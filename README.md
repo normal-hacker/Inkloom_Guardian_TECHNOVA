@@ -67,11 +67,25 @@ Next.js 15 · TypeScript · Tailwind · shadcn/ui — FastAPI · Pydantic · SQL
 ## Quick start
 ```bash
 cp .env.example .env
+
 docker compose up -d db
-cd backend && pip install -e ".[dev]" && alembic upgrade head && python -m app.seed.seed
-uvicorn app.main:app --reload            # http://localhost:8000/docs
-cd ../frontend && npm install && npm run dev   # http://localhost:3000
+cd backend
+python -m venv .venv
+. .venv/bin/activate    # Windows: .venv\Scripts\activate
+pip install -e ".[dev]"
+uvicorn app.main:app --reload --port 8000
 ```
+
+Then in a second terminal:
+```bash
+cd frontend
+cp .env.example .env.local
+npm install
+npm run dev
+```
+
+Open `http://localhost:3000` and try the demo content. This repository now includes a minimal working MVP for the brand-governance workflow, including a FastAPI review endpoint and a Next.js UI that displays rule findings.
+
 Full steps: [`docs/Setup.md`](docs/Setup.md).
 
 ## Team and contributions

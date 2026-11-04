@@ -5,27 +5,26 @@
 2. **Grounded or dropped.** A finding without a valid rule/fact citation and a real quote is discarded by the validator.
 3. **Human gate in the data model.** Approval is a state transition that only a reviewer/manager can perform and only when no blocker is open.
 4. **Immutable evidence.** Content versions, rule sets, review runs and audit rows are append-only.
-5. **Boring tech.** Postgres + FastAPI + Next.js. No queues or microservices for Round 2.
+5. **Boring tech.** PostgreSQL + one Next.js TypeScript app. No queues or microservices for Round 2.
 
 ## 2. Stack
 | Layer | Choice | Why |
 |---|---|---|
-| Frontend | Next.js 15 (App Router), TypeScript, Tailwind CSS, shadcn/ui, TanStack Query | Fast UI work, accessible primitives, matches Round 1 plan |
-| Backend | FastAPI (Python 3.12), Pydantic v2, SQLAlchemy 2, Alembic | Team strength in Python/AI; typed schemas; auto OpenAPI docs for judges |
-| Database | PostgreSQL 16 (managed: Supabase or Neon; local: Docker) | Relational integrity for audit; JSONB for rule definitions |
+| Application | Next.js 15 (App Router + Route Handlers), TypeScript strict mode, React | One language and one deploy target for the three-person team |
+| Database | PostgreSQL 16 (managed: Supabase; local: Docker), Drizzle ORM + SQL migrations | SQL-first schema and explicit migrations keep constraints auditable |
 | AI | `LLMProvider` interface: Anthropic (default), Mock (tests/offline) | Swap providers without touching business logic |
-| File parsing | `python-docx`, `pypdf`/`pdfplumber`, `Pillow` | Plain-text extraction, image metadata |
-| Auth | JWT (PyJWT) + argon2id password hashing | See `Auth.md` |
-| Tests | pytest, httpx, Vitest (UI units), Playwright (E2E) | See `Testing.md` |
-| Deploy | Vercel (web), Render or Railway (API), Supabase/Neon (DB) | Free tiers, public URLs |
+| File parsing | TypeScript extraction adapters (formats added in S3) | Keep parsing in the application runtime |
+| Auth | Signed session cookie + role guards | See `Auth.md`; simulated demo mode is not production auth |
+| Tests | Vitest (unit/integration), Playwright (E2E) | See `Testing.md` |
+| Deploy | Vercel (app), Supabase (Postgres) | One app deployment and a managed database |
 
 ## 3. System diagram
 ```
 ┌──────────────┐   HTTPS/JSON   ┌────────────────────────────────────────────┐
-│ Next.js web  │ ─────────────► │ FastAPI  /api/v1                           │
-│ (Vercel)     │ ◄───────────── │  routers → services → repositories         │
+│ Next.js app  │ ─────────────► │ Route Handlers /api/v1                     │
+│ (Vercel)     │ ◄───────────── │  routes → services → repositories          │
 └──────────────┘                │                                            │
-                                │  services/                                 │
+                                │  src/lib/                                  │
                                 │   extraction ─► redaction ─► rule_engine   │
                                 │                         └──► analyzer(LLM) │
                                 │                               └► validator │
@@ -70,11 +69,12 @@ Guards enforced in the service layer (not only the UI):
 | Decision | Detail | Deviation from deck? |
 |---|---|---|
 | Retrieval | The brand pack for the demo is small, so all active rules + relevant facts go into the prompt. Approved facts are selected by Postgres full-text search + keyword match. | Deck said RAG with pgvector. **Deferred**: pgvector adds an embedding provider, chunking and tuning with little visible benefit at this corpus size. Revisit in Round 3 if documents grow. |
+| Database access | Drizzle ORM with explicit SQL migrations | SQL-first schema and constraints remain reviewable |
 | Rules | YAML imported into `rules.definition` JSONB, versioned by rule set | As planned |
 | LLM | Provider-agnostic; model name from env | Deck left provider open |
 | Files | Extracted text stored in DB; original file bytes stored in DB (≤ 10 MB) because free hosts have ephemeral disks | New |
 | Realtime | Polling every 2 s on check status; no websockets | Simplification |
-| Background work | FastAPI `BackgroundTasks` + status column; no Celery/Redis | Simplification |
+| Background work | Persisted review-run state and polling; no queue in Round 2 | Simplification |
 
 Update this table whenever reality differs from the plan; it feeds the "changes made to the original plan" submission item.
 
@@ -83,62 +83,28 @@ Update this table whenever reality differs from the plan; it feeds the "changes 
 inkloom-guardian/
 ├── README.md
 ├── docs/                      # the 15 planning/ops docs
-├── docker-compose.yml         # postgres + api + web for local dev
+├── docker-compose.yml         # local PostgreSQL
 ├── .env.example
-├── backend/
-│   ├── pyproject.toml
-│   ├── alembic.ini
-│   ├── alembic/versions/
-│   ├── app/
-│   │   ├── main.py            # app factory, CORS, routers
-│   │   ├── config.py          # pydantic-settings
-│   │   ├── db.py              # engine, session
-│   │   ├── deps.py            # auth + role dependencies
-│   │   ├── models/            # SQLAlchemy tables (see Database.md)
-│   │   ├── schemas/           # Pydantic request/response
-│   │   ├── routers/           # auth, guidelines, rules, glossary, facts,
-│   │   │                      # content, reviews, findings, comments,
-│   │   │                      # decisions, insights, audit, public, health
-│   │   ├── services/
-│   │   │   ├── extraction.py  # txt/md/docx/pdf/image → text/metadata
-│   │   │   ├── redaction.py
-│   │   │   ├── rule_engine.py # deterministic checks
-│   │   │   ├── analyzer.py    # builds prompt, calls provider
-│   │   │   ├── validator.py   # grounding filter
-│   │   │   ├── review_service.py  # pipeline + state machine
-│   │   │   ├── suggestions.py
-│   │   │   ├── insights.py
-│   │   │   ├── audit.py
-│   │   │   └── llm/{base.py,anthropic_provider.py,mock_provider.py}
-│   │   └── seed/
-│   │       ├── brand_pack.yaml      # rules, glossary, facts (fictional brand)
-│   │       ├── sample_content/      # 20+ test documents with planted issues
-│   │       └── seed.py
-│   └── tests/{unit,integration,eval}/
 ├── frontend/
 │   ├── app/
-│   │   ├── page.tsx                   # public landing + "Try the demo"
-│   │   ├── demo/report/page.tsx       # public read-only sample report
-│   │   ├── login/page.tsx
-│   │   └── (app)/
-│   │       ├── dashboard/page.tsx
-│   │       ├── content/new/page.tsx
-│   │       ├── content/[id]/page.tsx  # review workspace
-│   │       ├── guidelines/page.tsx
-│   │       ├── insights/page.tsx
-│   │       ├── audit/page.tsx
-│   │       └── about-ai/page.tsx      # disclosure
-│   ├── components/{findings,editor,layout,ui}/
-│   ├── lib/{api.ts,auth.ts,types.ts}
-│   └── tests/
-└── e2e/                        # Playwright specs
+│   │   └── api/v1/            # thin Route Handlers
+│   ├── src/lib/
+│   │   ├── engine/            # pure deterministic checks
+│   │   ├── ai/                # provider interface + analyzer
+│   │   ├── services/          # workflow, audit, insights, extraction
+│   │   ├── db/                # Drizzle schema, migrations, seed
+│   │   └── auth/              # sessions, roles, guards
+│   ├── components/ui/         # presentational components
+│   ├── styles/
+│   ├── tests/                 # Vitest
+│   └── e2e/                   # Playwright specs
 ```
 
 ## 8. Environments and config
 | Env | Web | API | DB |
 |---|---|---|---|
-| local | `localhost:3000` | `localhost:8000` | Docker Postgres |
-| production | Vercel | Render/Railway | Supabase/Neon |
+| local | `localhost:3000` | Next.js Route Handlers on `localhost:3000` | Docker Postgres |
+| production | Vercel | Next.js Route Handlers on Vercel | Supabase |
 
 Config via environment variables only (see `Setup.md` / `.env.example`). No secrets in the repo.
 

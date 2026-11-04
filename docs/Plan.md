@@ -44,7 +44,8 @@ Update this table as reality changes. Judges reward honest, reasoned deviations 
 | 2 | Stale-content check (interview ask) | Moved to Round 3 improvement #1 | Needs stable rule versions first; keeps Round 2 focused | 2026-11-04 |
 | 3 | "Different content formats" | Round 2: text, md, docx, pdf, image alt-text; full visual checks in Round 3 | Scope/feasibility | 2026-11-04 |
 | 4 | LLM provider open | Provider-agnostic interface; default configured in env; mock for tests | Avoid lock-in, enable offline demo | 2026-11-04 |
-| 5 | Celery/queues (not in deck) | FastAPI BackgroundTasks + polling | Boring tech | 2026-11-04 |
+| 5 | Celery/queues (not in deck) | Persisted review-run state and polling in Next.js; no queue | Boring tech and fewer moving parts | 2026-11-04 |
+| 6 | Next.js frontend + FastAPI backend | Consolidate the product API in Next.js Route Handlers with TypeScript; use PostgreSQL + Drizzle migrations | One language and one deploy target are faster to build and maintain for a three-person team; Drizzle keeps SQL migrations explicit | 2026-11-04 |
 _Add rows during the build._
 
 ## 5. Submission checklist (Round 2)
