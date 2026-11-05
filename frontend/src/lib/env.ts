@@ -33,6 +33,23 @@ export const serverEnv = {
     assertServer('DATABASE_URL');
     return process.env.DATABASE_URL || '';
   },
+  get postgresUser(): string {
+    assertServer('POSTGRES_USER');
+    return process.env.POSTGRES_USER || 'guardian';
+  },
+  get postgresPassword(): string {
+    assertServer('POSTGRES_PASSWORD');
+    return process.env.POSTGRES_PASSWORD || 'guardian';
+  },
+  get postgresDb(): string {
+    assertServer('POSTGRES_DB');
+    return process.env.POSTGRES_DB || 'guardian';
+  },
+  get postgresPort(): number {
+    assertServer('POSTGRES_PORT');
+    const parsed = parseInt(process.env.POSTGRES_PORT || '5432', 10);
+    return isNaN(parsed) ? 5432 : parsed;
+  },
   get sessionSecret(): string {
     assertServer('SESSION_SECRET');
     return process.env.SESSION_SECRET || '';
