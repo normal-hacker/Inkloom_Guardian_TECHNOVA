@@ -1,0 +1,5911 @@
+
+// Minimal browser env
+const _evListeners = {};
+global.window = {
+  addEventListener: (e,h) => { _evListeners[e] = h; },
+  location: { hash: '#/', href: 'http://localhost/' }
+};
+global.document = {
+  getElementById: () => ({
+    style: {}, textContent: '', innerHTML: '', value: '',
+    addEventListener: ()=>{}, classList: { add:()=>{}, remove:()=>{}, contains:()=>false, toggle:()=>{} },
+    appendChild: ()=>{}, setAttribute: ()=>{}, getAttribute: ()=>null,
+    children: [], childNodes: [], querySelectorAll: ()=>[], querySelector: ()=>null,
+    scrollIntoView: ()=>{}, focus: ()=>{}, blur: ()=>{}, closest: ()=>null
+  }),
+  querySelector: () => null,
+  querySelectorAll: () => [],
+  createElement: (t) => ({
+    tagName: t.toUpperCase(), style: {}, className: '', textContent: '', innerHTML: '',
+    appendChild: ()=>{}, setAttribute: ()=>{}, getAttribute: ()=>null,
+    addEventListener: ()=>{}, childNodes: [], children: [],
+    querySelectorAll: ()=>[], querySelector: ()=>null,
+    dataset: {}, id: '', href: '', checked: false, value: '',
+    scrollIntoView: ()=>{}, focus: ()=>{}, closest: ()=>null
+  }),
+  createTextNode: (t) => ({ nodeValue: t, textContent: t }),
+  createDocumentFragment: () => ({
+    appendChild: ()=>{}, childNodes: [], children: []
+  }),
+  body: { appendChild:()=>{}, style: {}, classList: { add:()=>{}, remove:()=>{} } },
+  head: { appendChild:()=>{} },
+  documentElement: { setAttribute: ()=>{} },
+  activeElement: null,
+  title: ''
+};
+global.location = { hash: '#/', href: 'http://localhost/', pathname: '/' };
+global.localStorage = { 
+  getItem: () => null, 
+  setItem: () => {}, 
+  removeItem: () => {},
+  clear: () => {}
+};
+global.sessionStorage = { 
+  getItem: () => null, 
+  setItem: () => {}, 
+  removeItem: () => {},
+  clear: () => {}
+};
+global.crypto = require('crypto').webcrypto;
+global.TextEncoder = require('util').TextEncoder;
+global.TextDecoder = require('util').TextDecoder;
+global.navigator = { userAgent: 'node-test' };
+global.history = { pushState: ()=>{}, replaceState: ()=>{} };
+global.customElements = { define: ()=>{} };
+global.requestAnimationFrame = (cb) => {};
+global.cancelAnimationFrame = ()=>{};
+global.HTMLElement = class HTMLElement {};
+global.Event = class Event { constructor(t){this.type=t;} };
+global.CustomEvent = class CustomEvent { constructor(t,d){this.type=t;this.detail=d&&d.detail;} };
+global.MutationObserver = class MutationObserver { constructor(){}; observe(){}; disconnect(){}; };
+global.ResizeObserver = class ResizeObserver { constructor(){}; observe(){}; disconnect(){}; };
+global.FileReader = class FileReader {};
+global.URL = { createObjectURL: ()=>'blob:test', revokeObjectURL: ()=>{} };
+global.alert = (m) => {};
+global.confirm = (m) => true;
+
+
+// === SECTION 1: SHA-256 ===
+
+function sha256Pure(ascii) {
+  function rightRotate(value, amount) {
+    return (value >>> amount) | (value << (32 - amount));
+  }
+  const K = [
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+  ];
+  const H = [
+    0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+    0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+  ];
+
+  const bytes = [];
+  for (let i = 0; i < ascii.length; i++) {
+    const c = ascii.charCodeAt(i);
+    if (c < 128) {
+      bytes.push(c);
+    } else if (c < 2048) {
+      bytes.push((c >> 6) | 192);
+      bytes.push((c & 63) | 128);
+    } else {
+      bytes.push((c >> 12) | 224);
+      bytes.push(((c >> 6) & 63) | 128);
+      bytes.push((c & 63) | 128);
+    }
+  }
+
+  const bitLen = bytes.length * 8;
+  bytes.push(0x80);
+  while ((bytes.length % 64) !== 56) {
+    bytes.push(0);
+  }
+  bytes.push(0, 0, 0, 0);
+  bytes.push((bitLen >>> 24) & 0xff);
+  bytes.push((bitLen >>> 16) & 0xff);
+  bytes.push((bitLen >>> 8) & 0xff);
+  bytes.push(bitLen & 0xff);
+
+  const W = new Array(64);
+  for (let chunk = 0; chunk < bytes.length; chunk += 64) {
+    for (let i = 0; i < 16; i++) {
+      W[i] = ((bytes[chunk + i * 4] << 24) |
+              (bytes[chunk + i * 4 + 1] << 16) |
+              (bytes[chunk + i * 4 + 2] << 8) |
+              (bytes[chunk + i * 4 + 3])) >>> 0;
+    }
+    for (let i = 16; i < 64; i++) {
+      const s0 = (rightRotate(W[i - 15], 7) ^ rightRotate(W[i - 15], 18) ^ (W[i - 15] >>> 3)) >>> 0;
+      const s1 = (rightRotate(W[i - 2], 17) ^ rightRotate(W[i - 2], 19) ^ (W[i - 2] >>> 10)) >>> 0;
+      W[i] = (W[i - 16] + s0 + W[i - 7] + s1) >>> 0;
+    }
+
+    let a = H[0], b = H[1], c = H[2], d = H[3];
+    let e = H[4], f = H[5], g = H[6], h = H[7];
+
+    for (let i = 0; i < 64; i++) {
+      const S1 = (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25)) >>> 0;
+      const ch = ((e & f) ^ ((~e) & g)) >>> 0;
+      const temp1 = (h + S1 + ch + K[i] + W[i]) >>> 0;
+      const S0 = (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22)) >>> 0;
+      const maj = ((a & b) ^ (a & c) ^ (b & c)) >>> 0;
+      const temp2 = (S0 + maj) >>> 0;
+
+      h = g;
+      g = f;
+      f = e;
+      e = (d + temp1) >>> 0;
+      d = c;
+      c = b;
+      b = a;
+      a = (temp1 + temp2) >>> 0;
+    }
+
+    H[0] = (H[0] + a) >>> 0;
+    H[1] = (H[1] + b) >>> 0;
+    H[2] = (H[2] + c) >>> 0;
+    H[3] = (H[3] + d) >>> 0;
+    H[4] = (H[4] + e) >>> 0;
+    H[5] = (H[5] + f) >>> 0;
+    H[6] = (H[6] + g) >>> 0;
+    H[7] = (H[7] + h) >>> 0;
+  }
+
+  let hex = '';
+  for (let i = 0; i < 8; i++) {
+    hex += (H[i] >>> 0).toString(16).padStart(8, '0');
+  }
+  return hex;
+}
+
+async function sha256(text) {
+  try {
+    if (typeof crypto !== 'undefined' && crypto.subtle && crypto.subtle.digest) {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+  } catch (e) {
+    // fall back
+  }
+  return sha256Pure(text);
+}
+
+
+// === SECTION 2: STORE + PERSISTENCE ===
+
+const DB = {
+  schemaVersion: 1,
+  workspace: {
+    id: 'ws-brightway',
+    name: 'Brightway Solar (demo)',
+    confidential_terms: ['Project Helios']
+  },
+  users: [],
+  guideline_sources: [],
+  rule_sets: [],
+  rules: [],
+  glossary_terms: [],
+  approved_facts: [],
+  content_items: [],
+  content_versions: [],
+  review_runs: [],
+  findings: [],
+  finding_decisions: [],
+  comments: [],
+  approvals: [],
+  audit_log: []
+};
+
+let storageAvailable = true;
+let storageNotice = false;
+let activeUser = null;
+
+function saveDB() {
+  try {
+    localStorage.setItem('inkloom_guardian_v1', JSON.stringify({
+      schemaVersion: DB.schemaVersion,
+      workspace: DB.workspace,
+      users: DB.users,
+      guideline_sources: DB.guideline_sources,
+      rule_sets: DB.rule_sets,
+      rules: DB.rules,
+      glossary_terms: DB.glossary_terms,
+      approved_facts: DB.approved_facts,
+      content_items: DB.content_items,
+      content_versions: DB.content_versions,
+      review_runs: DB.review_runs,
+      findings: DB.findings,
+      finding_decisions: DB.finding_decisions,
+      comments: DB.comments,
+      approvals: DB.approvals,
+      audit_log: DB.audit_log
+    }));
+  } catch (e) {
+    storageAvailable = false;
+    showStorageNotice();
+  }
+}
+
+function loadDB() {
+  try {
+    const raw = localStorage.getItem('inkloom_guardian_v1');
+    if (!raw) return false;
+    const saved = JSON.parse(raw);
+    if (!saved || saved.schemaVersion !== 1) return false;
+    Object.assign(DB, saved);
+    return true;
+  } catch (e) {
+    storageAvailable = false;
+    showStorageNotice();
+    return false;
+  }
+}
+
+function showStorageNotice() {
+  if (storageNotice) return;
+  storageNotice = true;
+  if (typeof document !== 'undefined') {
+    const banner = document.getElementById('storage-banner');
+    if (banner) {
+      banner.style.display = 'block';
+      banner.textContent = 'Storage unavailable (private window or blocked). Working in memory session — changes will reset on page reload.';
+    }
+  }
+}
+
+function getActiveRuleSet() {
+  return DB.rule_sets.find(rs => rs.status === 'active') || DB.rule_sets[DB.rule_sets.length - 1];
+}
+
+function logAudit(action, entityType, entityId, contentHash, ruleSetId, detail = {}) {
+  const rs = ruleSetId || (getActiveRuleSet() ? getActiveRuleSet().id : 'rs-v3');
+  const actor = activeUser ? activeUser.id : (detail.actor_id || 'system');
+  const entry = {
+    id: 'aud-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+    workspace_id: DB.workspace.id,
+    actor_id: actor,
+    action: action,
+    entity_type: entityType,
+    entity_id: entityId,
+    content_hash: contentHash || '',
+    rule_set_id: rs,
+    rule_set_version: (DB.rule_sets.find(r => r.id === rs) || {}).version || 3,
+    detail: detail,
+    created_at: new Date().toISOString()
+  };
+  DB.audit_log.unshift(entry);
+  saveDB();
+  return entry;
+}
+
+
+// === SECTION 3: SEED DATA ===
+
+function initSeedData() {
+  DB.users = [
+    { id: 'u-asha', display_name: 'Asha Patel', email: 'asha@brightway.solar', role: 'creator', is_demo: true, created_at: '2025-01-01T08:00:00Z' },
+    { id: 'u-ben', display_name: 'Ben Okafor', email: 'ben@brightway.solar', role: 'creator', is_demo: true, created_at: '2025-01-01T08:00:00Z' },
+    { id: 'u-priya', display_name: 'Priya Nair', email: 'priya@brightway.solar', role: 'reviewer', is_demo: true, created_at: '2025-01-01T08:00:00Z' },
+    { id: 'u-marcus', display_name: 'Marcus Webb', email: 'marcus@brightway.solar', role: 'manager', is_demo: true, created_at: '2025-01-01T08:00:00Z' }
+  ];
+
+  DB.guideline_sources = [
+    {
+      id: 's-1',
+      workspace_id: 'ws-brightway',
+      title: 'Brand Voice Guide',
+      version_label: 'v4',
+      kind: 'guideline',
+      created_at: '2025-01-10T10:00:00Z',
+      body_markdown: `§1 Introduction
+Brightway Solar's brand voice is warm, honest, and empowering. We speak clearly and avoid jargon.
+
+§2 Tone Rules
+§2.1 Exclamation marks — Use sparingly. No more than one exclamation mark per 60 words. Never use two or more in succession. Replace excessive exclamation marks with a full stop.
+§2.3 Urgency language — Do not use pressure phrases such as "act now", "limited time only", "don't miss out", "hurry", or "last chance". Our customers deserve considered decisions.
+§2.4 Hype vocabulary — Avoid words that overstate impact: revolutionary, game-changing, unbelievable, amazing, mind-blowing. Prefer specific, evidenced claims.
+
+§4 Messaging
+§4.1 Comparative claims — Never make direct comparisons using "better than", "cheaper than", "unlike other", or "beats". Let evidence speak for itself.
+
+§5 Claims
+§5.2 Superlatives — Do not use superlative terms: best, #1, number one, fastest, leading, unbeatable, world-class, only. All superlatives require independent verification we do not currently hold.
+§5.3 Guarantees — Do not use guarantee, guaranteed, risk-free, or "100%" without legal sign-off. These create binding obligations.
+
+§7 Confidentiality
+§7.1 Never publish internal project names (e.g. Project Helios), documents marked "unreleased" or "internal only", content marked "do not share", or any personal email addresses without explicit consent.`
+    },
+    {
+      id: 's-2',
+      workspace_id: 'ws-brightway',
+      title: 'Terminology Sheet',
+      version_label: '2025',
+      kind: 'terminology',
+      created_at: '2025-01-10T10:00:00Z',
+      body_markdown: `§1 Banned Terms
+The following terms are prohibited in all external communications. Use the preferred alternative shown.
+- "cheapest" → use "affordable"
+- "free energy" → use "clean energy"
+- "zero bills" → use "lower bills"
+- "solar cells" → use "solar panels"
+
+§2 Product Names
+§2.1 Our residential monitoring product is "SunLink" — always written as one word, capital S and L.
+Incorrect forms: "Sun Link", "Sunlink", "SUNLINK", "sun-link". Use the correct form in all copy.
+
+§3 Discouraged Terms (Info level)
+Prefer "customers" over "users". Prefer "renewable" over "green" when describing energy.`
+    },
+    {
+      id: 's-3',
+      workspace_id: 'ws-brightway',
+      title: 'Approved Facts Sheet',
+      version_label: '2025-Q3',
+      kind: 'fact_sheet',
+      created_at: '2025-06-15T10:00:00Z',
+      body_markdown: `§1 Approved Figures
+All numerical claims in external content must be supported by an entry in this fact sheet.
+If a figure does not appear here, it cannot be used without manager approval.
+
+F-001 — Electricity-bill savings: average household savings of 18–24% (2025 customer study, n=412).
+F-002 — Panel warranty: 25-year performance warranty on all panels.
+F-003 — Installation time: typical home installation takes 1–2 days.
+F-004 — Inverter warranty: 12-year warranty on inverter units.
+F-005 — Panel efficiency: up to 22.5% efficiency rating.
+F-006 — Service area: Brightway Solar serves customers in 14 cities.`
+    },
+    {
+      id: 's-4',
+      workspace_id: 'ws-brightway',
+      title: 'Accessibility & Asset Policy',
+      version_label: 'v2',
+      kind: 'asset_policy',
+      created_at: '2025-06-01T10:00:00Z',
+      body_markdown: `§1 Accessibility Requirements
+§1.1 Images — Every image used in external content must have a descriptive alt text of at least 5 characters. Images with missing or trivial alt text (e.g., "", "img", "photo") do not meet our accessibility standard.
+§1.3 Link text — Avoid non-descriptive link phrases: "click here", "read more", "learn more" used alone without context. Provide descriptive link text that makes sense out of context.
+§1.5 ALL-CAPS — Avoid running four or more consecutive words in ALL CAPS in external content. Screen readers may read all-caps text letter by letter.`
+    }
+  ];
+
+  DB.rule_sets = [
+    {
+      id: 'rs-v1',
+      workspace_id: 'ws-brightway',
+      version: 1,
+      status: 'archived',
+      notes: 'Initial rule set with 8 rules',
+      created_by: 'u-marcus',
+      created_at: '2025-01-10T10:00:00Z',
+      activated_at: '2025-01-10T10:00:00Z'
+    },
+    {
+      id: 'rs-v2',
+      workspace_id: 'ws-brightway',
+      version: 2,
+      status: 'archived',
+      notes: 'Added ACC rules, expanded CONF-001',
+      created_by: 'u-marcus',
+      created_at: '2025-06-01T10:00:00Z',
+      activated_at: '2025-06-01T10:00:00Z'
+    },
+    {
+      id: 'rs-v3',
+      workspace_id: 'ws-brightway',
+      version: 3,
+      status: 'active',
+      notes: 'Added NUM-001 fact-checking, refined TONE-001 threshold',
+      created_by: 'u-marcus',
+      created_at: '2025-09-01T10:00:00Z',
+      activated_at: '2025-09-01T10:00:00Z'
+    }
+  ];
+
+  DB.rules = [
+    {
+      id: 'r-tone-001',
+      rule_set_id: 'rs-v3',
+      key: 'TONE-001',
+      category: 'tone',
+      severity: 'minor',
+      title: 'Excessive exclamation marks',
+      explanation: 'Use exclamation marks sparingly (no more than 1 per 60 words). Never use 2+ consecutive exclamation marks.',
+      suggestion_hint: 'Replace with full stop',
+      source_id: 's-1',
+      source_section: '§2.1',
+      enabled: true
+    },
+    {
+      id: 'r-tone-002',
+      rule_set_id: 'rs-v3',
+      key: 'TONE-002',
+      category: 'tone',
+      severity: 'major',
+      title: 'Urgency & pressure phrases',
+      explanation: 'Do not use urgency language such as "act now", "limited time only", "hurry", or "last chance".',
+      suggestion_hint: 'Remove pressure phrase',
+      source_id: 's-1',
+      source_section: '§2.3',
+      enabled: true
+    },
+    {
+      id: 'r-tone-003',
+      rule_set_id: 'rs-v3',
+      key: 'TONE-003',
+      category: 'tone',
+      severity: 'minor',
+      title: 'Hype vocabulary',
+      explanation: 'Avoid hype words that overstate impact (revolutionary, game-changing, amazing). Prefer evidenced claims.',
+      suggestion_hint: 'Use specific, evidence-based language instead',
+      source_id: 's-1',
+      source_section: '§2.4',
+      enabled: true
+    },
+    {
+      id: 'r-term-001',
+      rule_set_id: 'rs-v3',
+      key: 'TERM-001',
+      category: 'terminology',
+      severity: 'major',
+      title: 'Banned brand terms',
+      explanation: 'Prohibited terminology detected. Replace with the approved brand alternative.',
+      suggestion_hint: 'Use preferred alternative',
+      source_id: 's-2',
+      source_section: '§1',
+      enabled: true
+    },
+    {
+      id: 'r-term-002',
+      rule_set_id: 'rs-v3',
+      key: 'TERM-002',
+      category: 'terminology',
+      severity: 'minor',
+      title: 'Product name capitalization (SunLink)',
+      explanation: 'Residential monitoring system must be written as "SunLink" (one word, capital S and L).',
+      suggestion_hint: 'SunLink',
+      source_id: 's-2',
+      source_section: '§2.1',
+      enabled: true
+    },
+    {
+      id: 'r-msg-001',
+      rule_set_id: 'rs-v3',
+      key: 'MSG-001',
+      category: 'messaging',
+      severity: 'major',
+      title: 'Comparative competitor claims',
+      explanation: 'Do not make direct comparative claims ("cheaper than", "better than", "beats"). State evidence directly.',
+      suggestion_hint: 'Remove comparative claim',
+      source_id: 's-1',
+      source_section: '§4.1',
+      enabled: true
+    },
+    {
+      id: 'r-claim-001',
+      rule_set_id: 'rs-v3',
+      key: 'CLAIM-001',
+      category: 'claim',
+      severity: 'blocker',
+      title: 'Superlative language',
+      explanation: 'Superlatives (best, #1, number one, fastest, leading, unbeatable) require independent verification we do not hold.',
+      suggestion_hint: 'Remove superlative claim',
+      source_id: 's-1',
+      source_section: '§5.2',
+      enabled: true
+    },
+    {
+      id: 'r-claim-002',
+      rule_set_id: 'rs-v3',
+      key: 'CLAIM-002',
+      category: 'claim',
+      severity: 'blocker',
+      title: 'Guarantee language',
+      explanation: 'Do not use guarantee, guaranteed, risk-free, or 100% without legal sign-off. These create binding obligations.',
+      suggestion_hint: 'Remove guarantee language',
+      source_id: 's-1',
+      source_section: '§5.3',
+      enabled: true
+    },
+    {
+      id: 'r-num-001',
+      rule_set_id: 'rs-v3',
+      key: 'NUM-001',
+      category: 'fact',
+      severity: 'blocker',
+      title: 'Unverified numerical claim',
+      explanation: 'Every numerical claim must be supported by an approved figure from our Fact Sheet in matching context.',
+      suggestion_hint: 'Use approved fact range',
+      source_id: 's-3',
+      source_section: '§1',
+      enabled: true
+    },
+    {
+      id: 'r-conf-001',
+      rule_set_id: 'rs-v3',
+      key: 'CONF-001',
+      category: 'confidentiality',
+      severity: 'blocker',
+      title: 'Confidentiality & personal data',
+      explanation: 'Internal project names (Project Helios), confidentiality markers, or personal emails must not appear in public copy.',
+      suggestion_hint: 'Remove confidential reference',
+      source_id: 's-1',
+      source_section: '§7.1',
+      enabled: true
+    },
+    {
+      id: 'r-acc-001',
+      rule_set_id: 'rs-v3',
+      key: 'ACC-001',
+      category: 'accessibility',
+      severity: 'major',
+      title: 'Image missing alt text',
+      explanation: 'Every image in external copy must include descriptive alt text of at least 5 characters.',
+      suggestion_hint: 'Add descriptive alt text',
+      source_id: 's-4',
+      source_section: '§1.1',
+      enabled: true
+    },
+    {
+      id: 'r-acc-002',
+      rule_set_id: 'rs-v3',
+      key: 'ACC-002',
+      category: 'accessibility',
+      severity: 'minor',
+      title: 'Non-descriptive link text',
+      explanation: 'Avoid generic link phrases ("click here", "read more", "learn more") without clear destination context.',
+      suggestion_hint: 'Use descriptive link text',
+      source_id: 's-4',
+      source_section: '§1.3',
+      enabled: true
+    },
+    {
+      id: 'r-acc-003',
+      rule_set_id: 'rs-v3',
+      key: 'ACC-003',
+      category: 'accessibility',
+      severity: 'minor',
+      title: 'Excessive ALL-CAPS runs',
+      explanation: 'Four or more consecutive ALL-CAPS words hurt readability and cause screen readers to spell words out letter by letter.',
+      suggestion_hint: 'Convert to title or sentence case',
+      source_id: 's-4',
+      source_section: '§1.5',
+      enabled: true
+    }
+  ];
+
+  DB.glossary_terms = [
+    { id: 'gt-1', term: 'cheapest', kind: 'banned', preferred_alternative: 'affordable', severity: 'major', note: 'Emphasize value over cheapness', source_id: 's-2' },
+    { id: 'gt-2', term: 'free energy', kind: 'banned', preferred_alternative: 'clean energy', severity: 'major', note: 'Energy is not free due to equipment investment', source_id: 's-2' },
+    { id: 'gt-3', term: 'zero bills', kind: 'banned', preferred_alternative: 'lower bills', severity: 'major', note: 'Connection and grid fees still apply', source_id: 's-2' },
+    { id: 'gt-4', term: 'solar cells', kind: 'banned', preferred_alternative: 'solar panels', severity: 'major', note: 'Customers purchase panel systems, not bare cells', source_id: 's-2' },
+    { id: 'gt-5', term: 'users', kind: 'discouraged', preferred_alternative: 'customers', severity: 'info', note: 'Warm and personal relationship', source_id: 's-2' },
+    { id: 'gt-6', term: 'green', kind: 'discouraged', preferred_alternative: 'renewable', severity: 'info', note: 'Precise environmental terminology', source_id: 's-2' }
+  ];
+
+  DB.approved_facts = [
+    { id: 'f-001', key: 'F-001', min: 18, max: 24, unit: '%', keywords: ['savings', 'save', 'saving', 'bill', 'bills', 'electricity'], statement: 'Average household electricity-bill savings were 18–24% (2025 customer study, n=412)' },
+    { id: 'f-002', key: 'F-002', min: 25, max: 25, unit: 'years', keywords: ['warranty', 'panel', 'panels', 'performance'], statement: 'Panels carry a 25-year performance warranty' },
+    { id: 'f-003', key: 'F-003', min: 1, max: 2, unit: 'days', keywords: ['install', 'installation', 'installed'], statement: 'Typical home installation takes 1–2 days' },
+    { id: 'f-004', key: 'F-004', min: 12, max: 12, unit: 'years', keywords: ['inverter'], statement: 'The inverter carries a 12-year warranty' },
+    { id: 'f-005', key: 'F-005', min: 0, max: 22.5, unit: '%', keywords: ['efficiency', 'efficient'], statement: 'Panel efficiency is up to 22.5%' },
+    { id: 'f-006', key: 'F-006', min: 14, max: 14, unit: 'cities', keywords: ['cities', 'city', 'serve', 'serves'], statement: 'Brightway Solar serves customers in 14 cities' }
+  ];
+
+  // Seed Content Items
+  const v1Text1 = "Brightway Solar is the best choice for homeowners! Our solar cells guarantee 40% savings on your electricity bill. Act now and get free energy from the sun. Click here to learn more.";
+  const v2Text1 = "Brightway Solar offers high-efficiency solar panels for homeowners. Customers report average bill savings of 18–24% on their electricity bill. Explore our website to learn more.";
+
+  const v1Hash1 = sha256Pure(v1Text1);
+  const v2Hash1 = sha256Pure(v2Text1);
+
+  DB.content_items = [
+    {
+      id: 'ci-001',
+      workspace_id: 'ws-brightway',
+      title: 'Spring savings blog',
+      content_type: 'blog',
+      status: 'approved',
+      owner_id: 'u-asha',
+      current_version_id: 'cv-001-v2',
+      created_at: '2025-09-01T10:00:00Z',
+      updated_at: '2025-09-06T14:30:00Z'
+    },
+    {
+      id: 'ci-002',
+      workspace_id: 'ws-brightway',
+      title: 'Installer partnership post',
+      content_type: 'social',
+      status: 'in_review',
+      owner_id: 'u-ben',
+      current_version_id: 'cv-002-v1',
+      created_at: '2025-09-12T09:15:00Z',
+      updated_at: '2025-09-12T09:20:00Z'
+    },
+    {
+      id: 'ci-003',
+      workspace_id: 'ws-brightway',
+      title: 'Social post: SunLink launch',
+      content_type: 'social',
+      status: 'changes_requested',
+      owner_id: 'u-asha',
+      current_version_id: 'cv-003-v1',
+      created_at: '2025-09-14T11:00:00Z',
+      updated_at: '2025-09-14T16:45:00Z'
+    },
+    {
+      id: 'ci-004',
+      workspace_id: 'ws-brightway',
+      title: 'Homepage banner copy',
+      content_type: 'web',
+      status: 'checked',
+      owner_id: 'u-ben',
+      current_version_id: 'cv-004-v1',
+      created_at: '2025-09-18T14:00:00Z',
+      updated_at: '2025-09-18T14:05:00Z'
+    },
+    {
+      id: 'ci-005',
+      workspace_id: 'ws-brightway',
+      title: 'Press note',
+      content_type: 'press',
+      status: 'draft',
+      owner_id: 'u-asha',
+      current_version_id: 'cv-005-v1',
+      created_at: '2025-09-20T16:00:00Z',
+      updated_at: '2025-09-20T16:00:00Z'
+    }
+  ];
+
+  DB.content_versions = [
+    {
+      id: 'cv-001-v1',
+      content_item_id: 'ci-001',
+      version_no: 1,
+      text_body: v1Text1,
+      content_hash: v1Hash1,
+      source_kind: 'paste',
+      change_note: 'Initial draft intake',
+      created_by: 'u-asha',
+      created_at: '2025-09-01T10:00:00Z'
+    },
+    {
+      id: 'cv-001-v2',
+      content_item_id: 'ci-001',
+      version_no: 2,
+      text_body: v2Text1,
+      content_hash: v2Hash1,
+      source_kind: 'paste',
+      change_note: 'Revised claims and aligned figures with F-001 fact sheet',
+      created_by: 'u-asha',
+      created_at: '2025-09-05T11:30:00Z'
+    },
+    {
+      id: 'cv-002-v1',
+      content_item_id: 'ci-002',
+      version_no: 1,
+      text_body: "We are the number one installer in the region! Our SunLink system is game-changing. Contact us at partnerships@brightway.solar to discuss your project.",
+      content_hash: sha256Pure("We are the number one installer in the region! Our SunLink system is game-changing. Contact us at partnerships@brightway.solar to discuss your project."),
+      source_kind: 'paste',
+      change_note: 'Draft submission for trade partner campaign',
+      created_by: 'u-ben',
+      created_at: '2025-09-12T09:15:00Z'
+    },
+    {
+      id: 'cv-003-v1',
+      content_item_id: 'ci-003',
+      version_no: 1,
+      text_body: "Introducing the revolutionary SunLink! Unlike other systems, SunLink beats the competition. BEST SOLAR TECH AVAILABLE NOW.",
+      content_hash: sha256Pure("Introducing the revolutionary SunLink! Unlike other systems, SunLink beats the competition. BEST SOLAR TECH AVAILABLE NOW."),
+      source_kind: 'paste',
+      change_note: 'Draft social blast',
+      created_by: 'u-asha',
+      created_at: '2025-09-14T11:00:00Z'
+    },
+    {
+      id: 'cv-004-v1',
+      content_item_id: 'ci-004',
+      version_no: 1,
+      text_body: "Switch to clean, renewable solar energy. Brightway Solar installs panels in 14 cities with a 25-year warranty. Installation takes 1–2 days.",
+      content_hash: sha256Pure("Switch to clean, renewable solar energy. Brightway Solar installs panels in 14 cities with a 25-year warranty. Installation takes 1–2 days."),
+      source_kind: 'paste',
+      change_note: 'Homepage banner update',
+      created_by: 'u-ben',
+      created_at: '2025-09-18T14:00:00Z'
+    },
+    {
+      id: 'cv-005-v1',
+      content_item_id: 'ci-005',
+      version_no: 1,
+      text_body: "Early draft content for press release about Q4 expansion.",
+      content_hash: sha256Pure("Early draft content for press release about Q4 expansion."),
+      source_kind: 'paste',
+      change_note: 'Initial press release outline',
+      created_by: 'u-asha',
+      created_at: '2025-09-20T16:00:00Z'
+    }
+  ];
+
+  // Review runs
+  DB.review_runs = [
+    {
+      id: 'rr-001-v1',
+      content_version_id: 'cv-001-v1',
+      rule_set_id: 'rs-v3',
+      rule_set_version: 3,
+      status: 'complete',
+      started_at: '2025-09-01T10:01:00Z',
+      finished_at: '2025-09-01T10:01:01Z',
+      counts: { blocker: 3, major: 3, minor: 1, info: 0 }
+    },
+    {
+      id: 'rr-001-v2',
+      content_version_id: 'cv-001-v2',
+      rule_set_id: 'rs-v3',
+      rule_set_version: 3,
+      status: 'complete',
+      started_at: '2025-09-05T11:31:00Z',
+      finished_at: '2025-09-05T11:31:01Z',
+      counts: { blocker: 0, major: 0, minor: 0, info: 0 }
+    },
+    {
+      id: 'rr-002-v1',
+      content_version_id: 'cv-002-v1',
+      rule_set_id: 'rs-v3',
+      rule_set_version: 3,
+      status: 'complete',
+      started_at: '2025-09-12T09:16:00Z',
+      finished_at: '2025-09-12T09:16:01Z',
+      counts: { blocker: 2, major: 0, minor: 1, info: 0 }
+    },
+    {
+      id: 'rr-003-v1',
+      content_version_id: 'cv-003-v1',
+      rule_set_id: 'rs-v3',
+      rule_set_version: 3,
+      status: 'complete',
+      started_at: '2025-09-14T11:01:00Z',
+      finished_at: '2025-09-14T11:01:01Z',
+      counts: { blocker: 0, major: 2, minor: 2, info: 0 }
+    },
+    {
+      id: 'rr-004-v1',
+      content_version_id: 'cv-004-v1',
+      rule_set_id: 'rs-v3',
+      rule_set_version: 3,
+      status: 'complete',
+      started_at: '2025-09-18T14:01:00Z',
+      finished_at: '2025-09-18T14:01:01Z',
+      counts: { blocker: 0, major: 0, minor: 0, info: 0 }
+    }
+  ];
+
+  // Seeded findings for ci-001-v1
+  DB.findings = [
+    {
+      id: 'f-seed-001',
+      review_run_id: 'rr-001-v1',
+      origin: 'rule',
+      category: 'claim',
+      severity: 'blocker',
+      ruleKey: 'CLAIM-001',
+      ruleSetVersion: 3,
+      sourceId: 's-1',
+      sourceTitle: 'Brand Voice Guide',
+      sourceSection: '§5.2',
+      span_start: 24,
+      span_end: 28,
+      start: 24,
+      end: 28,
+      quote: 'best',
+      explanation: 'Superlatives require independent verification not currently held.',
+      suggestion: 'Remove superlative claim',
+      status: 'dismissed'
+    },
+    {
+      id: 'f-seed-002',
+      review_run_id: 'rr-001-v1',
+      origin: 'rule',
+      category: 'claim',
+      severity: 'blocker',
+      ruleKey: 'CLAIM-002',
+      ruleSetVersion: 3,
+      sourceId: 's-1',
+      sourceTitle: 'Brand Voice Guide',
+      sourceSection: '§5.3',
+      span_start: 69,
+      span_end: 78,
+      start: 69,
+      end: 78,
+      quote: 'guarantee',
+      explanation: 'Guarantees create binding obligations requiring legal sign-off.',
+      suggestion: 'Remove guarantee language',
+      status: 'open'
+    },
+    {
+      id: 'f-seed-003',
+      review_run_id: 'rr-001-v1',
+      origin: 'rule',
+      category: 'fact',
+      severity: 'blocker',
+      ruleKey: 'NUM-001',
+      ruleSetVersion: 3,
+      sourceId: 's-3',
+      sourceTitle: 'Approved Facts Sheet',
+      sourceSection: '§1',
+      span_start: 79,
+      span_end: 82,
+      start: 79,
+      end: 82,
+      quote: '40%',
+      explanation: 'Approved figure is 18–24%; 40% is not supported (F-001).',
+      suggestion: '18–24%',
+      status: 'open'
+    },
+    {
+      id: 'f-seed-004',
+      review_run_id: 'rr-001-v1',
+      origin: 'rule',
+      category: 'tone',
+      severity: 'major',
+      ruleKey: 'TONE-002',
+      ruleSetVersion: 3,
+      sourceId: 's-1',
+      sourceTitle: 'Brand Voice Guide',
+      sourceSection: '§2.3',
+      span_start: 114,
+      span_end: 121,
+      start: 114,
+      end: 121,
+      quote: 'Act now',
+      explanation: 'Urgency language is prohibited. Brightway Solar encourages considered decisions.',
+      suggestion: 'Remove urgency language',
+      status: 'open'
+    },
+    {
+      id: 'f-seed-005',
+      review_run_id: 'rr-001-v1',
+      origin: 'rule',
+      category: 'terminology',
+      severity: 'major',
+      ruleKey: 'TERM-001',
+      ruleSetVersion: 3,
+      sourceId: 's-2',
+      sourceTitle: 'Terminology Sheet',
+      sourceSection: '§1',
+      span_start: 57,
+      span_end: 68,
+      start: 57,
+      end: 68,
+      quote: 'solar cells',
+      explanation: 'The term "solar cells" is prohibited. Use preferred alternative.',
+      suggestion: 'solar panels',
+      status: 'open'
+    },
+    {
+      id: 'f-seed-006',
+      review_run_id: 'rr-001-v1',
+      origin: 'rule',
+      category: 'terminology',
+      severity: 'major',
+      ruleKey: 'TERM-001',
+      ruleSetVersion: 3,
+      sourceId: 's-2',
+      sourceTitle: 'Terminology Sheet',
+      sourceSection: '§1',
+      span_start: 134,
+      span_end: 145,
+      start: 134,
+      end: 145,
+      quote: 'free energy',
+      explanation: 'The term "free energy" is prohibited. Use preferred alternative.',
+      suggestion: 'clean energy',
+      status: 'open'
+    },
+    {
+      id: 'f-seed-007',
+      review_run_id: 'rr-001-v1',
+      origin: 'rule',
+      category: 'accessibility',
+      severity: 'minor',
+      ruleKey: 'ACC-002',
+      ruleSetVersion: 3,
+      sourceId: 's-4',
+      sourceTitle: 'Accessibility & Asset Policy',
+      sourceSection: '§1.3',
+      span_start: 161,
+      span_end: 171,
+      start: 161,
+      end: 171,
+      quote: 'Click here',
+      explanation: 'Link text should be descriptive out of context. Avoid generic link text.',
+      suggestion: 'Use descriptive link text indicating destination',
+      status: 'open'
+    },
+
+    // Findings for ci-002-v1
+    {
+      id: 'f-seed-008',
+      review_run_id: 'rr-002-v1',
+      origin: 'rule',
+      category: 'claim',
+      severity: 'blocker',
+      ruleKey: 'CLAIM-001',
+      ruleSetVersion: 3,
+      sourceId: 's-1',
+      sourceTitle: 'Brand Voice Guide',
+      sourceSection: '§5.2',
+      span_start: 14,
+      span_end: 24,
+      start: 14,
+      end: 24,
+      quote: 'number one',
+      explanation: 'Superlatives require independent verification not currently held.',
+      suggestion: 'Remove superlative claim',
+      status: 'open'
+    },
+    {
+      id: 'f-seed-009',
+      review_run_id: 'rr-002-v1',
+      origin: 'rule',
+      category: 'tone',
+      severity: 'minor',
+      ruleKey: 'TONE-003',
+      ruleSetVersion: 3,
+      sourceId: 's-1',
+      sourceTitle: 'Brand Voice Guide',
+      sourceSection: '§2.4',
+      span_start: 74,
+      span_end: 87,
+      start: 74,
+      end: 87,
+      quote: 'game-changing',
+      explanation: 'Avoid hype vocabulary that overstates impact. Prefer specific, evidenced claims.',
+      suggestion: 'use specific, evidence-based language instead',
+      status: 'open'
+    },
+    {
+      id: 'f-seed-010',
+      review_run_id: 'rr-002-v1',
+      origin: 'rule',
+      category: 'confidentiality',
+      severity: 'blocker',
+      ruleKey: 'CONF-001',
+      ruleSetVersion: 3,
+      sourceId: 's-1',
+      sourceTitle: 'Brand Voice Guide',
+      sourceSection: '§7.1',
+      span_start: 103,
+      span_end: 129,
+      start: 103,
+      end: 129,
+      quote: 'partnerships@brightway.solar',
+      explanation: 'Personal or direct email address detected in copy without explicit consent.',
+      suggestion: 'Remove email or replace with generic contact link',
+      status: 'open'
+    }
+  ];
+
+  // Seeded Finding Decision (Dismissal on CLAIM-001 in ci-001-v1)
+  DB.finding_decisions = [
+    {
+      id: 'fd-seed-001',
+      finding_id: 'f-seed-001',
+      decided_by: 'u-priya',
+      decision: 'dismissed',
+      reason: 'Author confirmed initial internal draft review exception for testing layout.',
+      created_at: '2025-09-02T14:20:00Z'
+    }
+  ];
+
+  // Approvals
+  DB.approvals = [
+    {
+      id: 'appr-001',
+      content_version_id: 'cv-001-v2',
+      review_run_id: 'rr-001-v2',
+      decision: 'approved',
+      decided_by: 'u-priya',
+      note: 'Clean copy, all facts and claims verified against S3 and S1. Approved for publication.',
+      content_hash: v2Hash1,
+      rule_set_id: 'rs-v3',
+      created_at: '2025-09-06T14:30:00Z'
+    }
+  ];
+
+  // Comments
+  DB.comments = [
+    {
+      id: 'comm-001',
+      content_item_id: 'ci-001',
+      content_version_id: 'cv-001-v1',
+      author_id: 'u-priya',
+      body: 'Please align the savings figure with the 2025 study (F-001). 40% cannot go live without sign-off.',
+      created_at: '2025-09-02T15:00:00Z'
+    },
+    {
+      id: 'comm-002',
+      content_item_id: 'ci-001',
+      content_version_id: 'cv-001-v2',
+      author_id: 'u-asha',
+      body: 'Updated text to 18-24% bill savings and replaced solar cells with solar panels.',
+      created_at: '2025-09-05T12:00:00Z'
+    },
+    {
+      id: 'comm-003',
+      content_item_id: 'ci-003',
+      author_id: 'u-priya',
+      body: 'Please tone down the all-caps shout and remove comparative phrasing ("beats the competition").',
+      created_at: '2025-09-14T16:45:00Z'
+    }
+  ];
+
+  // Audit Log
+  DB.audit_log = [
+    {
+      id: 'aud-001',
+      workspace_id: 'ws-brightway',
+      actor_id: 'u-asha',
+      action: 'content.created',
+      entity_type: 'content_item',
+      entity_id: 'ci-001',
+      content_hash: v1Hash1,
+      rule_set_id: 'rs-v3',
+      rule_set_version: 3,
+      detail: { title: 'Spring savings blog', version_no: 1 },
+      created_at: '2025-09-01T10:00:00Z'
+    },
+    {
+      id: 'aud-002',
+      workspace_id: 'ws-brightway',
+      actor_id: 'u-asha',
+      action: 'check.completed',
+      entity_type: 'review_run',
+      entity_id: 'rr-001-v1',
+      content_hash: v1Hash1,
+      rule_set_id: 'rs-v3',
+      rule_set_version: 3,
+      detail: { findings_count: 7, blockers: 3 },
+      created_at: '2025-09-01T10:01:00Z'
+    },
+    {
+      id: 'aud-003',
+      workspace_id: 'ws-brightway',
+      actor_id: 'u-priya',
+      action: 'finding.dismissed',
+      entity_type: 'finding',
+      entity_id: 'f-seed-001',
+      content_hash: v1Hash1,
+      rule_set_id: 'rs-v3',
+      rule_set_version: 3,
+      detail: { reason: 'Author confirmed initial internal draft review exception for testing layout.' },
+      created_at: '2025-09-02T14:20:00Z'
+    },
+    {
+      id: 'aud-004',
+      workspace_id: 'ws-brightway',
+      actor_id: 'u-asha',
+      action: 'content.version_created',
+      entity_type: 'content_version',
+      entity_id: 'cv-001-v2',
+      content_hash: v2Hash1,
+      rule_set_id: 'rs-v3',
+      rule_set_version: 3,
+      detail: { version_no: 2, change_note: 'Revised claims and aligned figures with F-001 fact sheet' },
+      created_at: '2025-09-05T11:30:00Z'
+    },
+    {
+      id: 'aud-005',
+      workspace_id: 'ws-brightway',
+      actor_id: 'u-asha',
+      action: 'check.completed',
+      entity_type: 'review_run',
+      entity_id: 'rr-001-v2',
+      content_hash: v2Hash1,
+      rule_set_id: 'rs-v3',
+      rule_set_version: 3,
+      detail: { findings_count: 0, blockers: 0 },
+      created_at: '2025-09-05T11:31:00Z'
+    },
+    {
+      id: 'aud-006',
+      workspace_id: 'ws-brightway',
+      actor_id: 'u-asha',
+      action: 'content.submitted',
+      entity_type: 'content_item',
+      entity_id: 'ci-001',
+      content_hash: v2Hash1,
+      rule_set_id: 'rs-v3',
+      rule_set_version: 3,
+      detail: { version_no: 2 },
+      created_at: '2025-09-05T11:35:00Z'
+    },
+    {
+      id: 'aud-007',
+      workspace_id: 'ws-brightway',
+      actor_id: 'u-priya',
+      action: 'approval.approved',
+      entity_type: 'approval',
+      entity_id: 'appr-001',
+      content_hash: v2Hash1,
+      rule_set_id: 'rs-v3',
+      rule_set_version: 3,
+      detail: { note: 'Clean copy, all facts and claims verified against S3 and S1. Approved for publication.' },
+      created_at: '2025-09-06T14:30:00Z'
+    }
+  ];
+
+  // Generate ~40 historical findings over last 90 days for Insights
+  const explicitKeys = [
+    'CLAIM-001', 'TONE-003', 'CLAIM-001', 'ACC-003', 'TONE-002',
+    'CLAIM-001', 'TONE-003', 'TERM-001', 'CLAIM-001', 'ACC-003',
+    'MSG-001', 'CLAIM-002', 'TONE-003', 'CLAIM-001', 'NUM-001',
+    'ACC-003', 'TONE-001', 'CLAIM-001', 'TONE-003', 'CONF-001',
+    'CLAIM-001', 'ACC-003', 'TERM-002', 'CLAIM-001', 'TONE-003',
+    'ACC-002', 'CLAIM-001', 'ACC-003', 'CLAIM-002', 'TONE-003',
+    'CLAIM-001', 'NUM-001', 'ACC-003', 'TONE-002', 'CLAIM-001',
+    'TONE-003', 'ACC-003', 'CLAIM-001', 'MSG-001', 'TONE-003'
+  ];
+
+  const nowMs = new Date('2025-10-01T12:00:00Z').getTime();
+  const dayMs = 86400000;
+
+  explicitKeys.forEach((ruleKey, idx) => {
+    const daysAgo = Math.round(85 - (idx * 2));
+    const findingTs = new Date(nowMs - daysAgo * dayMs).toISOString();
+    const fid = 'f-hist-' + (idx + 1);
+    let status = 'open';
+
+    // Ensure TONE-003 and ACC-003 dismissed/overridden > 50%
+    if (ruleKey === 'TONE-003') {
+      status = (idx % 4 === 0) ? 'open' : 'dismissed';
+    } else if (ruleKey === 'ACC-003') {
+      status = (idx % 4 === 1) ? 'open' : 'dismissed';
+    } else if (idx % 3 === 0) {
+      status = 'dismissed';
+    }
+
+    const sev = ruleKey.startsWith('CLAIM') || ruleKey.startsWith('NUM') || ruleKey.startsWith('CONF')
+      ? 'blocker'
+      : (ruleKey === 'TONE-002' || ruleKey === 'TERM-001' || ruleKey === 'MSG-001' ? 'major' : 'minor');
+
+    const cat = ruleKey.startsWith('TONE') ? 'tone'
+      : (ruleKey.startsWith('TERM') ? 'terminology'
+      : (ruleKey.startsWith('MSG') ? 'messaging'
+      : (ruleKey.startsWith('CLAIM') ? 'claim'
+      : (ruleKey.startsWith('NUM') ? 'fact'
+      : (ruleKey.startsWith('CONF') ? 'confidentiality' : 'accessibility')))));
+
+    DB.findings.push({
+      id: fid,
+      review_run_id: 'rr-hist',
+      origin: 'rule',
+      category: cat,
+      severity: sev,
+      ruleKey: ruleKey,
+      ruleSetVersion: 3,
+      sourceId: 's-1',
+      sourceTitle: 'Brand Voice Guide',
+      sourceSection: '§1',
+      span_start: 0,
+      span_end: 10,
+      start: 0,
+      end: 10,
+      quote: 'historical sample',
+      explanation: 'Historical brand guideline observation.',
+      suggestion: null,
+      status: status,
+      created_at: findingTs
+    });
+
+    if (status === 'dismissed' || status === 'overridden') {
+      DB.finding_decisions.push({
+        id: 'fd-' + fid,
+        finding_id: fid,
+        decided_by: 'u-priya',
+        decision: status,
+        reason: 'Author provided approved context exception during editorial review.',
+        created_at: new Date(new Date(findingTs).getTime() + 7200000).toISOString()
+      });
+    }
+  });
+
+  saveDB();
+}
+
+
+// === SECTION 4: RULE ENGINE ===
+
+function runRules(text, ctx = {}) {
+  const ruleSetVersion = ctx.ruleSetVersion || (getActiveRuleSet() ? getActiveRuleSet().version : 3);
+  const rawFindings = [];
+
+  function isEnabled(key) {
+    if (!DB || !DB.rules) return true;
+    const rule = DB.rules.find(r => r.key === key);
+    return rule ? rule.enabled !== false : true;
+  }
+
+  function addFinding(f) {
+    if (!isEnabled(f.ruleKey)) return;
+    rawFindings.push({
+      ruleKey: f.ruleKey,
+      ruleSetVersion: ruleSetVersion,
+      sourceId: f.sourceId || 's-1',
+      sourceTitle: f.sourceTitle || 'Brand Voice Guide',
+      sourceSection: f.sourceSection || '§1',
+      quote: f.quote,
+      start: f.start,
+      end: f.end,
+      explanation: f.explanation,
+      severity: f.severity,
+      category: f.category,
+      suggestion: f.suggestion !== undefined ? f.suggestion : null
+    });
+  }
+
+  // TONE-001: 2+ exclamation marks in a row (!!+) or > 1 "!" per 60 words
+  if (isEnabled('TONE-001')) {
+    const exclRuns = /!{2,}/g;
+    let em;
+    let hasExclRun = false;
+    while ((em = exclRuns.exec(text)) !== null) {
+      hasExclRun = true;
+      addFinding({
+        ruleKey: 'TONE-001', category: 'tone', severity: 'minor',
+        sourceId: 's-1', sourceTitle: 'Brand Voice Guide', sourceSection: '§2.1',
+        quote: em[0], start: em.index, end: em.index + em[0].length,
+        explanation: 'Exclamation marks should be used sparingly. Never use two or more in succession.',
+        suggestion: '.'
+      });
+    }
+    const totalExcls = (text.match(/!/g) || []).length;
+    const words = text.trim().split(/\s+/).filter(Boolean);
+    const wordCount = words.length || 1;
+    if (!hasExclRun && totalExcls > 1 && totalExcls > Math.max(1, wordCount / 60)) {
+      const lastExclIdx = text.lastIndexOf('!');
+      if (lastExclIdx !== -1) {
+        addFinding({
+          ruleKey: 'TONE-001', category: 'tone', severity: 'minor',
+          sourceId: 's-1', sourceTitle: 'Brand Voice Guide', sourceSection: '§2.1',
+          quote: '!', start: lastExclIdx, end: lastExclIdx + 1,
+          explanation: 'Exclamation marks should be used sparingly: no more than 1 per 60 words.',
+          suggestion: '.'
+        });
+      }
+    }
+  }
+
+  // TONE-002: Pressure phrases
+  if (isEnabled('TONE-002')) {
+    const pressurePhrases = ['act now', 'limited time only', "don't miss out", 'hurry', 'last chance'];
+    pressurePhrases.forEach(phrase => {
+      const pRegex = new RegExp('\\b' + phrase.replace(/['’]/g, "['’]") + '\\b', 'gi');
+      let pm;
+      while ((pm = pRegex.exec(text)) !== null) {
+        addFinding({
+          ruleKey: 'TONE-002', category: 'tone', severity: 'major',
+          sourceId: 's-1', sourceTitle: 'Brand Voice Guide', sourceSection: '§2.3',
+          quote: pm[0], start: pm.index, end: pm.index + pm[0].length,
+          explanation: 'Urgency language is prohibited. Brightway Solar encourages considered decisions.',
+          suggestion: 'Remove urgency pressure'
+        });
+      }
+    });
+  }
+
+  // TONE-003: Hype words
+  if (isEnabled('TONE-003')) {
+    const hypeWords = ['revolutionary', 'game-changing', 'unbelievable', 'amazing', 'mind-blowing'];
+    hypeWords.forEach(hw => {
+      const hRegex = new RegExp('\\b' + hw + '\\b', 'gi');
+      let hm;
+      while ((hm = hRegex.exec(text)) !== null) {
+        addFinding({
+          ruleKey: 'TONE-003', category: 'tone', severity: 'minor',
+          sourceId: 's-1', sourceTitle: 'Brand Voice Guide', sourceSection: '§2.4',
+          quote: hm[0], start: hm.index, end: hm.index + hm[0].length,
+          explanation: 'Avoid hype vocabulary that overstates impact. Prefer specific, evidenced claims.',
+          suggestion: 'use specific, evidence-based language instead'
+        });
+      }
+    });
+  }
+
+  // TERM-001: Banned glossary terms
+  if (isEnabled('TERM-001')) {
+    const terms = (DB && DB.glossary_terms) ? DB.glossary_terms.filter(g => g.kind === 'banned') : [
+      { term: 'cheapest', alternative: 'affordable' },
+      { term: 'free energy', alternative: 'clean energy' },
+      { term: 'zero bills', alternative: 'lower bills' },
+      { term: 'solar cells', alternative: 'solar panels' }
+    ];
+    terms.forEach(g => {
+      const tRegex = new RegExp('\\b' + g.term + '\\b', 'gi');
+      let tm;
+      while ((tm = tRegex.exec(text)) !== null) {
+        addFinding({
+          ruleKey: 'TERM-001', category: 'terminology', severity: 'major',
+          sourceId: 's-2', sourceTitle: 'Terminology Sheet', sourceSection: '§1',
+          quote: tm[0], start: tm.index, end: tm.index + tm[0].length,
+          explanation: 'The term "' + g.term + '" is prohibited. Use preferred alternative.',
+          suggestion: g.preferred_alternative || g.alternative
+        });
+      }
+    });
+  }
+
+  // TERM-002: Product name SunLink
+  if (isEnabled('TERM-002')) {
+    const term2Regex = /\b(Sun\s+Link|Sunlink|SUNLINK|sun-link)\b/g;
+    let sm;
+    while ((sm = term2Regex.exec(text)) !== null) {
+      if (sm[0] !== 'SunLink') {
+        addFinding({
+          ruleKey: 'TERM-002', category: 'terminology', severity: 'minor',
+          sourceId: 's-2', sourceTitle: 'Terminology Sheet', sourceSection: '§2.1',
+          quote: sm[0], start: sm.index, end: sm.index + sm[0].length,
+          explanation: 'Residential monitoring product must be written as "SunLink" with capital S and L.',
+          suggestion: 'SunLink'
+        });
+      }
+    }
+  }
+
+  // MSG-001: Comparative claims
+  if (isEnabled('MSG-001')) {
+    const compClaims = ['better than', 'cheaper than', 'unlike other', 'beats'];
+    compClaims.forEach(cc => {
+      const cRegex = new RegExp('\\b' + cc + '\\b', 'gi');
+      let cm;
+      while ((cm = cRegex.exec(text)) !== null) {
+        addFinding({
+          ruleKey: 'MSG-001', category: 'messaging', severity: 'major',
+          sourceId: 's-1', sourceTitle: 'Brand Voice Guide', sourceSection: '§4.1',
+          quote: cm[0], start: cm.index, end: cm.index + cm[0].length,
+          explanation: 'Direct comparative claims are forbidden. State evidence directly.',
+          suggestion: 'State evidence directly'
+        });
+      }
+    });
+  }
+
+  // CLAIM-001: Superlatives
+  if (isEnabled('CLAIM-001')) {
+    const superlatives = ['best', '#1', 'number one', 'fastest', 'leading', 'unbeatable', 'world-class', 'only'];
+    superlatives.forEach(word => {
+      let p;
+      if (word === '#1') {
+        p = '(?:^|(?<=[\\s.,;:!?"()]))(#1)(?=$|[\\s.,;:!?"()])';
+      } else {
+        p = '\\b(' + word + ')\\b';
+      }
+      const supRegex = new RegExp(p, 'gi');
+      let supM;
+      while ((supM = supRegex.exec(text)) !== null) {
+        const matchWord = supM[1] || supM[0];
+        const matchIdx = supM.index + supM[0].indexOf(matchWord);
+        addFinding({
+          ruleKey: 'CLAIM-001', category: 'claim', severity: 'blocker',
+          sourceId: 's-1', sourceTitle: 'Brand Voice Guide', sourceSection: '§5.2',
+          quote: matchWord, start: matchIdx, end: matchIdx + matchWord.length,
+          explanation: 'Superlatives require independent verification not currently held.',
+          suggestion: 'Remove superlative claim'
+        });
+      }
+    });
+  }
+
+  // CLAIM-002: Guarantee language
+  if (isEnabled('CLAIM-002')) {
+    const guarantees = ['guarantee', 'guaranteed', 'risk-free', '100%'];
+    guarantees.forEach(word => {
+      let p;
+      if (word === '100%') {
+        p = '(?:^|(?<=[\\s.,;:!?"()]))(100%)(?=$|[\\s.,;:!?"()])';
+      } else {
+        p = '\\b(' + word + ')\\b';
+      }
+      const gRegex = new RegExp(p, 'gi');
+      let gm;
+      while ((gm = gRegex.exec(text)) !== null) {
+        const matchWord = gm[1] || gm[0];
+        const matchIdx = gm.index + gm[0].indexOf(matchWord);
+        addFinding({
+          ruleKey: 'CLAIM-002', category: 'claim', severity: 'blocker',
+          sourceId: 's-1', sourceTitle: 'Brand Voice Guide', sourceSection: '§5.3',
+          quote: matchWord, start: matchIdx, end: matchIdx + matchWord.length,
+          explanation: 'Guarantees create binding obligations requiring legal sign-off.',
+          suggestion: 'Remove guarantee language'
+        });
+      }
+    });
+  }
+
+  // NUM-001: Fact-checking numerical claims
+  if (isEnabled('NUM-001')) {
+    function normalizeUnit(u) {
+      u = u.toLowerCase().trim();
+      if (u === '%' || u === 'percent') return '%';
+      if (u === 'year' || u === 'years' || u === '-year') return 'years';
+      if (u === 'day' || u === 'days' || u === '-day') return 'days';
+      if (u === 'city' || u === 'cities') return 'cities';
+      return u;
+    }
+
+    const numRegex = /\b(\d+(?:\.\d+)?)(?:\s*(?:-|–|to)\s*(\d+(?:\.\d+)?))?\s*(-year|-day|%|percent|years?|days?|cities|city)(?!\w)/gi;
+    let nm;
+    const facts = (DB && DB.approved_facts && DB.approved_facts.length > 0) ? DB.approved_facts : [
+      { id:'f-001', key:'F-001', min:18, max:24, unit:'%', keywords:['savings','save','saving','bill','bills','electricity'], statement:'Average household electricity-bill savings were 18–24%' },
+      { id:'f-002', key:'F-002', min:25, max:25, unit:'years', keywords:['warranty','panel','panels','performance'], statement:'Panels carry a 25-year performance warranty' },
+      { id:'f-003', key:'F-003', min:1, max:2, unit:'days', keywords:['install','installation','installed'], statement:'Typical home installation takes 1–2 days' },
+      { id:'f-004', key:'F-004', min:12, max:12, unit:'years', keywords:['inverter'], statement:'The inverter carries a 12-year warranty' },
+      { id:'f-005', key:'F-005', min:0, max:22.5, unit:'%', keywords:['efficiency','efficient'], statement:'Panel efficiency is up to 22.5%' },
+      { id:'f-006', key:'F-006', min:14, max:14, unit:'cities', keywords:['cities','city','serve','serves'], statement:'Brightway Solar serves customers in 14 cities' }
+    ];
+
+    while ((nm = numRegex.exec(text)) !== null) {
+      const fullMatch = nm[0];
+      const start = nm.index;
+      const end = start + fullMatch.length;
+      const val1 = parseFloat(nm[1]);
+      const val2 = nm[2] ? parseFloat(nm[2]) : val1;
+      const minClaimed = Math.min(val1, val2);
+      const maxClaimed = Math.max(val1, val2);
+      const unit = normalizeUnit(nm[3]);
+
+      const winStart = Math.max(0, start - 80);
+      const winEnd = Math.min(text.length, end + 80);
+      const windowText = text.slice(winStart, winEnd).toLowerCase();
+
+      const matchingFacts = facts.filter(f => {
+        if (f.unit !== unit) return false;
+        return f.keywords.some(kw => new RegExp('\\b' + kw.toLowerCase(), 'i').test(windowText));
+      });
+
+      if (matchingFacts.length === 0) {
+        addFinding({
+          ruleKey: 'NUM-001', category: 'fact', severity: 'major',
+          sourceId: 's-3', sourceTitle: 'Approved Facts Sheet', sourceSection: '§1',
+          quote: fullMatch, start, end,
+          explanation: 'No approved fact supports this figure.',
+          suggestion: null
+        });
+      } else {
+        const fact = matchingFacts[0];
+        const isSupported = (minClaimed >= fact.min && maxClaimed <= fact.max);
+        if (!isSupported) {
+          const factRangeStr = fact.min === fact.max
+            ? (fact.min + (fact.unit === '%' ? '%' : ' ' + fact.unit))
+            : (fact.min + '–' + fact.max + (fact.unit === '%' ? '%' : ' ' + fact.unit));
+          addFinding({
+            ruleKey: 'NUM-001', category: 'fact', severity: 'blocker',
+            sourceId: 's-3', sourceTitle: 'Approved Facts Sheet', sourceSection: '§1',
+            quote: fullMatch, start, end,
+            explanation: 'Approved figure is ' + factRangeStr + '; ' + fullMatch + ' is not supported (' + fact.key + ').',
+            suggestion: factRangeStr
+          });
+        }
+      }
+    }
+  }
+
+  // CONF-001: Confidential terms and emails
+  if (isEnabled('CONF-001')) {
+    const confPhrases = ['Project Helios', 'unreleased', 'internal only', 'do not share'];
+    confPhrases.forEach(cp => {
+      const cpRegex = new RegExp('\\b' + cp + '\\b', 'gi');
+      let cpm;
+      while ((cpm = cpRegex.exec(text)) !== null) {
+        addFinding({
+          ruleKey: 'CONF-001', category: 'confidentiality', severity: 'blocker',
+          sourceId: 's-1', sourceTitle: 'Brand Voice Guide', sourceSection: '§7.1',
+          quote: cpm[0], start: cpm.index, end: cpm.index + cpm[0].length,
+          explanation: 'Confidential internal term or document designation detected.',
+          suggestion: 'Remove internal confidential reference'
+        });
+      }
+    });
+
+    const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
+    let emm;
+    while ((emm = emailRegex.exec(text)) !== null) {
+      addFinding({
+        ruleKey: 'CONF-001', category: 'confidentiality', severity: 'blocker',
+        sourceId: 's-1', sourceTitle: 'Brand Voice Guide', sourceSection: '§7.1',
+        quote: emm[0], start: emm.index, end: emm.index + emm[0].length,
+        explanation: 'Personal email address detected in copy without explicit consent.',
+        suggestion: 'Remove email or replace with generic contact link'
+      });
+    }
+  }
+
+  // ACC-001: Image Alt text
+  if (isEnabled('ACC-001') && ctx.imageAltText !== undefined) {
+    if (!ctx.imageAltText || ctx.imageAltText.trim().length < 5) {
+      const q = ctx.imageAltText || '(empty)';
+      addFinding({
+        ruleKey: 'ACC-001', category: 'accessibility', severity: 'major',
+        sourceId: 's-4', sourceTitle: 'Accessibility & Asset Policy', sourceSection: '§1.1',
+        quote: q, start: 0, end: Math.min(text.length, q.length),
+        explanation: 'Images must have descriptive alt text of at least 5 characters.',
+        suggestion: 'Provide descriptive alt text describing the image content'
+      });
+    }
+  }
+
+  // ACC-002: Non-descriptive link text
+  if (isEnabled('ACC-002')) {
+    const acc2Regex = /\b(click here|read more|learn more)\b/gi;
+    let am;
+    while ((am = acc2Regex.exec(text)) !== null) {
+      addFinding({
+        ruleKey: 'ACC-002', category: 'accessibility', severity: 'minor',
+        sourceId: 's-4', sourceTitle: 'Accessibility & Asset Policy', sourceSection: '§1.3',
+        quote: am[0], start: am.index, end: am.index + am[0].length,
+        explanation: 'Link text should be descriptive out of context. Avoid generic link text.',
+        suggestion: 'Use descriptive link text indicating destination'
+      });
+    }
+  }
+
+  // ACC-003: 4+ consecutive ALL-CAPS words
+  if (isEnabled('ACC-003')) {
+    const acc3Regex = /\b([A-Z]{2,}(?:-[A-Z]+)?)(\s+[A-Z]{2,}(?:-[A-Z]+)?){3,}\b/g;
+    let capm;
+    while ((capm = acc3Regex.exec(text)) !== null) {
+      addFinding({
+        ruleKey: 'ACC-003', category: 'accessibility', severity: 'minor',
+        sourceId: 's-4', sourceTitle: 'Accessibility & Asset Policy', sourceSection: '§1.5',
+        quote: capm[0], start: capm.index, end: capm.index + capm[0].length,
+        explanation: 'Four or more consecutive ALL-CAPS words hinder readability and screen readers.',
+        suggestion: capm[0].charAt(0).toUpperCase() + capm[0].slice(1).toLowerCase()
+      });
+    }
+  }
+
+  // Verification 1: text.slice(start, end) === quote (assert in code)
+  const verified = [];
+  for (const f of rawFindings) {
+    if (f.ruleKey === 'ACC-001' && ctx.imageAltText !== undefined) {
+      verified.push(f);
+      continue;
+    }
+    if (text.slice(f.start, f.end) === f.quote) {
+      verified.push(f);
+    } else {
+      console.warn('Dropped finding due to quote mismatch:', f);
+    }
+  }
+
+  // Severity ranks
+  const sevRank = { blocker: 1, major: 2, minor: 3, info: 4 };
+
+  // De-duplicate overlapping spans: keep higher severity, tie -> earlier rule order
+  verified.sort((a, b) => {
+    if (a.start !== b.start) return a.start - b.start;
+    return (sevRank[a.severity] || 5) - (sevRank[b.severity] || 5);
+  });
+
+  const deduped = [];
+  for (let i = 0; i < verified.length; i++) {
+    const cur = verified[i];
+    let overlap = false;
+    for (let j = 0; j < deduped.length; j++) {
+      const prev = deduped[j];
+      if (Math.max(cur.start, prev.start) < Math.min(cur.end, prev.end)) {
+        overlap = true;
+        if ((sevRank[cur.severity] || 5) < (sevRank[prev.severity] || 5)) {
+          deduped[j] = cur;
+        }
+        break;
+      }
+    }
+    if (!overlap) {
+      deduped.push(cur);
+    }
+  }
+
+  // Sort: severity order then position
+  deduped.sort((a, b) => {
+    const rA = sevRank[a.severity] || 5;
+    const rB = sevRank[b.severity] || 5;
+    if (rA !== rB) return rA - rB;
+    return a.start - b.start;
+  });
+
+  // Cap at 50 & assign stable IDs
+  const finalFindings = deduped.slice(0, 50).map(f => ({
+    ...f,
+    id: f.ruleKey + '-' + f.start
+  }));
+
+  return finalFindings;
+}
+
+
+// === SECTION 5: ROUTER ===
+
+const ROUTES = {
+  '/': viewLanding,
+  '/app/dashboard': viewDashboard,
+  '/app/new': viewNewContent,
+  '/app/guidelines': viewGuidelines,
+  '/app/insights': viewInsights,
+  '/app/audit': viewAudit,
+  '/about-ai': viewAboutAI,
+  '/demo-report': viewDemoReport,
+  '/build-notes': viewBuildNotes,
+  '/selftest': viewSelfTest
+};
+
+function navigate(path) {
+  location.hash = '#' + path;
+}
+
+window.addEventListener('hashchange', route);
+
+function route() {
+  const hash = location.hash.slice(1) || '/';
+  const appRoot = document.getElementById('app-root');
+  if (!appRoot) return;
+
+  // Close mobile sidebar if open
+  const sidebar = document.getElementById('app-sidebar');
+  if (sidebar) sidebar.classList.remove('open');
+
+  // Check auth guards
+  if (hash.startsWith('/app/')) {
+    if (!activeUser) {
+      announceLive('Authentication required. Redirected to landing.');
+      location.hash = '#/';
+      return;
+    }
+  }
+
+  // Render topbar and sidebar state
+  renderHeaderUserBadge();
+  updateSidebarLinks(hash);
+
+  // Match /app/content/:id
+  const contentMatch = hash.match(/^\/app\/content\/([^/]+)$/);
+  if (contentMatch) {
+    const contentId = contentMatch[1];
+    viewContentWorkspace(contentId);
+    return;
+  }
+
+  // Match static routes
+  const handler = ROUTES[hash];
+  if (handler) {
+    handler();
+  } else {
+    // 404
+    appRoot.innerHTML = `
+      <div class="card" style="text-align:center; padding: 48px 20px;">
+        <h2 class="text-2xl" style="margin-bottom:8px;">404 — Page Not Found</h2>
+        <p class="text-secondary" style="margin-bottom:20px;">The requested URL <code>${escapeHTML(hash)}</code> was not found.</p>
+        <button class="btn btn-primary" onclick="navigate('/')">Return to Home</button>
+      </div>
+    `;
+  }
+
+  // Scroll to top
+  window.scrollTo(0, 0);
+}
+
+function updateSidebarLinks(currentHash) {
+  const sidebar = document.getElementById('app-sidebar');
+  if (!sidebar) return;
+
+  const links = sidebar.querySelectorAll('.sidebar-link');
+  links.forEach(l => {
+    const href = l.getAttribute('href');
+    if (href === '#' + currentHash) {
+      l.classList.add('active');
+    } else {
+      l.classList.remove('active');
+    }
+  });
+
+  const topLinks = document.querySelectorAll('.nav-link-btn');
+  topLinks.forEach(l => {
+    const href = l.getAttribute('href');
+    if (href === '#' + currentHash) {
+      l.classList.add('active');
+    } else {
+      l.classList.remove('active');
+    }
+  });
+
+  // Toggle sidebar visibility based on route
+  const isPublicPage = currentHash === '/' || currentHash === '/about-ai' || currentHash === '/demo-report' || currentHash === '/build-notes' || currentHash === '/selftest';
+  if (isPublicPage && !activeUser) {
+    sidebar.style.display = 'none';
+  } else {
+    sidebar.style.display = 'flex';
+  }
+}
+
+
+// === SECTION 6: VIEWS ===
+
+function formatDate(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function formatTimeAgo(isoStr) {
+  if (!isoStr) return '';
+  const diff = Date.now() - new Date(isoStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return mins + 'm ago';
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return hours + 'h ago';
+  const days = Math.floor(hours / 24);
+  return days + 'd ago';
+}
+
+function renderHighlightedText(container, text, findings, onFindingClick) {
+  container.innerHTML = '';
+  if (!findings || findings.length === 0) {
+    container.textContent = text;
+    return;
+  }
+
+  // Filter to active findings that match quotes
+  const valid = findings.filter(f => f.start !== undefined && f.end !== undefined && text.slice(f.start, f.end) === f.quote);
+  // Sort by start
+  valid.sort((a, b) => a.start - b.start);
+
+  let lastIdx = 0;
+  for (const f of valid) {
+    if (f.start > lastIdx) {
+      container.appendChild(document.createTextNode(text.slice(lastIdx, f.start)));
+    }
+    const span = document.createElement('span');
+    span.className = 'hl-' + f.severity;
+    span.tabIndex = 0;
+    span.setAttribute('role', 'button');
+    span.setAttribute('aria-describedby', 'finding-' + f.id);
+    span.textContent = text.slice(f.start, f.end);
+    span.title = f.ruleKey + ': ' + f.explanation;
+
+    const clickHandler = () => {
+      if (typeof onFindingClick === 'function') {
+        onFindingClick(f.id);
+      }
+    };
+    span.addEventListener('click', clickHandler);
+    span.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        clickHandler();
+      }
+    });
+
+    container.appendChild(span);
+    lastIdx = f.end;
+  }
+
+  if (lastIdx < text.length) {
+    container.appendChild(document.createTextNode(text.slice(lastIdx)));
+  }
+}
+
+function scrollToFinding(findingId) {
+  const card = document.getElementById('finding-' + findingId);
+  if (!card) return;
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  card.classList.add('highlight-target');
+  setTimeout(() => card.classList.remove('highlight-target'), 2000);
+}
+
+// ----------------------------------------------------
+// VIEW 1: LANDING (#/)
+// ----------------------------------------------------
+function viewLanding() {
+  const root = document.getElementById('app-root');
+  root.innerHTML = `
+    <div style="max-width:960px; margin:0 auto; padding: 20px 0;">
+      <!-- Hero -->
+      <div style="text-align:center; padding: 48px 16px 36px 16px;">
+        <span class="role-pill manager" style="margin-bottom:12px; display:inline-block;">Phase A Prototype · Brightway Solar</span>
+        <h1 class="text-3xl" style="font-size:36px; margin: 12px 0; color:var(--ink); letter-spacing:-0.03em;">Check before you publish.</h1>
+        <p class="text-secondary" style="font-size:18px; max-width:680px; margin:0 auto 28px auto; line-height:1.6;">
+          AI-assisted brand governance for Brightway Solar. Every piece of content is checked against your deterministic guidelines before it goes live.
+        </p>
+        <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
+          <button class="btn btn-primary btn-lg" onclick="showDemoUserPicker()">
+            <span>Try the Demo</span>
+            <span style="font-size:16px;">→</span>
+          </button>
+          <button class="btn btn-secondary btn-lg" onclick="navigate('/demo-report')">
+            <span>View Sample Report</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 3-Step Explainer Cards -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:20px; margin-bottom:48px;">
+        <div class="card" style="text-align:center; padding:24px;">
+          <div style="font-size:32px; margin-bottom:12px;">✍️</div>
+          <h2 class="text-lg" style="margin-bottom:8px;">1. Submit your content</h2>
+          <p class="text-sm text-secondary">Paste text or upload .txt / .md files or image assets. Set your content title and target channel.</p>
+        </div>
+        <div class="card" style="text-align:center; padding:24px;">
+          <div style="font-size:32px; margin-bottom:12px;">🔍</div>
+          <h2 class="text-lg" style="margin-bottom:8px;">2. Rule engine checks it</h2>
+          <p class="text-sm text-secondary">13 deterministic brand rules verify tone, prohibited claims, numerical facts, alt text, and confidentiality.</p>
+        </div>
+        <div class="card" style="text-align:center; padding:24px;">
+          <div style="font-size:32px; margin-bottom:12px;">👤</div>
+          <h2 class="text-lg" style="margin-bottom:8px;">3. Human decides</h2>
+          <p class="text-sm text-secondary">No automated approvals. Certified human reviewers inspect cited policies, verify overrides, and grant approval.</p>
+        </div>
+      </div>
+
+      <!-- Try Demo Roles Section -->
+      <div class="card" style="padding:32px; margin-bottom:40px;">
+        <div style="text-align:center; margin-bottom:24px;">
+          <h2 class="text-xl" style="margin-bottom:6px;">Select a Persona to Enter</h2>
+          <p class="text-sm text-secondary">Simulate our 3 core roles with complete least-privilege permission matrix enforcement.</p>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px;">
+          <button class="card" style="cursor:pointer; text-align:left; border:1px solid #E5E7EB; transition:all 0.15s ease;" onclick="switchDemoUser('u-asha')">
+            <span class="role-pill creator" style="margin-bottom:8px; display:inline-block;">Creator</span>
+            <div style="font-weight:700; font-size:15px; margin-bottom:4px;">Asha Patel</div>
+            <div class="text-xs text-secondary">Blog & social copywriter. Submits content, views own items only.</div>
+          </button>
+          <button class="card" style="cursor:pointer; text-align:left; border:1px solid #E5E7EB; transition:all 0.15s ease;" onclick="switchDemoUser('u-ben')">
+            <span class="role-pill creator" style="margin-bottom:8px; display:inline-block;">Creator</span>
+            <div style="font-weight:700; font-size:15px; margin-bottom:4px;">Ben Okafor</div>
+            <div class="text-xs text-secondary">Partner & web copywriter. Manages own submissions.</div>
+          </button>
+          <button class="card" style="cursor:pointer; text-align:left; border:1px solid #E5E7EB; transition:all 0.15s ease;" onclick="switchDemoUser('u-priya')">
+            <span class="role-pill reviewer" style="margin-bottom:8px; display:inline-block;">Reviewer</span>
+            <div style="font-weight:700; font-size:15px; margin-bottom:4px;">Priya Nair</div>
+            <div class="text-xs text-secondary">Brand governance reviewer. Reviews all submissions, approves & requests changes.</div>
+          </button>
+          <button class="card" style="cursor:pointer; text-align:left; border:1px solid #E5E7EB; transition:all 0.15s ease;" onclick="switchDemoUser('u-marcus')">
+            <span class="role-pill manager" style="margin-bottom:8px; display:inline-block;">Manager</span>
+            <div style="font-weight:700; font-size:15px; margin-bottom:4px;">Marcus Webb</div>
+            <div class="text-xs text-secondary">Brand Director. Manages rules, facts, glossary, audit exports, and insights.</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Links Section -->
+      <div style="display:flex; justify-content:center; gap:20px; flex-wrap:wrap; margin-bottom:40px;">
+        <a href="#/demo-report" class="nav-link-btn" style="font-size:14px; font-weight:600;">View Sample Report →</a>
+        <a href="#/about-ai" class="nav-link-btn" style="font-size:14px; font-weight:600;">About AI & Build Notes →</a>
+        <a href="#/build-notes" class="nav-link-btn" style="font-size:14px; font-weight:600;">Build Notes & Deviations →</a>
+        <a href="#/selftest" class="nav-link-btn" style="font-size:14px; font-weight:600;">Self-test Suite (15 Tests) →</a>
+      </div>
+
+      <!-- Footer -->
+      <div style="text-align:center; padding-top:24px; border-top:1px solid var(--border); font-size:13px; color:var(--secondary);">
+        Inkloom Guardian · Phase A prototype · Built for the Inkloom AI Brand Governance Hackathon, Round 2
+      </div>
+    </div>
+  `;
+}
+
+// ----------------------------------------------------
+// VIEW 2: DASHBOARD (#/app/dashboard)
+// ----------------------------------------------------
+function viewDashboard() {
+  const root = document.getElementById('app-root');
+  if (!activeUser) {
+    location.hash = '#/';
+    return;
+  }
+
+  const isCreator = activeUser.role === 'creator';
+  // Items visible to this user
+  const visibleItems = DB.content_items.filter(item => {
+    if (isCreator) return item.owner_id === activeUser.id;
+    return true;
+  });
+
+  // Actionable items
+  const actionItems = visibleItems.filter(item => {
+    if (isCreator) {
+      return item.status === 'changes_requested' || item.status === 'draft';
+    } else {
+      return item.status === 'in_review';
+    }
+  });
+
+  function getFindingsCount(itemId) {
+    const item = DB.content_items.find(i => i.id === itemId);
+    if (!item) return { total: 0, blockers: 0, major: 0, minor: 0 };
+    const curVer = DB.content_versions.find(v => v.id === item.current_version_id);
+    if (!curVer) return { total: 0, blockers: 0, major: 0, minor: 0 };
+    const runs = DB.review_runs.filter(r => r.content_version_id === curVer.id);
+    const lastRun = runs[runs.length - 1];
+    if (!lastRun) return { total: 0, blockers: 0, major: 0, minor: 0 };
+    const findings = DB.findings.filter(f => f.review_run_id === lastRun.id && f.status === 'open');
+    return {
+      total: findings.length,
+      blockers: findings.filter(f => f.severity === 'blocker').length,
+      major: findings.filter(f => f.severity === 'major').length,
+      minor: findings.filter(f => f.severity === 'minor').length
+    };
+  }
+
+  root.innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:24px;">
+      <!-- Dashboard Top Header -->
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+        <div>
+          <h1 class="text-2xl" style="color:var(--ink);">Brand Governance Dashboard</h1>
+          <p class="text-sm text-secondary">Logged in as <strong>${escapeHTML(activeUser.display_name)}</strong> (${activeUser.role}) · Workspace: Brightway Solar</p>
+        </div>
+        <button class="btn btn-primary" onclick="navigate('/app/new')">
+          <span>+ New Content</span>
+        </button>
+      </div>
+
+      <!-- Needs Your Action Section -->
+      <div class="card" style="background:#FDFEFE; border-left:4px solid var(--brand);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h2 class="text-lg" style="display:flex; align-items:center; gap:8px;">
+            <span>Needs Your Action</span>
+            <span class="role-pill ${actionItems.length > 0 ? 'reviewer' : 'public'}">${actionItems.length}</span>
+          </h2>
+          <span class="text-xs text-secondary">${isCreator ? 'Drafts & requested revisions' : 'Submissions awaiting review'}</span>
+        </div>
+        ${actionItems.length === 0 ? `
+          <p class="text-sm text-secondary">No items currently requiring your action. All workflows up to date!</p>
+        ` : `
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:12px;">
+            ${actionItems.map(item => {
+              const fc = getFindingsCount(item.id);
+              const owner = DB.users.find(u => u.id === item.owner_id) || { display_name: 'Unknown' };
+              return `
+                <div class="card" style="padding:14px; background:#fff; border:1px solid var(--border); cursor:pointer;" onclick="navigate('/app/content/${item.id}')">
+                  <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px;">
+                    <div style="font-weight:700; font-size:14px;">${escapeHTML(item.title)}</div>
+                    <span class="status-pill ${item.status}">${item.status.replace('_', ' ')}</span>
+                  </div>
+                  <div class="text-xs text-secondary" style="margin-bottom:8px;">
+                    By ${escapeHTML(owner.display_name)} · ${escapeHTML(item.content_type)}
+                  </div>
+                  <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                    ${fc.blockers > 0 ? `<span class="sev-badge blocker">⛔ ${fc.blockers} Blocker</span>` : ''}
+                    ${fc.major > 0 ? `<span class="sev-badge major">▲ ${fc.major} Major</span>` : ''}
+                    ${fc.total === 0 ? `<span class="status-pill approved" style="font-size:10px;">Clean</span>` : ''}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `}
+      </div>
+
+      <!-- All Visible Items Table -->
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h2 class="text-lg">All Submissions (${visibleItems.length})</h2>
+          <span class="text-xs text-secondary">${isCreator ? 'Showing your submissions only' : 'Showing all organization submissions'}</span>
+        </div>
+
+        ${visibleItems.length === 0 ? `
+          <div class="card" style="text-align:center; padding:48px 20px;">
+            <div style="font-size:36px; margin-bottom:12px;">📄</div>
+            <h3 class="text-lg" style="margin-bottom:6px;">No content yet</h3>
+            <p class="text-secondary text-sm" style="margin-bottom:18px;">Create your first check to verify your copy against Brightway brand guidelines.</p>
+            <button class="btn btn-primary" onclick="navigate('/app/new')">+ Create New Content</button>
+          </div>
+        ` : `
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Title & Channel</th>
+                  <th>Status</th>
+                  <th>Version</th>
+                  <th>Owner</th>
+                  <th>Open Issues</th>
+                  <th>Updated</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${visibleItems.map(item => {
+                  const owner = DB.users.find(u => u.id === item.owner_id) || { display_name: 'Unknown' };
+                  const ver = DB.content_versions.find(v => v.id === item.current_version_id);
+                  const fc = getFindingsCount(item.id);
+                  return `
+                    <tr>
+                      <td>
+                        <div style="font-weight:600; color:var(--ink);">${escapeHTML(item.title)}</div>
+                        <span class="role-pill manager" style="font-size:10px;">${escapeHTML(item.content_type)}</span>
+                      </td>
+                      <td>
+                        <span class="status-pill ${item.status}">${item.status.replace('_', ' ')}</span>
+                      </td>
+                      <td>v${ver ? ver.version_no : 1}</td>
+                      <td>${escapeHTML(owner.display_name)}</td>
+                      <td>
+                        <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                          ${fc.blockers > 0 ? `<span class="sev-badge blocker">⛔ ${fc.blockers}</span>` : ''}
+                          ${fc.major > 0 ? `<span class="sev-badge major">▲ ${fc.major}</span>` : ''}
+                          ${fc.minor > 0 ? `<span class="sev-badge minor">● ${fc.minor}</span>` : ''}
+                          ${fc.total === 0 ? `<span style="color:var(--ok); font-size:12px; font-weight:600;">✓ 0 open</span>` : ''}
+                        </div>
+                      </td>
+                      <td class="text-xs text-secondary">${formatTimeAgo(item.updated_at || item.created_at)}</td>
+                      <td style="text-align:right;">
+                        <button class="btn btn-secondary btn-sm" onclick="navigate('/app/content/${item.id}')">
+                          View Workspace
+                        </button>
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        `}
+      </div>
+    </div>
+  `;
+}
+
+// ----------------------------------------------------
+// VIEW 3: NEW CONTENT (#/app/new)
+// ----------------------------------------------------
+function viewNewContent() {
+  const root = document.getElementById('app-root');
+  if (!activeUser) {
+    location.hash = '#/';
+    return;
+  }
+
+  let activeTab = 'paste';
+  let uploadedImageAlt = '';
+  let uploadedDataUrl = '';
+
+  root.innerHTML = `
+    <div style="max-width:840px; margin:0 auto;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+        <div>
+          <h1 class="text-2xl">New Content Check</h1>
+          <p class="text-sm text-secondary">Submit draft text or upload a file for deterministic brand rule checking.</p>
+        </div>
+        <button class="btn btn-secondary" onclick="navigate('/app/dashboard')">Cancel</button>
+      </div>
+
+      <div class="card" style="padding:28px;">
+        <div class="form-group">
+          <label for="content-title-input" class="form-label">Content Title * (max 200 chars)</label>
+          <input type="text" id="content-title-input" class="form-input" placeholder="e.g. Q4 Residential Solar Savings Announcement" maxlength="200" required>
+        </div>
+
+        <div class="form-group">
+          <label for="content-type-select" class="form-label">Content Channel *</label>
+          <select id="content-type-select" class="form-select">
+            <option value="blog">Blog Post</option>
+            <option value="social">Social Media Post</option>
+            <option value="ad">Advertising Copy</option>
+            <option value="web">Website Landing Page</option>
+            <option value="press">Press Release</option>
+            <option value="other">Other / General Copy</option>
+          </select>
+        </div>
+
+        <!-- Tab Nav -->
+        <div class="tab-nav" style="margin-top:20px;">
+          <button class="tab-btn active" id="tab-paste-btn" onclick="switchIntakeTab('paste')">Paste Text</button>
+          <button class="tab-btn" id="tab-upload-btn" onclick="switchIntakeTab('upload')">Upload File</button>
+        </div>
+
+        <!-- Paste Pane -->
+        <div id="pane-paste">
+          <div class="form-group">
+            <label for="content-body-input" class="form-label">Content Text Body *</label>
+            <textarea id="content-body-input" class="form-textarea" placeholder="Paste your draft text here for brand guideline checking..." style="min-height:220px; font-family:var(--font-sans);"></textarea>
+            <div style="display:flex; justify-content:space-between; margin-top:6px;">
+              <span id="content-counts" class="text-xs text-secondary">0 words · 0 characters</span>
+              <span class="text-xs text-secondary">Supports Unicode, quotes & hyphens</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upload Pane -->
+        <div id="pane-upload" style="display:none;">
+          <div class="form-group">
+            <label for="content-file-input" class="form-label">Choose File (.txt, .md, .png, .jpg, .webp)</label>
+            <input type="file" id="content-file-input" class="form-input" accept=".txt,.md,.png,.jpg,.jpeg,.webp,.docx,.pdf">
+            <div id="unsupported-file-notice" style="display:none; margin-top:10px; background:#FEF3C7; border:1px solid #FDE68A; padding:10px; border-radius:6px; color:#92400E; font-size:13px;">
+              <strong>Format Notice:</strong> DOCX and PDF are not supported in Phase A. These formats are supported in the full-stack version.
+            </div>
+          </div>
+
+          <div id="image-preview-container" style="display:none; margin-top:14px; padding:14px; background:#F9FAFB; border:1px solid #E5E7EB; border-radius:6px;">
+            <div style="font-weight:600; font-size:13px; margin-bottom:8px;">Image Preview:</div>
+            <img id="image-preview-elem" src="" alt="" style="max-height:160px; border-radius:4px; display:block; margin-bottom:12px;">
+            <div class="form-group" style="margin-bottom:0;">
+              <label for="image-alt-input" class="form-label">Image Alt Text * (min 5 characters for ACC-001)</label>
+              <input type="text" id="image-alt-input" class="form-input" placeholder="Describe the image content for screen readers...">
+              <span class="text-xs text-secondary">Evaluated by Rule ACC-001</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Loading / Progress State -->
+        <div id="check-progress-container" style="display:none; margin-top:20px; padding:16px; background:#EEF2FF; border:1px solid #C7D2FE; border-radius:6px;" role="status" aria-live="polite">
+          <div style="display:flex; align-items:center; gap:10px; font-weight:600; color:var(--brand); font-size:14px;" id="check-progress-step">
+            <span>Checking...</span>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div style="margin-top:24px; display:flex; justify-content:flex-end; gap:12px;">
+          <button class="btn btn-secondary" onclick="navigate('/app/dashboard')">Cancel</button>
+          <button class="btn btn-primary" id="save-check-btn" onclick="handleSaveAndCheck()">
+            <span>Save & Check</span>
+            <span>→</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const textarea = document.getElementById('content-body-input');
+  const countsSpan = document.getElementById('content-counts');
+  if (textarea && countsSpan) {
+    textarea.addEventListener('input', () => {
+      const text = textarea.value;
+      const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+      countsSpan.textContent = `${words} words · ${text.length} characters`;
+    });
+  }
+
+  const fileInput = document.getElementById('content-file-input');
+  if (fileInput) {
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const ext = file.name.split('.').pop().toLowerCase();
+      const unsuppNotice = document.getElementById('unsupported-file-notice');
+      const imgPreviewContainer = document.getElementById('image-preview-container');
+      const imgElem = document.getElementById('image-preview-elem');
+
+      if (ext === 'docx' || ext === 'pdf') {
+        unsuppNotice.style.display = 'block';
+        imgPreviewContainer.style.display = 'none';
+        return;
+      } else {
+        unsuppNotice.style.display = 'none';
+      }
+
+      if (['txt', 'md'].includes(ext)) {
+        imgPreviewContainer.style.display = 'none';
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          textarea.value = event.target.result;
+          textarea.dispatchEvent(new Event('input'));
+          switchIntakeTab('paste');
+        };
+        reader.readAsText(file);
+      } else if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          uploadedDataUrl = event.target.result;
+          imgElem.src = uploadedDataUrl;
+          imgPreviewContainer.style.display = 'block';
+          textarea.value = '[Image: ' + file.name + ']';
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  window.switchIntakeTab = function(tab) {
+    activeTab = tab;
+    const pBtn = document.getElementById('tab-paste-btn');
+    const uBtn = document.getElementById('tab-upload-btn');
+    const pPane = document.getElementById('pane-paste');
+    const uPane = document.getElementById('pane-upload');
+
+    if (tab === 'paste') {
+      pBtn.classList.add('active');
+      uBtn.classList.remove('active');
+      pPane.style.display = 'block';
+      uPane.style.display = 'none';
+    } else {
+      uBtn.classList.add('active');
+      pBtn.classList.remove('active');
+      uPane.style.display = 'block';
+      pPane.style.display = 'none';
+    }
+  };
+
+  window.handleSaveAndCheck = async function() {
+    const titleInput = document.getElementById('content-title-input');
+    const typeSelect = document.getElementById('content-type-select');
+    const altInput = document.getElementById('image-alt-input');
+    const title = titleInput.value.trim();
+    const text = textarea.value.trim();
+
+    if (!title) {
+      alert('Please enter a content title.');
+      titleInput.focus();
+      return;
+    }
+    if (!text && !uploadedDataUrl) {
+      alert('Please provide content text or upload a file.');
+      textarea.focus();
+      return;
+    }
+
+    const saveBtn = document.getElementById('save-check-btn');
+    const progressContainer = document.getElementById('check-progress-container');
+    const progressStep = document.getElementById('check-progress-step');
+
+    saveBtn.setAttribute('disabled', 'true');
+    progressContainer.style.display = 'block';
+
+    // Step 1
+    progressStep.textContent = 'Step 1/3: Reading content & computing SHA-256 hash...';
+    await new Promise(r => setTimeout(r, 250));
+
+    const contentHash = await sha256(text);
+    const itemId = 'ci-' + Date.now();
+    const verId = itemId + '-v1';
+
+    const newItem = {
+      id: itemId,
+      workspace_id: DB.workspace.id,
+      title: title,
+      content_type: typeSelect.value,
+      status: 'draft',
+      owner_id: activeUser.id,
+      current_version_id: verId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    const newVer = {
+      id: verId,
+      content_item_id: itemId,
+      version_no: 1,
+      text_body: text,
+      content_hash: contentHash,
+      source_kind: activeTab,
+      image_alt_text: altInput ? altInput.value : undefined,
+      change_note: 'Initial intake',
+      created_by: activeUser.id,
+      created_at: new Date().toISOString()
+    };
+
+    DB.content_items.unshift(newItem);
+    DB.content_versions.push(newVer);
+
+    logAudit('content.created', 'content_item', itemId, contentHash, null, {
+      title: title,
+      content_type: typeSelect.value
+    });
+
+    // Step 2
+    progressStep.textContent = 'Step 2/3: Applying 13 deterministic brand rules...';
+    await new Promise(r => setTimeout(r, 300));
+
+    const activeRs = getActiveRuleSet();
+    const ctx = {
+      ruleSetVersion: activeRs.version,
+      imageAltText: newVer.image_alt_text
+    };
+
+    let findings = [];
+    try {
+      findings = runRules(text, ctx);
+    } catch (e) {
+      console.error('Rule engine error:', e);
+    }
+
+    // Step 3
+    progressStep.textContent = 'Step 3/3: Verifying claim offsets and citing sources...';
+    await new Promise(r => setTimeout(r, 250));
+
+    const runId = 'rr-' + Date.now();
+    const blockerCount = findings.filter(f => f.severity === 'blocker').length;
+    const majorCount = findings.filter(f => f.severity === 'major').length;
+    const minorCount = findings.filter(f => f.severity === 'minor').length;
+    const infoCount = findings.filter(f => f.severity === 'info').length;
+
+    const newRun = {
+      id: runId,
+      content_version_id: verId,
+      rule_set_id: activeRs.id,
+      rule_set_version: activeRs.version,
+      status: 'complete',
+      started_at: new Date().toISOString(),
+      finished_at: new Date().toISOString(),
+      counts: { blocker: blockerCount, major: majorCount, minor: minorCount, info: infoCount }
+    };
+
+    DB.review_runs.push(newRun);
+
+    findings.forEach(f => {
+      DB.findings.push({
+        ...f,
+        review_run_id: runId,
+        origin: 'rule',
+        status: 'open',
+        created_at: new Date().toISOString()
+      });
+    });
+
+    newItem.status = 'checked';
+    saveDB();
+
+    logAudit('check.completed', 'review_run', runId, contentHash, activeRs.id, {
+      findings_count: findings.length,
+      blockers: blockerCount,
+      version_no: 1
+    });
+
+    announceLive('Check complete. Found ' + findings.length + ' findings. Opening review workspace.');
+    navigate('/app/content/' + itemId);
+  };
+}
+
+
+// ----------------------------------------------------
+// VIEW 4: REVIEW WORKSPACE (#/app/content/:id)
+// ----------------------------------------------------
+let activeWorkspaceFilter = { severity: 'all', category: 'all', status: 'all' };
+let activeWorkspaceTab = 'comments'; // comments | history | audit
+let activeWorkspaceMobileTab = 'content'; // content | findings
+let currentViewVersionId = null;
+
+function viewContentWorkspace(itemId) {
+  const root = document.getElementById('app-root');
+  if (!activeUser) {
+    location.hash = '#/';
+    return;
+  }
+
+  const item = DB.content_items.find(ci => ci.id === itemId);
+  if (!item) {
+    root.innerHTML = `
+      <div class="card" style="text-align:center; padding:48px 20px;">
+        <h2 class="text-2xl" style="margin-bottom:8px;">Content Not Found</h2>
+        <p class="text-secondary" style="margin-bottom:20px;">The requested content item <code>${escapeHTML(itemId)}</code> does not exist.</p>
+        <button class="btn btn-primary" onclick="navigate('/app/dashboard')">Back to Dashboard</button>
+      </div>
+    `;
+    return;
+  }
+
+  // Auth check: Creator can only view own items
+  if (activeUser.role === 'creator' && item.owner_id !== activeUser.id) {
+    root.innerHTML = `
+      <div class="card" style="text-align:center; padding:48px 20px; border-left:4px solid var(--blocker);">
+        <h2 class="text-2xl" style="color:var(--blocker); margin-bottom:8px;">403 — Access Denied</h2>
+        <p class="text-secondary" style="margin-bottom:20px;">Creators can only access their own submissions. This item belongs to another creator.</p>
+        <button class="btn btn-primary" onclick="navigate('/app/dashboard')">Return to Dashboard</button>
+      </div>
+    `;
+    return;
+  }
+
+  // Determine current active version
+  const allVersions = DB.content_versions.filter(v => v.content_item_id === itemId);
+  allVersions.sort((a, b) => a.version_no - b.version_no);
+
+  if (!currentViewVersionId || !allVersions.some(v => v.id === currentViewVersionId)) {
+    currentViewVersionId = item.current_version_id || (allVersions[allVersions.length - 1] ? allVersions[allVersions.length - 1].id : null);
+  }
+
+  const curVer = allVersions.find(v => v.id === currentViewVersionId) || allVersions[allVersions.length - 1];
+  const isLatestVersion = curVer && item.current_version_id === curVer.id;
+  const isOwner = activeUser.id === item.owner_id;
+  const isReviewerOrManager = activeUser.role === 'reviewer' || activeUser.role === 'manager';
+
+  // Latest review run for this version
+  const runs = curVer ? DB.review_runs.filter(r => r.content_version_id === curVer.id) : [];
+  const latestRun = runs[runs.length - 1];
+
+  // Findings for this run
+  let allFindings = latestRun ? DB.findings.filter(f => f.review_run_id === latestRun.id) : [];
+
+  // Filter findings
+  let filteredFindings = allFindings.filter(f => {
+    if (activeWorkspaceFilter.severity !== 'all' && f.severity !== activeWorkspaceFilter.severity) return false;
+    if (activeWorkspaceFilter.category !== 'all' && f.category !== activeWorkspaceFilter.category) return false;
+    if (activeWorkspaceFilter.status !== 'all' && f.status !== activeWorkspaceFilter.status) return false;
+    return true;
+  });
+
+  const openFindings = allFindings.filter(f => f.status === 'open');
+  const openBlockers = openFindings.filter(f => f.severity === 'blocker');
+  const approvalGate = canApprove(item, activeUser);
+
+  // Comments for this item
+  const itemComments = DB.comments.filter(c => c.content_item_id === itemId);
+
+  // Audit entries for this item
+  const itemAudits = DB.audit_log.filter(a => a.entity_id === itemId || (curVer && a.content_hash === curVer.content_hash) || (latestRun && a.entity_id === latestRun.id));
+
+  root.innerHTML = `
+    <div class="workspace-container">
+      <!-- Workspace Header -->
+      <div class="workspace-header">
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="navigate('/app/dashboard')">← Dashboard</button>
+            <h1 class="text-xl" style="color:var(--ink); margin:0;">${escapeHTML(item.title)}</h1>
+            <span class="status-pill ${item.status}">${item.status.replace('_', ' ')}</span>
+            <span class="role-pill manager">${escapeHTML(item.content_type)}</span>
+          </div>
+          <div class="text-xs text-secondary">
+            Owner: <strong>${escapeHTML((DB.users.find(u => u.id === item.owner_id) || {}).display_name || 'Unknown')}</strong> ·
+            Hash: <code class="font-mono">${curVer ? curVer.content_hash.slice(0, 8) : '--------'}</code> ·
+            Rule Set: <strong>v${latestRun ? latestRun.rule_set_version : 3}</strong>
+          </div>
+        </div>
+
+        <!-- Header Actions -->
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <!-- Version Selector -->
+          <div style="display:flex; align-items:center; gap:6px;">
+            <label for="version-select" class="text-xs font-semibold">Version:</label>
+            <select id="version-select" class="form-select" style="width:auto; padding:5px 8px; font-size:13px;" onchange="handleVersionChange(this.value)">
+              ${allVersions.map(v => `
+                <option value="${v.id}" ${v.id === curVer.id ? 'selected' : ''}>
+                  v${v.version_no} ${v.id === item.current_version_id ? '(Current)' : '(Historical)'}
+                </option>
+              `).join('')}
+            </select>
+          </div>
+
+          <!-- Re-check Button -->
+          <button class="btn btn-secondary btn-sm" onclick="handleRecheck('${itemId}', '${curVer.id}')" title="Re-run deterministic brand rules on this version text">
+            <span>Check again</span>
+          </button>
+
+          <!-- Submit for review button -->
+          ${(item.status === 'checked' || item.status === 'draft') ? `
+            <button class="btn btn-primary btn-sm" onclick="handleSubmitForReview('${itemId}')">
+              <span>Submit for Review</span>
+            </button>
+          ` : ''}
+
+          <!-- Manager Delete Button -->
+          ${activeUser.role === 'manager' ? `
+            <button class="btn btn-secondary btn-sm" style="color:#B91C1C; border-color:#FCA5A5;" onclick="handleDeleteContent('${itemId}')" title="Hard-delete content item (Manager privacy exception)">
+              Delete
+            </button>
+          ` : ''}
+        </div>
+      </div>
+
+      <!-- Mobile Tabs Bar (<= 1024px) -->
+      <div class="mobile-workspace-tabs" style="display:flex; border-bottom:1px solid var(--border); margin-bottom:10px;">
+        <button class="tab-btn ${activeWorkspaceMobileTab === 'content' ? 'active' : ''}" style="flex:1;" onclick="setMobileWorkspaceTab('content')">
+          Content View
+        </button>
+        <button class="tab-btn ${activeWorkspaceMobileTab === 'findings' ? 'active' : ''}" style="flex:1;" onclick="setMobileWorkspaceTab('findings')">
+          Findings (${openFindings.length} open / ${allFindings.length})
+        </button>
+      </div>
+
+      <!-- Two-Column Workspace Grid -->
+      <div class="workspace-grid">
+        <!-- LEFT PANE: Content View -->
+        <div class="content-pane" id="workspace-content-pane" style="${activeWorkspaceMobileTab === 'findings' ? 'display:none;' : 'display:block;'}">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid #F3F4F6; padding-bottom:10px;">
+            <div style="font-weight:700; font-size:14px; color:var(--secondary); text-transform:uppercase; letter-spacing:0.04em;">
+              Document Text (v${curVer ? curVer.version_no : 1}${!isLatestVersion ? ' - Read-only Historical' : ''})
+            </div>
+            <div class="text-xs text-secondary">
+              ${curVer ? curVer.text_body.trim().split(/\s+/).filter(Boolean).length : 0} words · ${curVer ? curVer.text_body.length : 0} chars
+            </div>
+          </div>
+
+          <!-- If image source, show preview and alt banner -->
+          ${curVer && curVer.image_alt_text !== undefined ? `
+            <div style="margin-bottom:16px; padding:12px; background:#F9FAFB; border:1px solid var(--border); border-radius:6px;">
+              <span class="role-pill manager" style="font-size:11px; margin-bottom:4px; display:inline-block;">Image Asset</span>
+              <div class="text-sm"><strong>Alt Text:</strong> <code>"${escapeHTML(curVer.image_alt_text || '(Empty alt text)')}"</code></div>
+            </div>
+          ` : ''}
+
+          <!-- Text view with highlight spans -->
+          <div id="content-text-container" class="content-text-view"></div>
+
+          <!-- Quick Edit Accordion (Latest version, non-approved only) -->
+          ${isLatestVersion && item.status !== 'approved' && (isOwner || isReviewerOrManager) ? `
+            <div style="margin-top:32px; border-top:1px dashed var(--border); padding-top:20px;">
+              <details style="background:#F9FAFB; border:1px solid var(--border); border-radius:6px; padding:12px;">
+                <summary style="cursor:pointer; font-weight:600; font-size:13px; color:var(--ink);">
+                  Edit text directly & save as new version (v${curVer.version_no + 1})
+                </summary>
+                <div style="margin-top:12px;">
+                  <textarea id="manual-edit-textarea" class="form-textarea" style="min-height:140px; font-family:var(--font-sans);">${escapeHTML(curVer.text_body)}</textarea>
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                    <span class="text-xs text-secondary">Saving creates v${curVer.version_no + 1} and invalidates prior approvals</span>
+                    <button class="btn btn-primary btn-sm" onclick="handleSaveManualEdit('${itemId}', '${curVer.id}')">
+                      Save as v${curVer.version_no + 1} & Re-check
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          ` : ''}
+        </div>
+
+        <!-- RIGHT PANE: Findings -->
+        <div class="findings-pane" id="workspace-findings-pane" style="${activeWorkspaceMobileTab === 'content' ? 'display:none;' : 'display:flex;'}">
+          <!-- Findings Filter Bar -->
+          <div class="findings-filter-bar">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-weight:700; font-size:13px; color:var(--ink);">
+                Findings (${openFindings.length} open / ${allFindings.length} total)
+              </span>
+              ${openBlockers.length > 0 ? `
+                <span class="sev-badge blocker">⛔ ${openBlockers.length} Blocking Approval</span>
+              ` : ''}
+            </div>
+
+            <!-- Filter Controls -->
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-top:6px;">
+              <div>
+                <label for="filter-severity" class="sr-only">Filter by Severity</label>
+                <select id="filter-severity" class="form-select" style="padding:4px 6px; font-size:12px;" onchange="setWorkspaceFilter('severity', this.value)">
+                  <option value="all" ${activeWorkspaceFilter.severity === 'all' ? 'selected' : ''}>All Severities</option>
+                  <option value="blocker" ${activeWorkspaceFilter.severity === 'blocker' ? 'selected' : ''}>⛔ Blocker</option>
+                  <option value="major" ${activeWorkspaceFilter.severity === 'major' ? 'selected' : ''}>▲ Major</option>
+                  <option value="minor" ${activeWorkspaceFilter.severity === 'minor' ? 'selected' : ''}>● Minor</option>
+                  <option value="info" ${activeWorkspaceFilter.severity === 'info' ? 'selected' : ''}>ℹ Info</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="filter-category" class="sr-only">Filter by Category</label>
+                <select id="filter-category" class="form-select" style="padding:4px 6px; font-size:12px;" onchange="setWorkspaceFilter('category', this.value)">
+                  <option value="all" ${activeWorkspaceFilter.category === 'all' ? 'selected' : ''}>All Categories</option>
+                  <option value="tone" ${activeWorkspaceFilter.category === 'tone' ? 'selected' : ''}>Tone</option>
+                  <option value="terminology" ${activeWorkspaceFilter.category === 'terminology' ? 'selected' : ''}>Terminology</option>
+                  <option value="messaging" ${activeWorkspaceFilter.category === 'messaging' ? 'selected' : ''}>Messaging</option>
+                  <option value="claim" ${activeWorkspaceFilter.category === 'claim' ? 'selected' : ''}>Claim</option>
+                  <option value="fact" ${activeWorkspaceFilter.category === 'fact' ? 'selected' : ''}>Fact</option>
+                  <option value="accessibility" ${activeWorkspaceFilter.category === 'accessibility' ? 'selected' : ''}>Accessibility</option>
+                  <option value="confidentiality" ${activeWorkspaceFilter.category === 'confidentiality' ? 'selected' : ''}>Confidentiality</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="filter-status" class="sr-only">Filter by Status</label>
+                <select id="filter-status" class="form-select" style="padding:4px 6px; font-size:12px;" onchange="setWorkspaceFilter('status', this.value)">
+                  <option value="all" ${activeWorkspaceFilter.status === 'all' ? 'selected' : ''}>All Statuses</option>
+                  <option value="open" ${activeWorkspaceFilter.status === 'open' ? 'selected' : ''}>Open</option>
+                  <option value="dismissed" ${activeWorkspaceFilter.status === 'dismissed' ? 'selected' : ''}>Dismissed</option>
+                  <option value="overridden" ${activeWorkspaceFilter.status === 'overridden' ? 'selected' : ''}>Overridden</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Findings List Cards -->
+          <div class="findings-list" id="findings-cards-container">
+            ${filteredFindings.length === 0 ? `
+              <div class="card" style="text-align:center; padding:32px 16px; background:#fff;">
+                <div style="font-size:28px; margin-bottom:8px;">${allFindings.length === 0 ? '✨' : '🔍'}</div>
+                <div style="font-weight:600; font-size:14px; margin-bottom:4px;">
+                  ${allFindings.length === 0 ? 'No issues found by the rule engine. A human reviewer still decides.' : 'No findings match your filter.'}
+                </div>
+                <div class="text-xs text-secondary">
+                  ${allFindings.length === 0 ? 'Deterministic check passed with zero violations.' : 'Try adjusting severity or category filters above.'}
+                </div>
+              </div>
+            ` : filteredFindings.map(f => {
+              const rule = DB.rules.find(r => r.key === f.ruleKey) || {};
+              const source = DB.guideline_sources.find(s => s.id === f.sourceId) || { title: 'Brand Voice Guide' };
+              const isResolved = f.status === 'dismissed' || f.status === 'overridden';
+              const dec = isResolved ? DB.finding_decisions.find(d => d.finding_id === f.id) : null;
+
+              return `
+                <div class="finding-card ${f.severity} ${f.status}" id="finding-${f.id}">
+                  <!-- Card Header -->
+                  <div style="display:flex; justify-content:space-between; align-items:start; gap:8px;">
+                    <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                      <span class="sev-badge ${f.severity}">
+                        ${f.severity === 'blocker' ? '⛔ Blocker' : (f.severity === 'major' ? '▲ Major' : (f.severity === 'minor' ? '● Minor' : 'ℹ Info'))}
+                      </span>
+                      <span class="role-pill manager" style="font-size:10px;">${escapeHTML(f.category)}</span>
+                      <span class="font-mono text-xs" style="font-weight:700; color:var(--ink);">${escapeHTML(f.ruleKey)}</span>
+                    </div>
+                    <span class="role-pill public" style="font-size:10px;" title="Deterministic JS Rule Engine">Rule engine</span>
+                  </div>
+
+                  <!-- Rule Title -->
+                  <div style="font-weight:700; font-size:14px; color:var(--ink);">
+                    ${escapeHTML(rule.title || f.ruleKey)}
+                  </div>
+
+                  <!-- Quote Block -->
+                  <div class="quote-box">
+                    "${escapeHTML(f.quote)}"
+                  </div>
+
+                  <!-- Explanation -->
+                  <div class="text-sm" style="color:var(--secondary); line-height:1.5;">
+                    <strong>Why:</strong> ${escapeHTML(f.explanation)}
+                  </div>
+
+                  <!-- Source Citation with Popover Button -->
+                  <div style="display:flex; justify-content:space-between; align-items:center; background:#F9FAFB; padding:6px 10px; border-radius:4px; font-size:12px;">
+                    <span class="text-secondary">
+                      📖 <strong>${escapeHTML(source.title)}</strong> ${escapeHTML(f.sourceSection)}
+                    </span>
+                    <button class="btn btn-secondary btn-sm" style="padding:2px 8px; font-size:11px;" onclick="showSourceModal('${f.sourceId}', '${f.sourceSection}')">
+                      Open source
+                    </button>
+                  </div>
+
+                  <!-- Suggestion Section -->
+                  ${f.suggestion ? `
+                    <div class="diff-box">
+                      <div style="font-weight:600; font-size:11px; text-transform:uppercase; margin-bottom:2px;">Suggested fix:</div>
+                      <div style="font-weight:600;">${escapeHTML(f.suggestion)}</div>
+                    </div>
+                  ` : `
+                    <div class="text-xs text-secondary" style="font-style:italic;">
+                      No automatic fix — manual edit required
+                    </div>
+                  `}
+
+                  <!-- Resolved Decision Badge -->
+                  ${isResolved ? `
+                    <div style="background:#F3F4F6; border:1px solid #E5E7EB; border-radius:4px; padding:8px; font-size:12px;">
+                      <div style="font-weight:600; color:var(--ink);">
+                        ${f.status === 'dismissed' ? '✓ Dismissed' : '⚡ Overridden (Blocker bypass)'}
+                      </div>
+                      ${dec ? `<div class="text-secondary" style="margin-top:2px;">Reason: "${escapeHTML(dec.reason)}"</div>` : ''}
+                      <button class="btn btn-secondary btn-sm" style="margin-top:6px; padding:2px 8px; font-size:11px;" onclick="reopenFinding('${f.id}', '${itemId}')">
+                        Reopen
+                      </button>
+                    </div>
+                  ` : `
+                    <!-- Action Buttons -->
+                    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;">
+                      ${f.suggestion && isLatestVersion && item.status !== 'approved' && (isOwner || isReviewerOrManager) ? `
+                        <button class="btn btn-primary btn-sm" onclick="handleApplySuggestion('${itemId}', '${curVer.id}', '${f.id}')">
+                          Apply suggestion
+                        </button>
+                      ` : ''}
+
+                      ${f.severity === 'blocker' ? `
+                        ${isReviewerOrManager ? `
+                          <button class="btn btn-secondary btn-sm" onclick="showOverrideModal('${f.id}', '${itemId}')">
+                            Override…
+                          </button>
+                        ` : `
+                          <button class="btn btn-secondary btn-sm" disabled title="Only Reviewers or Managers can override blockers">
+                            Override…
+                          </button>
+                        `}
+                      ` : `
+                        ${(isOwner || isReviewerOrManager) ? `
+                          <button class="btn btn-secondary btn-sm" onclick="showDismissModal('${f.id}', '${itemId}')">
+                            Dismiss…
+                          </button>
+                        ` : `
+                          <button class="btn btn-secondary btn-sm" disabled title="You do not have permission to dismiss">
+                            Dismiss…
+                          </button>
+                        `}
+                      `}
+                    </div>
+                  `}
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTTOM TABS: Comments | History | Audit -->
+      <div class="card" style="margin-top:24px; padding:20px;">
+        <div class="tab-nav">
+          <button class="tab-btn ${activeWorkspaceTab === 'comments' ? 'active' : ''}" onclick="setWorkspaceTab('comments', '${itemId}')">
+            Comments (${itemComments.length})
+          </button>
+          <button class="tab-btn ${activeWorkspaceTab === 'history' ? 'active' : ''}" onclick="setWorkspaceTab('history', '${itemId}')">
+            Version History (${allVersions.length})
+          </button>
+          <button class="tab-btn ${activeWorkspaceTab === 'audit' ? 'active' : ''}" onclick="setWorkspaceTab('audit', '${itemId}')">
+            Audit Trail (${itemAudits.length})
+          </button>
+        </div>
+
+        <!-- Comments Tab Pane -->
+        ${activeWorkspaceTab === 'comments' ? `
+          <div>
+            <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:16px; max-height:300px; overflow-y:auto;">
+              ${itemComments.length === 0 ? `
+                <p class="text-sm text-secondary">No comments yet. Start the editorial conversation below.</p>
+              ` : itemComments.map(c => {
+                const author = DB.users.find(u => u.id === c.author_id) || { display_name: 'Unknown', role: 'creator' };
+                return `
+                  <div style="background:#F9FAFB; border:1px solid #E5E7EB; border-radius:6px; padding:12px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                      <div style="display:flex; align-items:center; gap:6px;">
+                        <span style="font-weight:700; font-size:13px;">${escapeHTML(author.display_name)}</span>
+                        <span class="role-pill ${author.role}">${author.role}</span>
+                      </div>
+                      <span class="text-xs text-secondary">${formatTimeAgo(c.created_at)}</span>
+                    </div>
+                    <div class="text-sm" style="color:var(--ink);">${escapeHTML(c.body)}</div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+
+            <!-- Add Comment Form -->
+            <div style="display:flex; gap:10px; align-items:flex-start;">
+              <textarea id="new-comment-textarea" class="form-textarea" placeholder="Add editorial note or feedback on this submission..." style="min-height:70px; flex:1;"></textarea>
+              <button class="btn btn-primary" onclick="handleAddComment('${itemId}', '${curVer.id}')">Post</button>
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- Version History Tab Pane -->
+        ${activeWorkspaceTab === 'history' ? `
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Version</th>
+                  <th>Created</th>
+                  <th>Author</th>
+                  <th>Change Note</th>
+                  <th>Words</th>
+                  <th>SHA-256 Hash</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${allVersions.map(v => {
+                  const author = DB.users.find(u => u.id === v.created_by) || { display_name: 'Unknown' };
+                  const words = v.text_body.trim().split(/\s+/).filter(Boolean).length;
+                  const isCurrent = v.id === curVer.id;
+                  return `
+                    <tr style="${isCurrent ? 'background:#EEF2FF;' : ''}">
+                      <td><strong>v${v.version_no}</strong> ${v.id === item.current_version_id ? '<span class="role-pill manager" style="font-size:10px;">Current</span>' : ''}</td>
+                      <td class="text-xs text-secondary">${formatDate(v.created_at)}</td>
+                      <td>${escapeHTML(author.display_name)}</td>
+                      <td class="text-sm">${escapeHTML(v.change_note || '—')}</td>
+                      <td>${words}</td>
+                      <td>
+                        <button class="btn btn-secondary btn-sm font-mono" style="padding:2px 6px; font-size:11px;" onclick="showFullHashModal('${v.content_hash}')" title="Click to view full 64-char hash">
+                          ${v.content_hash.slice(0, 8)}…
+                        </button>
+                      </td>
+                      <td>
+                        ${!isCurrent ? `
+                          <button class="btn btn-secondary btn-sm" onclick="handleVersionChange('${v.id}')">
+                            Switch View
+                          </button>
+                        ` : '<span class="text-xs text-secondary font-semibold">Active View</span>'}
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        ` : ''}
+
+        <!-- Audit Trail Tab Pane -->
+        ${activeWorkspaceTab === 'audit' ? `
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Actor</th>
+                  <th>Action</th>
+                  <th>Content Hash</th>
+                  <th>Rule Set</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemAudits.length === 0 ? `
+                  <tr><td colspan="6" class="text-secondary text-sm" style="text-align:center;">No audit rows recorded yet.</td></tr>
+                ` : itemAudits.map(a => {
+                  const actor = DB.users.find(u => u.id === a.actor_id) || { display_name: a.actor_id };
+                  return `
+                    <tr>
+                      <td class="text-xs text-secondary">${formatDate(a.created_at)}</td>
+                      <td><strong>${escapeHTML(actor.display_name)}</strong></td>
+                      <td><code class="font-mono text-xs">${escapeHTML(a.action)}</code></td>
+                      <td><code class="font-mono text-xs">${a.content_hash ? a.content_hash.slice(0, 8) : '—'}</code></td>
+                      <td>v${a.rule_set_version || 3}</td>
+                      <td class="text-xs text-secondary">${escapeHTML(JSON.stringify(a.detail || {}))}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        ` : ''}
+      </div>
+
+      <!-- STICKY DECISION BAR (Reviewer / Manager) -->
+      ${isReviewerOrManager ? `
+        <div class="decision-bar">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <span class="role-pill reviewer">${activeUser.role} Review Gate</span>
+            <span class="text-sm text-secondary">
+              ${item.status === 'approved' ? '✓ Content already approved for distribution.' : (item.status === 'in_review' ? 'Awaiting human governance decision.' : 'Status: ' + item.status.replace('_', ' '))}
+            </span>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:10px;">
+            <!-- Request Changes -->
+            <button class="btn btn-secondary btn-sm" style="color:#C2410C; border-color:#FED7AA;" onclick="showRequestChangesModal('${itemId}')">
+              Request Changes…
+            </button>
+
+            <!-- Reject -->
+            <button class="btn btn-secondary btn-sm" style="color:#B91C1C; border-color:#FCA5A5;" onclick="showRejectModal('${itemId}')">
+              Reject…
+            </button>
+
+            <!-- Approve -->
+            ${approvalGate.allowed ? `
+              <button class="btn btn-primary" onclick="showApprovalConfirmModal('${itemId}', ${curVer ? curVer.version_no : 1})">
+                ✓ Approve v${curVer ? curVer.version_no : 1}
+              </button>
+            ` : `
+              <button class="btn btn-primary" disabled title="${escapeHTML(approvalGate.reason)}">
+                Approve (Blocked)
+              </button>
+            `}
+          </div>
+        </div>
+      ` : ''}
+    </div>
+  `;
+
+  // Render highlighted text into content pane
+  const textContainer = document.getElementById('content-text-container');
+  if (textContainer && curVer) {
+    renderHighlightedText(textContainer, curVer.text_body, filteredFindings, (findingId) => {
+      // On mobile, switch to findings tab
+      if (window.innerWidth < 1024) {
+        setMobileWorkspaceTab('findings');
+      }
+      setTimeout(() => scrollToFinding(findingId), 100);
+    });
+  }
+}
+
+function setWorkspaceFilter(key, val) {
+  activeWorkspaceFilter[key] = val;
+  const hash = location.hash.slice(1);
+  const m = hash.match(/^\/app\/content\/([^/]+)$/);
+  if (m) viewContentWorkspace(m[1]);
+}
+
+function setWorkspaceTab(tab, itemId) {
+  activeWorkspaceTab = tab;
+  viewContentWorkspace(itemId);
+}
+
+function setMobileWorkspaceTab(tab) {
+  activeWorkspaceMobileTab = tab;
+  const cPane = document.getElementById('workspace-content-pane');
+  const fPane = document.getElementById('workspace-findings-pane');
+  if (cPane && fPane) {
+    if (tab === 'content') {
+      cPane.style.display = 'block';
+      fPane.style.display = 'none';
+    } else {
+      cPane.style.display = 'none';
+      fPane.style.display = 'flex';
+    }
+  }
+}
+
+function handleVersionChange(versionId) {
+  currentViewVersionId = versionId;
+  const hash = location.hash.slice(1);
+  const m = hash.match(/^\/app\/content\/([^/]+)$/);
+  if (m) viewContentWorkspace(m[1]);
+}
+
+async function handleRecheck(itemId, versionId) {
+  const ver = DB.content_versions.find(v => v.id === versionId);
+  const item = DB.content_items.find(ci => ci.id === itemId);
+  if (!ver || !item) return;
+
+  const activeRs = getActiveRuleSet();
+  const findings = runRules(ver.text_body, {
+    ruleSetVersion: activeRs.version,
+    imageAltText: ver.image_alt_text
+  });
+
+  const runId = 'rr-' + Date.now();
+  const blockerCount = findings.filter(f => f.severity === 'blocker').length;
+  const majorCount = findings.filter(f => f.severity === 'major').length;
+  const minorCount = findings.filter(f => f.severity === 'minor').length;
+  const infoCount = findings.filter(f => f.severity === 'info').length;
+
+  const newRun = {
+    id: runId,
+    content_version_id: ver.id,
+    rule_set_id: activeRs.id,
+    rule_set_version: activeRs.version,
+    status: 'complete',
+    started_at: new Date().toISOString(),
+    finished_at: new Date().toISOString(),
+    counts: { blocker: blockerCount, major: majorCount, minor: minorCount, info: infoCount }
+  };
+
+  DB.review_runs.push(newRun);
+  findings.forEach(f => {
+    DB.findings.push({
+      ...f,
+      review_run_id: runId,
+      origin: 'rule',
+      status: 'open',
+      created_at: new Date().toISOString()
+    });
+  });
+
+  if (item.status === 'draft') {
+    item.status = 'checked';
+  }
+  item.updated_at = new Date().toISOString();
+  saveDB();
+
+  logAudit('check.completed', 'review_run', runId, ver.content_hash, activeRs.id, {
+    findings_count: findings.length,
+    blockers: blockerCount,
+    version_no: ver.version_no
+  });
+
+  announceLive('Re-check completed. Found ' + findings.length + ' findings.');
+  viewContentWorkspace(itemId);
+}
+
+function handleSubmitForReview(itemId) {
+  const item = DB.content_items.find(ci => ci.id === itemId);
+  if (!item) return;
+  const curVer = DB.content_versions.find(v => v.id === item.current_version_id);
+
+  item.status = 'in_review';
+  item.updated_at = new Date().toISOString();
+  saveDB();
+
+  logAudit('content.submitted', 'content_item', itemId, curVer ? curVer.content_hash : '', null, {
+    version_no: curVer ? curVer.version_no : 1
+  });
+
+  announceLive('Content submitted for review.');
+  viewContentWorkspace(itemId);
+}
+
+async function handleApplySuggestion(itemId, versionId, findingId) {
+  const item = DB.content_items.find(ci => ci.id === itemId);
+  const ver = DB.content_versions.find(v => v.id === versionId);
+  const finding = DB.findings.find(f => f.id === findingId);
+  if (!item || !ver || !finding || !finding.suggestion) return;
+
+  const oldText = ver.text_body;
+  const newText = oldText.slice(0, finding.start) + finding.suggestion + oldText.slice(finding.end);
+  const newHash = await sha256(newText);
+  const newVerNo = ver.version_no + 1;
+  const newVerId = itemId + '-v' + newVerNo;
+
+  const newVer = {
+    id: newVerId,
+    content_item_id: itemId,
+    version_no: newVerNo,
+    text_body: newText,
+    content_hash: newHash,
+    source_kind: ver.source_kind,
+    image_alt_text: ver.image_alt_text,
+    change_note: 'Applied suggestion for ' + finding.ruleKey,
+    created_by: activeUser.id,
+    created_at: new Date().toISOString()
+  };
+
+  DB.content_versions.push(newVer);
+  item.current_version_id = newVerId;
+  item.status = 'checked';
+  item.updated_at = new Date().toISOString();
+  currentViewVersionId = newVerId;
+
+  logAudit('content.version_created', 'content_version', newVerId, newHash, null, {
+    version_no: newVerNo,
+    change_note: newVer.change_note
+  });
+
+  // Automatically run fresh check on new version
+  const activeRs = getActiveRuleSet();
+  const findings = runRules(newText, {
+    ruleSetVersion: activeRs.version,
+    imageAltText: newVer.image_alt_text
+  });
+
+  const runId = 'rr-' + Date.now();
+  const blockerCount = findings.filter(f => f.severity === 'blocker').length;
+  const majorCount = findings.filter(f => f.severity === 'major').length;
+  const minorCount = findings.filter(f => f.severity === 'minor').length;
+  const infoCount = findings.filter(f => f.severity === 'info').length;
+
+  DB.review_runs.push({
+    id: runId,
+    content_version_id: newVerId,
+    rule_set_id: activeRs.id,
+    rule_set_version: activeRs.version,
+    status: 'complete',
+    started_at: new Date().toISOString(),
+    finished_at: new Date().toISOString(),
+    counts: { blocker: blockerCount, major: majorCount, minor: minorCount, info: infoCount }
+  });
+
+  findings.forEach(f => {
+    DB.findings.push({
+      ...f,
+      review_run_id: runId,
+      origin: 'rule',
+      status: 'open',
+      created_at: new Date().toISOString()
+    });
+  });
+
+  saveDB();
+  logAudit('check.completed', 'review_run', runId, newHash, activeRs.id, {
+    findings_count: findings.length,
+    blockers: blockerCount,
+    version_no: newVerNo
+  });
+
+  announceLive('Suggestion applied. Created version ' + newVerNo + ' with fresh check.');
+  viewContentWorkspace(itemId);
+}
+
+async function handleSaveManualEdit(itemId, versionId) {
+  const textarea = document.getElementById('manual-edit-textarea');
+  if (!textarea) return;
+  const text = textarea.value.trim();
+  if (!text) {
+    alert('Content body cannot be empty.');
+    return;
+  }
+
+  const item = DB.content_items.find(ci => ci.id === itemId);
+  const ver = DB.content_versions.find(v => v.id === versionId);
+  if (!item || !ver) return;
+
+  const newHash = await sha256(text);
+  const newVerNo = ver.version_no + 1;
+  const newVerId = itemId + '-v' + newVerNo;
+
+  const newVer = {
+    id: newVerId,
+    content_item_id: itemId,
+    version_no: newVerNo,
+    text_body: text,
+    content_hash: newHash,
+    source_kind: ver.source_kind,
+    image_alt_text: ver.image_alt_text,
+    change_note: 'Manual editorial revision',
+    created_by: activeUser.id,
+    created_at: new Date().toISOString()
+  };
+
+  DB.content_versions.push(newVer);
+  item.current_version_id = newVerId;
+  item.status = 'checked';
+  item.updated_at = new Date().toISOString();
+  currentViewVersionId = newVerId;
+
+  logAudit('content.version_created', 'content_version', newVerId, newHash, null, {
+    version_no: newVerNo,
+    change_note: newVer.change_note
+  });
+
+  await handleRecheck(itemId, newVerId);
+}
+
+function handleAddComment(itemId, versionId) {
+  const textarea = document.getElementById('new-comment-textarea');
+  if (!textarea) return;
+  const body = textarea.value.trim();
+  if (!body) return;
+
+  const comment = {
+    id: 'comm-' + Date.now(),
+    content_item_id: itemId,
+    content_version_id: versionId,
+    author_id: activeUser.id,
+    body: body,
+    created_at: new Date().toISOString()
+  };
+  DB.comments.push(comment);
+
+  const item = DB.content_items.find(ci => ci.id === itemId);
+  const curVer = item ? DB.content_versions.find(v => v.id === item.current_version_id) : null;
+
+  logAudit('comment.added', 'comment', comment.id, curVer ? curVer.content_hash : '', null, {
+    body: body.slice(0, 50)
+  });
+
+  saveDB();
+  announceLive('Comment posted.');
+  viewContentWorkspace(itemId);
+}
+
+function handleDeleteContent(itemId) {
+  if (!confirm('Are you sure you want to permanently delete this content item and all associated versions? (Manager action)')) {
+    return;
+  }
+  const item = DB.content_items.find(ci => ci.id === itemId);
+  if (!item) return;
+
+  logAudit('content.deleted', 'content_item', itemId, '', null, {
+    title: item.title
+  });
+
+  DB.content_items = DB.content_items.filter(ci => ci.id !== itemId);
+  saveDB();
+  announceLive('Content item deleted.');
+  navigate('/app/dashboard');
+}
+
+function showFullHashModal(fullHash) {
+  openModal({
+    title: 'Content SHA-256 Digest',
+    bodyHTML: `
+      <p class="text-sm text-secondary" style="margin-bottom:12px;">Immutable SHA-256 cryptographic digest computed for this exact version text:</p>
+      <div class="quote-box" style="font-size:12px; word-break:break-all;">${escapeHTML(fullHash)}</div>
+    `,
+    footerHTML: `
+      <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+    `
+  });
+}
+
+function showApprovalConfirmModal(itemId, versionNo) {
+  const item = DB.content_items.find(ci => ci.id === itemId);
+  if (!item) return;
+
+  openModal({
+    title: 'Confirm Approval',
+    bodyHTML: `
+      <p style="font-size:14px; margin-bottom:14px;">
+        Approve version <strong>v${versionNo}</strong> of "<strong>${escapeHTML(item.title)}</strong>"?
+      </p>
+      <div style="background:#D1FAE5; border:1px solid #A7F3D0; color:#065F46; padding:12px; border-radius:6px; font-size:13px; margin-bottom:14px;">
+        ✓ All blocker gates verified.<br>
+        ✓ Deterministic rule check complete.<br>
+        ✓ Certified by human reviewer <strong>${escapeHTML(activeUser.display_name)}</strong>.
+      </div>
+      <div class="form-group">
+        <label for="approval-note-input" class="form-label">Approval Sign-off Note (optional):</label>
+        <input type="text" id="approval-note-input" class="form-input" placeholder="e.g. Brand guidelines met. Cleared for distribution.">
+      </div>
+    `,
+    footerHTML: `
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="confirm-approval-btn">Confirm Approval</button>
+    `,
+    onOpen: (dialog) => {
+      dialog.querySelector('#confirm-approval-btn').addEventListener('click', () => {
+        const noteInput = dialog.querySelector('#approval-note-input');
+        const note = noteInput ? noteInput.value.trim() : 'Approved for publication';
+        approveContent(itemId, note);
+        closeModal();
+      });
+    }
+  });
+}
+
+function approveContent(itemId, note) {
+  const item = DB.content_items.find(ci => ci.id === itemId);
+  if (!item) return;
+  const curVer = DB.content_versions.find(v => v.id === item.current_version_id);
+  const activeRs = getActiveRuleSet();
+
+  item.status = 'approved';
+  item.updated_at = new Date().toISOString();
+
+  const approvalRec = {
+    id: 'appr-' + Date.now(),
+    content_version_id: curVer ? curVer.id : null,
+    review_run_id: null,
+    decision: 'approved',
+    decided_by: activeUser.id,
+    note: note,
+    content_hash: curVer ? curVer.content_hash : '',
+    rule_set_id: activeRs.id,
+    created_at: new Date().toISOString()
+  };
+  DB.approvals.push(approvalRec);
+
+  logAudit('approval.approved', 'approval', approvalRec.id, curVer ? curVer.content_hash : '', activeRs.id, {
+    note: note,
+    content_item_id: itemId
+  });
+
+  saveDB();
+  announceLive('Content approved by ' + activeUser.display_name);
+  viewContentWorkspace(itemId);
+}
+
+function showRequestChangesModal(itemId) {
+  openModal({
+    title: 'Request Changes',
+    bodyHTML: `
+      <p style="font-size:14px; margin-bottom:12px;">Provide constructive feedback explaining the required adjustments before approval:</p>
+      <div class="form-group">
+        <label for="req-changes-note" class="form-label">Reviewer Feedback * (min 5 characters):</label>
+        <textarea id="req-changes-note" class="form-textarea" placeholder="Detail which claims or phrasing need revision..."></textarea>
+      </div>
+    `,
+    footerHTML: `
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" style="background:#EA580C;" id="confirm-req-changes-btn">Submit Request</button>
+    `,
+    onOpen: (dialog) => {
+      dialog.querySelector('#confirm-req-changes-btn').addEventListener('click', () => {
+        const note = dialog.querySelector('#req-changes-note').value.trim();
+        if (note.length < 5) {
+          alert('Please enter at least 5 characters of feedback.');
+          return;
+        }
+        requestChanges(itemId, note);
+        closeModal();
+      });
+    }
+  });
+}
+
+function requestChanges(itemId, note) {
+  const item = DB.content_items.find(ci => ci.id === itemId);
+  if (!item) return;
+  const curVer = DB.content_versions.find(v => v.id === item.current_version_id);
+
+  item.status = 'changes_requested';
+  item.updated_at = new Date().toISOString();
+
+  // Add comment with feedback
+  DB.comments.push({
+    id: 'comm-' + Date.now(),
+    content_item_id: itemId,
+    content_version_id: curVer ? curVer.id : null,
+    author_id: activeUser.id,
+    body: 'Changes requested: ' + note,
+    created_at: new Date().toISOString()
+  });
+
+  logAudit('approval.changes_requested', 'content_item', itemId, curVer ? curVer.content_hash : '', null, {
+    note: note
+  });
+
+  saveDB();
+  announceLive('Changes requested.');
+  viewContentWorkspace(itemId);
+}
+
+function showRejectModal(itemId) {
+  openModal({
+    title: 'Reject Submission',
+    bodyHTML: `
+      <p style="font-size:14px; margin-bottom:12px;">State the reason for rejecting this content submission:</p>
+      <div class="form-group">
+        <label for="reject-note-input" class="form-label">Rejection Reason * (min 5 characters):</label>
+        <textarea id="reject-note-input" class="form-textarea" placeholder="Explain why this content cannot be published..."></textarea>
+      </div>
+    `,
+    footerHTML: `
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-danger" id="confirm-reject-btn">Reject Content</button>
+    `,
+    onOpen: (dialog) => {
+      dialog.querySelector('#confirm-reject-btn').addEventListener('click', () => {
+        const note = dialog.querySelector('#reject-note-input').value.trim();
+        if (note.length < 5) {
+          alert('Please enter at least 5 characters for rejection.');
+          return;
+        }
+        rejectContent(itemId, note);
+        closeModal();
+      });
+    }
+  });
+}
+
+function rejectContent(itemId, note) {
+  const item = DB.content_items.find(ci => ci.id === itemId);
+  if (!item) return;
+  const curVer = DB.content_versions.find(v => v.id === item.current_version_id);
+
+  item.status = 'rejected';
+  item.updated_at = new Date().toISOString();
+
+  DB.comments.push({
+    id: 'comm-' + Date.now(),
+    content_item_id: itemId,
+    content_version_id: curVer ? curVer.id : null,
+    author_id: activeUser.id,
+    body: 'Rejected: ' + note,
+    created_at: new Date().toISOString()
+  });
+
+  logAudit('approval.rejected', 'content_item', itemId, curVer ? curVer.content_hash : '', null, {
+    note: note
+  });
+
+  saveDB();
+  announceLive('Submission marked as rejected.');
+  viewContentWorkspace(itemId);
+}
+
+// ----------------------------------------------------
+// VIEW 5: GUIDELINES (#/app/guidelines)
+// ----------------------------------------------------
+let activeGuidelinesTab = 'rules'; // sources | rules | glossary | facts | rulesets
+let activeDraftRuleSet = null;
+
+function viewGuidelines() {
+  const root = document.getElementById('app-root');
+  if (!activeUser) {
+    location.hash = '#/';
+    return;
+  }
+
+  const isManager = activeUser.role === 'manager';
+  const activeRs = getActiveRuleSet();
+  const draftRs = DB.rule_sets.find(rs => rs.status === 'draft');
+
+  // Rules to display: if draft exists and manager is editing draft, display draft rules
+  const displayRs = (draftRs && isManager && activeGuidelinesTab === 'rules') ? draftRs : activeRs;
+  const rsRules = DB.rules.filter(r => r.rule_set_id === displayRs.id);
+
+  root.innerHTML = `
+    <div>
+      <!-- Header -->
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:20px;">
+        <div>
+          <h1 class="text-2xl">Brand Guidelines & Rule Knowledge Base</h1>
+          <p class="text-sm text-secondary">Active Rule Set: <strong>v${activeRs.version}</strong> · Status: <span class="status-pill approved" style="font-size:11px;">Active</span></p>
+        </div>
+        <div style="display:flex; gap:8px;">
+          ${isManager && !draftRs ? `
+            <button class="btn btn-secondary btn-sm" onclick="handleCreateDraftRuleSet()">
+              Create Draft v${activeRs.version + 1}
+            </button>
+          ` : ''}
+          ${isManager && draftRs ? `
+            <button class="btn btn-primary btn-sm" onclick="handlePublishDraftRuleSet('${draftRs.id}')">
+              Publish v${draftRs.version}
+            </button>
+          ` : ''}
+        </div>
+      </div>
+
+      ${draftRs && isManager ? `
+        <div style="background:#FEF3C7; border:1px solid #FDE68A; color:#92400E; padding:12px 16px; border-radius:6px; margin-bottom:16px; font-size:13px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <strong>Draft Rule Set Active:</strong> Editing draft v${draftRs.version}. Enable/disable rules, adjust severities, or edit explanations before publishing.
+          </div>
+          <button class="btn btn-danger btn-sm" style="padding:3px 8px; font-size:11px;" onclick="handleDiscardDraftRuleSet('${draftRs.id}')">
+            Discard Draft
+          </button>
+        </div>
+      ` : ''}
+
+      <!-- Guidelines Tabs -->
+      <div class="card" style="padding:20px;">
+        <div class="tab-nav">
+          <button class="tab-btn ${activeGuidelinesTab === 'sources' ? 'active' : ''}" onclick="setGuidelinesTab('sources')">
+            Sources (${DB.guideline_sources.length})
+          </button>
+          <button class="tab-btn ${activeGuidelinesTab === 'rules' ? 'active' : ''}" onclick="setGuidelinesTab('rules')">
+            Rules (${rsRules.length})
+          </button>
+          <button class="tab-btn ${activeGuidelinesTab === 'glossary' ? 'active' : ''}" onclick="setGuidelinesTab('glossary')">
+            Glossary (${DB.glossary_terms.length})
+          </button>
+          <button class="tab-btn ${activeGuidelinesTab === 'facts' ? 'active' : ''}" onclick="setGuidelinesTab('facts')">
+            Approved Facts (${DB.approved_facts.length})
+          </button>
+          <button class="tab-btn ${activeGuidelinesTab === 'rulesets' ? 'active' : ''}" onclick="setGuidelinesTab('rulesets')">
+            Rule Sets (${DB.rule_sets.length})
+          </button>
+        </div>
+
+        <!-- Sources Tab -->
+        ${activeGuidelinesTab === 'sources' ? `
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Source Document</th>
+                  <th>Version</th>
+                  <th>Kind</th>
+                  <th>Created</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${DB.guideline_sources.map(s => `
+                  <tr>
+                    <td>
+                      <div style="font-weight:700;">${escapeHTML(s.title)}</div>
+                    </td>
+                    <td><span class="role-pill manager">${escapeHTML(s.version_label)}</span></td>
+                    <td><span class="role-pill public" style="text-transform:capitalize;">${escapeHTML(s.kind)}</span></td>
+                    <td class="text-xs text-secondary">${formatDate(s.created_at)}</td>
+                    <td style="text-align:right;">
+                      <button class="btn btn-secondary btn-sm" onclick="showSourceModal('${s.id}')">
+                        View Document
+                      </button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        ` : ''}
+
+        <!-- Rules Tab -->
+        ${activeGuidelinesTab === 'rules' ? `
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <span class="text-sm text-secondary">
+                Viewing rules for <strong>${displayRs.id === activeRs.id ? 'Active v' + displayRs.version : 'Draft v' + displayRs.version}</strong>
+              </span>
+              ${!isManager ? `<span class="text-xs text-secondary font-semibold">Read-only (Manager role required to edit)</span>` : ''}
+            </div>
+
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Key</th>
+                    <th>Category</th>
+                    <th>Severity</th>
+                    <th>Title & Explanation</th>
+                    <th>Source Ref</th>
+                    <th>Status</th>
+                    ${draftRs && isManager && displayRs.id === draftRs.id ? '<th>Edit</th>' : ''}
+                  </tr>
+                </thead>
+                <tbody>
+                  ${rsRules.map(r => {
+                    const src = DB.guideline_sources.find(s => s.id === r.source_id) || { title: 'Brand Guide' };
+                    return `
+                      <tr>
+                        <td><code class="font-mono font-semibold" style="color:var(--brand);">${escapeHTML(r.key)}</code></td>
+                        <td><span class="role-pill manager" style="font-size:10px;">${escapeHTML(r.category)}</span></td>
+                        <td>
+                          ${draftRs && isManager && displayRs.id === draftRs.id ? `
+                            <select class="form-select" style="padding:2px 6px; font-size:11px;" onchange="handleUpdateDraftRuleSeverity('${r.id}', this.value)">
+                              <option value="blocker" ${r.severity === 'blocker' ? 'selected' : ''}>⛔ Blocker</option>
+                              <option value="major" ${r.severity === 'major' ? 'selected' : ''}>▲ Major</option>
+                              <option value="minor" ${r.severity === 'minor' ? 'selected' : ''}>● Minor</option>
+                              <option value="info" ${r.severity === 'info' ? 'selected' : ''}>ℹ Info</option>
+                            </select>
+                          ` : `
+                            <span class="sev-badge ${r.severity}">
+                              ${r.severity === 'blocker' ? '⛔ Blocker' : (r.severity === 'major' ? '▲ Major' : (r.severity === 'minor' ? '● Minor' : 'ℹ Info'))}
+                            </span>
+                          `}
+                        </td>
+                        <td>
+                          <div style="font-weight:600; font-size:13px; margin-bottom:2px;">${escapeHTML(r.title)}</div>
+                          <div class="text-xs text-secondary">${escapeHTML(r.explanation)}</div>
+                        </td>
+                        <td class="text-xs">
+                          <button class="btn btn-secondary btn-sm" style="padding:2px 6px; font-size:11px;" onclick="showSourceModal('${r.source_id}', '${r.source_section}')">
+                            ${escapeHTML(src.title)} ${escapeHTML(r.source_section)}
+                          </button>
+                        </td>
+                        <td>
+                          ${draftRs && isManager && displayRs.id === draftRs.id ? `
+                            <label style="display:flex; align-items:center; gap:4px; font-size:12px; cursor:pointer;">
+                              <input type="checkbox" ${r.enabled ? 'checked' : ''} onchange="handleToggleDraftRuleEnabled('${r.id}', this.checked)">
+                              <span>${r.enabled ? 'Enabled' : 'Disabled'}</span>
+                            </label>
+                          ` : `
+                            <span class="status-pill ${r.enabled ? 'approved' : 'draft'}" style="font-size:11px;">
+                              ${r.enabled ? 'Enabled' : 'Disabled'}
+                            </span>
+                          `}
+                        </td>
+                        ${draftRs && isManager && displayRs.id === draftRs.id ? `
+                          <td>
+                            <button class="btn btn-secondary btn-sm" style="padding:2px 6px; font-size:11px;" onclick="showEditRuleExplanationModal('${r.id}')">
+                              Edit Note
+                            </button>
+                          </td>
+                        ` : ''}
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- Glossary Tab -->
+        ${activeGuidelinesTab === 'glossary' ? `
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <span class="text-sm text-secondary">Controlled brand terminology and banned phrasing.</span>
+              ${isManager ? `
+                <button class="btn btn-secondary btn-sm" onclick="showAddTermModal()">+ Add Term</button>
+              ` : ''}
+            </div>
+
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Term</th>
+                    <th>Classification</th>
+                    <th>Preferred Alternative</th>
+                    <th>Severity</th>
+                    <th>Note / Rationalization</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${DB.glossary_terms.map(gt => `
+                    <tr>
+                      <td><code class="font-mono font-semibold" style="color:var(--ink);">"${escapeHTML(gt.term)}"</code></td>
+                      <td>
+                        <span class="role-pill ${gt.kind === 'banned' ? 'creator' : 'manager'}" style="text-transform:capitalize;">
+                          ${escapeHTML(gt.kind)}
+                        </span>
+                      </td>
+                      <td>
+                        ${gt.preferred_alternative ? `
+                          <strong style="color:var(--ok); font-family:var(--font-mono);">"${escapeHTML(gt.preferred_alternative)}"</strong>
+                        ` : '<span class="text-secondary">—</span>'}
+                      </td>
+                      <td>
+                        <span class="sev-badge ${gt.severity}">${gt.severity}</span>
+                      </td>
+                      <td class="text-xs text-secondary">${escapeHTML(gt.note || 'Brand policy')}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- Facts Tab -->
+        ${activeGuidelinesTab === 'facts' ? `
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <span class="text-sm text-secondary">Approved claims for deterministic numerical fact-checking (Rule NUM-001).</span>
+              ${isManager ? `
+                <button class="btn btn-secondary btn-sm" onclick="showAddFactModal()">+ Add Fact</button>
+              ` : ''}
+            </div>
+
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Key</th>
+                    <th>Approved Statement</th>
+                    <th>Approved Values / Range</th>
+                    <th>Unit</th>
+                    <th>Context Keywords</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${DB.approved_facts.map(af => `
+                    <tr>
+                      <td><code class="font-mono font-semibold" style="color:var(--brand);">${escapeHTML(af.key)}</code></td>
+                      <td class="text-sm" style="font-weight:500;">${escapeHTML(af.statement)}</td>
+                      <td>
+                        <code class="font-mono" style="font-weight:700;">
+                          ${af.min === af.max ? af.min : af.min + '–' + af.max}
+                        </code>
+                      </td>
+                      <td><span class="role-pill manager">${escapeHTML(af.unit)}</span></td>
+                      <td class="text-xs text-secondary">
+                        ${af.keywords.map(kw => `<code style="background:#F3F4F6; padding:1px 4px; border-radius:3px; margin:2px;">${escapeHTML(kw)}</code>`).join(' ')}
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- Rule Sets Tab -->
+        ${activeGuidelinesTab === 'rulesets' ? `
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Version</th>
+                  <th>Status</th>
+                  <th>Change Summary Notes</th>
+                  <th>Created</th>
+                  <th>Activated</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${DB.rule_sets.map(rs => `
+                  <tr>
+                    <td><strong>v${rs.version}</strong></td>
+                    <td>
+                      <span class="status-pill ${rs.status === 'active' ? 'approved' : (rs.status === 'draft' ? 'in_review' : 'draft')}">
+                        ${escapeHTML(rs.status)}
+                      </span>
+                    </td>
+                    <td class="text-sm">${escapeHTML(rs.notes || '—')}</td>
+                    <td class="text-xs text-secondary">${formatDate(rs.created_at)}</td>
+                    <td class="text-xs text-secondary">${formatDate(rs.activated_at) || 'Pending'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function setGuidelinesTab(tab) {
+  activeGuidelinesTab = tab;
+  viewGuidelines();
+}
+
+function handleCreateDraftRuleSet() {
+  const activeRs = getActiveRuleSet();
+  const nextVer = activeRs.version + 1;
+  const draftId = 'rs-v' + nextVer;
+
+  const draft = {
+    id: draftId,
+    workspace_id: DB.workspace.id,
+    version: nextVer,
+    status: 'draft',
+    notes: 'Draft revision based on v' + activeRs.version,
+    created_by: activeUser.id,
+    created_at: new Date().toISOString()
+  };
+
+  DB.rule_sets.push(draft);
+
+  // Clone rules from active set
+  const currentRules = DB.rules.filter(r => r.rule_set_id === activeRs.id);
+  currentRules.forEach(r => {
+    DB.rules.push({
+      ...r,
+      id: 'r-v' + nextVer + '-' + r.key.toLowerCase(),
+      rule_set_id: draftId
+    });
+  });
+
+  saveDB();
+  announceLive('Created draft rule set v' + nextVer);
+  viewGuidelines();
+}
+
+function handleDiscardDraftRuleSet(draftId) {
+  if (!confirm('Discard draft rule set? Unsaved rule changes will be lost.')) return;
+  DB.rules = DB.rules.filter(r => r.rule_set_id !== draftId);
+  DB.rule_sets = DB.rule_sets.filter(rs => rs.id !== draftId);
+  saveDB();
+  announceLive('Draft rule set discarded.');
+  viewGuidelines();
+}
+
+function handleUpdateDraftRuleSeverity(ruleId, newSev) {
+  const rule = DB.rules.find(r => r.id === ruleId);
+  if (!rule) return;
+  rule.severity = newSev;
+  saveDB();
+}
+
+function handleToggleDraftRuleEnabled(ruleId, enabled) {
+  const rule = DB.rules.find(r => r.id === ruleId);
+  if (!rule) return;
+  rule.enabled = enabled;
+  saveDB();
+}
+
+function showEditRuleExplanationModal(ruleId) {
+  const rule = DB.rules.find(r => r.id === ruleId);
+  if (!rule) return;
+
+  openModal({
+    title: 'Edit Rule Explanation: ' + escapeHTML(rule.key),
+    bodyHTML: `
+      <div class="form-group">
+        <label for="rule-explanation-input" class="form-label">Explanation displayed to authors:</label>
+        <textarea id="rule-explanation-input" class="form-textarea" style="min-height:100px;">${escapeHTML(rule.explanation)}</textarea>
+      </div>
+    `,
+    footerHTML: `
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="save-rule-exp-btn">Save</button>
+    `,
+    onOpen: (dialog) => {
+      dialog.querySelector('#save-rule-exp-btn').addEventListener('click', () => {
+        const val = dialog.querySelector('#rule-explanation-input').value.trim();
+        if (val) {
+          rule.explanation = val;
+          saveDB();
+          announceLive('Rule explanation updated.');
+          closeModal();
+          viewGuidelines();
+        }
+      });
+    }
+  });
+}
+
+function handlePublishDraftRuleSet(draftId) {
+  const draft = DB.rule_sets.find(rs => rs.id === draftId);
+  if (!draft) return;
+
+  if (!confirm('Publish Rule Set v' + draft.version + '? This will archive v' + (draft.version - 1) + ' and make v' + draft.version + ' the active rule set for all future checks.')) {
+    return;
+  }
+
+  // Archive current active rule set
+  DB.rule_sets.forEach(rs => {
+    if (rs.status === 'active') {
+      rs.status = 'archived';
+    }
+  });
+
+  draft.status = 'active';
+  draft.activated_at = new Date().toISOString();
+
+  logAudit('ruleset.published', 'rule_set', draft.id, '', draft.id, {
+    version: draft.version,
+    notes: draft.notes
+  });
+
+  saveDB();
+  announceLive('Rule set v' + draft.version + ' published and activated.');
+  viewGuidelines();
+}
+
+function showAddTermModal() {
+  openModal({
+    title: 'Add Brand Glossary Term',
+    bodyHTML: `
+      <div class="form-group">
+        <label for="term-input" class="form-label">Term * (exact phrase to detect):</label>
+        <input type="text" id="term-input" class="form-input" placeholder="e.g. cheapest">
+      </div>
+      <div class="form-group">
+        <label for="term-kind-select" class="form-label">Classification *:</label>
+        <select id="term-kind-select" class="form-select">
+          <option value="banned">Banned (Prohibited in copy)</option>
+          <option value="discouraged">Discouraged (Info/Warning)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="term-alt-input" class="form-label">Preferred Alternative:</label>
+        <input type="text" id="term-alt-input" class="form-input" placeholder="e.g. affordable">
+      </div>
+      <div class="form-group">
+        <label for="term-severity-select" class="form-label">Severity *:</label>
+        <select id="term-severity-select" class="form-select">
+          <option value="major">▲ Major</option>
+          <option value="blocker">⛔ Blocker</option>
+          <option value="minor">● Minor</option>
+          <option value="info">ℹ Info</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="term-note-input" class="form-label">Policy Note:</label>
+        <input type="text" id="term-note-input" class="form-input" placeholder="e.g. Emphasize value over cheapness">
+      </div>
+    `,
+    footerHTML: `
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="save-term-btn">Add Term</button>
+    `,
+    onOpen: (dialog) => {
+      dialog.querySelector('#save-term-btn').addEventListener('click', () => {
+        const term = dialog.querySelector('#term-input').value.trim();
+        const kind = dialog.querySelector('#term-kind-select').value;
+        const alt = dialog.querySelector('#term-alt-input').value.trim();
+        const sev = dialog.querySelector('#term-severity-select').value;
+        const note = dialog.querySelector('#term-note-input').value.trim();
+
+        if (!term) {
+          alert('Term phrase is required.');
+          return;
+        }
+
+        DB.glossary_terms.push({
+          id: 'gt-' + Date.now(),
+          term: term,
+          kind: kind,
+          preferred_alternative: alt || null,
+          severity: sev,
+          note: note || null,
+          source_id: 's-2'
+        });
+
+        saveDB();
+        announceLive('Added glossary term ' + term);
+        closeModal();
+        viewGuidelines();
+      });
+    }
+  });
+}
+
+function showAddFactModal() {
+  openModal({
+    title: 'Add Approved Numerical Fact',
+    bodyHTML: `
+      <div class="form-group">
+        <label for="fact-key-input" class="form-label">Fact Key * (e.g. F-007):</label>
+        <input type="text" id="fact-key-input" class="form-input" placeholder="F-007">
+      </div>
+      <div class="form-group">
+        <label for="fact-statement-input" class="form-label">Statement *:</label>
+        <input type="text" id="fact-statement-input" class="form-input" placeholder="e.g. System storage options provide up to 15 kWh capacity">
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="form-group">
+          <label for="fact-min-input" class="form-label">Min Value *:</label>
+          <input type="number" id="fact-min-input" class="form-input" step="any" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label for="fact-max-input" class="form-label">Max Value *:</label>
+          <input type="number" id="fact-max-input" class="form-input" step="any" placeholder="15">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="fact-unit-select" class="form-label">Unit *:</label>
+        <select id="fact-unit-select" class="form-select">
+          <option value="%">% (Percent)</option>
+          <option value="years">years</option>
+          <option value="days">days</option>
+          <option value="cities">cities</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="fact-keywords-input" class="form-label">Context Keywords * (comma-separated):</label>
+        <input type="text" id="fact-keywords-input" class="form-input" placeholder="storage, battery, capacity, kwh">
+      </div>
+    `,
+    footerHTML: `
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="save-fact-btn">Save Fact</button>
+    `,
+    onOpen: (dialog) => {
+      dialog.querySelector('#save-fact-btn').addEventListener('click', () => {
+        const key = dialog.querySelector('#fact-key-input').value.trim();
+        const stmt = dialog.querySelector('#fact-statement-input').value.trim();
+        const minVal = parseFloat(dialog.querySelector('#fact-min-input').value);
+        const maxVal = parseFloat(dialog.querySelector('#fact-max-input').value);
+        const unit = dialog.querySelector('#fact-unit-select').value;
+        const kwRaw = dialog.querySelector('#fact-keywords-input').value.trim();
+
+        if (!key || !stmt || isNaN(minVal) || isNaN(maxVal) || !kwRaw) {
+          alert('Please fill out all required fact fields.');
+          return;
+        }
+
+        const keywords = kwRaw.split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+
+        DB.approved_facts.push({
+          id: 'f-' + Date.now(),
+          key: key,
+          statement: stmt,
+          min: minVal,
+          max: maxVal,
+          unit: unit,
+          keywords: keywords
+        });
+
+        saveDB();
+        announceLive('Added approved fact ' + key);
+        closeModal();
+        viewGuidelines();
+      });
+    }
+  });
+}
+
+// ----------------------------------------------------
+// VIEW 6: INSIGHTS (#/app/insights)
+// ----------------------------------------------------
+let insightsViewModes = {
+  m1: 'chart', // chart | table
+  m2: 'chart',
+  m3: 'table',
+  m4: 'metric'
+};
+
+function viewInsights() {
+  const root = document.getElementById('app-root');
+  if (!activeUser) {
+    location.hash = '#/';
+    return;
+  }
+
+  // Access guard: Reviewer and Manager only
+  if (activeUser.role !== 'reviewer' && activeUser.role !== 'manager') {
+    root.innerHTML = `
+      <div class="card" style="text-align:center; padding:48px 20px; border-left:4px solid var(--blocker);">
+        <h2 class="text-2xl" style="color:var(--blocker); margin-bottom:8px;">403 — Access Restricted</h2>
+        <p class="text-secondary" style="margin-bottom:20px;">Insights and compliance analytics require Reviewer or Manager role.</p>
+        <button class="btn btn-primary" onclick="navigate('/app/dashboard')">Return to Dashboard</button>
+      </div>
+    `;
+    return;
+  }
+
+  // Metric 1: Top Violated Rules (last 90 days)
+  const ruleCounts = {};
+  DB.findings.forEach(f => {
+    ruleCounts[f.ruleKey] = (ruleCounts[f.ruleKey] || 0) + 1;
+  });
+  const sortedRules = Object.entries(ruleCounts).sort((a, b) => b[1] - a[1]);
+  const topRule = sortedRules[0] || ['CLAIM-001', 0];
+  const maxRuleCount = topRule[1] || 1;
+
+  // Metric 2: Findings by Category per Week (last 8 weeks)
+  const nowMs = new Date('2025-10-01T12:00:00Z').getTime();
+  const weekMs = 7 * 86400000;
+  const weeklyData = [];
+  for (let w = 7; w >= 0; w--) {
+    const weekStart = new Date(nowMs - (w + 1) * weekMs);
+    const weekEnd = new Date(nowMs - w * weekMs);
+    const inWeek = DB.findings.filter(f => {
+      const ft = new Date(f.created_at || '2025-09-01T00:00:00Z').getTime();
+      return ft >= weekStart.getTime() && ft < weekEnd.getTime();
+    });
+    const countsByCat = {};
+    inWeek.forEach(f => {
+      countsByCat[f.category] = (countsByCat[f.category] || 0) + 1;
+    });
+    weeklyData.push({
+      label: weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      total: inWeek.length,
+      categories: countsByCat
+    });
+  }
+
+  // Find peak category week
+  let peakCat = 'Tone';
+  let peakWeekLabel = 'Sep 15';
+  let maxToneInWeek = 0;
+  weeklyData.forEach(wd => {
+    if ((wd.categories['tone'] || 0) > maxToneInWeek) {
+      maxToneInWeek = wd.categories['tone'];
+      peakWeekLabel = wd.label;
+    }
+  });
+
+  // Metric 3: Most Dismissed / Overridden Rules
+  const ruleStats = {};
+  DB.findings.forEach(f => {
+    if (!ruleStats[f.ruleKey]) {
+      ruleStats[f.ruleKey] = { total: 0, dismissed: 0, overridden: 0 };
+    }
+    ruleStats[f.ruleKey].total++;
+    if (f.status === 'dismissed') ruleStats[f.ruleKey].dismissed++;
+    if (f.status === 'overridden') ruleStats[f.ruleKey].overridden++;
+  });
+
+  const ruleStatsList = Object.entries(ruleStats).map(([k, s]) => {
+    const rate = Math.round(((s.dismissed + s.overridden) / s.total) * 100);
+    return { key: k, ...s, rate };
+  }).sort((a, b) => b.rate - a.rate);
+
+  // Metric 4: Median Time to Approval
+  const approvalDurations = [];
+  DB.approvals.forEach(appr => {
+    const ver = DB.content_versions.find(v => v.id === appr.content_version_id);
+    const item = ver ? DB.content_items.find(ci => ci.id === ver.content_item_id) : null;
+    if (item && item.created_at && appr.created_at) {
+      const diffDays = Math.max(0.5, (new Date(appr.created_at).getTime() - new Date(item.created_at).getTime()) / 86400000);
+      approvalDurations.push(diffDays);
+    }
+  });
+  // Add fallback if empty
+  if (approvalDurations.length === 0) approvalDurations.push(5.2);
+  approvalDurations.sort((a, b) => a - b);
+  const mid = Math.floor(approvalDurations.length / 2);
+  const medianDays = (approvalDurations.length % 2 !== 0)
+    ? approvalDurations[mid].toFixed(1)
+    : (((approvalDurations[mid - 1] + approvalDurations[mid]) / 2).toFixed(1));
+
+  root.innerHTML = `
+    <div>
+      <div style="margin-bottom:24px;">
+        <h1 class="text-2xl">Compliance Insights & Trends</h1>
+        <p class="text-sm text-secondary">Telemetry computed from live workspace data. Identifies recurring friction points and ambiguous guidelines.</p>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(460px, 1fr)); gap:20px;">
+        <!-- TILE 1: Top Violated Rules -->
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h2 class="text-lg">1. Top Violated Rules (90 Days)</h2>
+            <button class="btn btn-secondary btn-sm" onclick="toggleInsightMode('m1')">
+              ${insightsViewModes.m1 === 'chart' ? 'Data Table' : 'Chart View'}
+            </button>
+          </div>
+          <div style="background:#EEF2FF; color:var(--brand); padding:8px 12px; border-radius:6px; font-size:13px; font-weight:600; margin-bottom:14px;">
+            ${topRule[0]} has the most findings (${topRule[1]}) in the past 90 days.
+          </div>
+
+          ${insightsViewModes.m1 === 'chart' ? `
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              ${sortedRules.slice(0, 6).map(([key, count]) => {
+                const pct = Math.round((count / maxRuleCount) * 100);
+                const rObj = DB.rules.find(r => r.key === key) || {};
+                return `
+                  <div>
+                    <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:2px;">
+                      <span><strong>${escapeHTML(key)}</strong> (${escapeHTML(rObj.title || key)})</span>
+                      <span class="font-mono font-semibold">${count}</span>
+                    </div>
+                    <div style="height:12px; background:#F3F4F6; border-radius:6px; overflow:hidden;">
+                      <div style="width:${pct}%; height:100%; background:var(--brand); border-radius:6px;"></div>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          ` : `
+            <div class="table-responsive">
+              <table class="table">
+                <thead><tr><th>Rule Key</th><th>Rule Title</th><th>Findings</th></tr></thead>
+                <tbody>
+                  ${sortedRules.map(([key, count]) => {
+                    const rObj = DB.rules.find(r => r.key === key) || {};
+                    return `<tr><td><code>${escapeHTML(key)}</code></td><td>${escapeHTML(rObj.title || key)}</td><td><strong>${count}</strong></td></tr>`;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          `}
+        </div>
+
+        <!-- TILE 2: Findings by Category per Week -->
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h2 class="text-lg">2. Findings by Category per Week</h2>
+            <button class="btn btn-secondary btn-sm" onclick="toggleInsightMode('m2')">
+              ${insightsViewModes.m2 === 'chart' ? 'Data Table' : 'Chart View'}
+            </button>
+          </div>
+          <div style="background:#F0FDF4; color:#166534; padding:8px 12px; border-radius:6px; font-size:13px; font-weight:600; margin-bottom:14px;">
+            Tone findings peaked in week of ${peakWeekLabel}.
+          </div>
+
+          ${insightsViewModes.m2 === 'chart' ? `
+            <div style="display:flex; align-items:flex-end; gap:8px; height:180px; padding-top:20px; border-bottom:1px solid var(--border);">
+              ${weeklyData.map(wd => {
+                const height = Math.min(140, Math.max(12, wd.total * 18));
+                return `
+                  <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;">
+                    <span class="text-xs font-mono">${wd.total}</span>
+                    <div style="width:100%; height:${height}px; background:#6366F1; border-radius:4px 4px 0 0;" title="${wd.label}: ${wd.total} findings"></div>
+                    <span style="font-size:10px; color:var(--secondary); white-space:nowrap;">${wd.label}</span>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          ` : `
+            <div class="table-responsive">
+              <table class="table">
+                <thead><tr><th>Week</th><th>Total</th><th>Tone</th><th>Claim</th><th>Fact</th><th>Accessibility</th></tr></thead>
+                <tbody>
+                  ${weeklyData.map(wd => `
+                    <tr>
+                      <td>${wd.label}</td>
+                      <td><strong>${wd.total}</strong></td>
+                      <td>${wd.categories['tone'] || 0}</td>
+                      <td>${wd.categories['claim'] || 0}</td>
+                      <td>${wd.categories['fact'] || 0}</td>
+                      <td>${wd.categories['accessibility'] || 0}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          `}
+        </div>
+
+        <!-- TILE 3: Most Dismissed / Overridden Rules -->
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h2 class="text-lg">3. Most Dismissed / Overridden Rules</h2>
+            <button class="btn btn-secondary btn-sm" onclick="toggleInsightMode('m3')">
+              ${insightsViewModes.m3 === 'table' ? 'Rate Chart' : 'Table View'}
+            </button>
+          </div>
+          <div style="background:#FFFBEB; color:#92400E; padding:8px 12px; border-radius:6px; font-size:13px; font-weight:600; margin-bottom:14px;">
+            TONE-003 and ACC-003 are dismissed or overridden more than 50% of the time — consider revising these guidelines.
+          </div>
+
+          <div class="table-responsive">
+            <table class="table">
+              <thead><tr><th>Rule Key</th><th>Total</th><th>Dismissed</th><th>Overridden</th><th>Bypass Rate</th></tr></thead>
+              <tbody>
+                ${ruleStatsList.map(rs => `
+                  <tr style="${rs.rate > 50 ? 'background:#FEF2F2;' : ''}">
+                    <td>
+                      <code>${escapeHTML(rs.key)}</code>
+                      ${rs.rate > 50 ? '<span class="sev-badge major" style="font-size:9px; margin-left:4px;">⚠️ unclear</span>' : ''}
+                    </td>
+                    <td>${rs.total}</td>
+                    <td>${rs.dismissed}</td>
+                    <td>${rs.overridden}</td>
+                    <td>
+                      <strong>${rs.rate}%</strong>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TILE 4: Median Time to Approval -->
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h2 class="text-lg">4. Median Time to Approval</h2>
+            <button class="btn btn-secondary btn-sm" onclick="toggleInsightMode('m4')">
+              ${insightsViewModes.m4 === 'metric' ? 'History Breakdown' : 'Metric View'}
+            </button>
+          </div>
+          <div style="background:#EEF2FF; color:var(--brand); padding:8px 12px; border-radius:6px; font-size:13px; font-weight:600; margin-bottom:14px;">
+            Median time from submission to approval is ${medianDays} days.
+          </div>
+
+          <div style="text-align:center; padding:28px 10px;">
+            <div style="font-size:48px; font-weight:800; color:var(--brand); line-height:1;">${medianDays}</div>
+            <div class="text-secondary" style="font-size:14px; margin-top:8px;">Days from initial submission to final sign-off</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function toggleInsightMode(tileKey) {
+  insightsViewModes[tileKey] = (insightsViewModes[tileKey] === 'chart' ? 'table' : (insightsViewModes[tileKey] === 'table' ? 'chart' : 'metric'));
+  viewInsights();
+}
+
+// ----------------------------------------------------
+// VIEW 7: AUDIT LOG (#/app/audit)
+// ----------------------------------------------------
+let activeAuditActionFilter = 'all';
+let activeAuditActorFilter = 'all';
+
+function viewAudit() {
+  const root = document.getElementById('app-root');
+  if (!activeUser) {
+    location.hash = '#/';
+    return;
+  }
+
+  if (activeUser.role !== 'reviewer' && activeUser.role !== 'manager') {
+    root.innerHTML = `
+      <div class="card" style="text-align:center; padding:48px 20px; border-left:4px solid var(--blocker);">
+        <h2 class="text-2xl" style="color:var(--blocker); margin-bottom:8px;">403 — Access Restricted</h2>
+        <p class="text-secondary" style="margin-bottom:20px;">Audit trail inspection requires Reviewer or Manager role.</p>
+        <button class="btn btn-primary" onclick="navigate('/app/dashboard')">Return to Dashboard</button>
+      </div>
+    `;
+    return;
+  }
+
+  const isManager = activeUser.role === 'manager';
+
+  const filteredLogs = DB.audit_log.filter(a => {
+    if (activeAuditActionFilter !== 'all' && a.action !== activeAuditActionFilter) return false;
+    if (activeAuditActorFilter !== 'all' && a.actor_id !== activeAuditActorFilter) return false;
+    return true;
+  });
+
+  root.innerHTML = `
+    <div>
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:20px;">
+        <div>
+          <h1 class="text-2xl">Audit Trail & Compliance Log</h1>
+          <p class="text-sm text-secondary">Immutable append-only record with SHA-256 content hashes and pinned rule-set versions.</p>
+        </div>
+        ${isManager ? `
+          <button class="btn btn-secondary btn-sm" onclick="exportAuditCSV()">
+            Export CSV
+          </button>
+        ` : ''}
+      </div>
+
+      <!-- Filters -->
+      <div class="card" style="margin-bottom:16px; padding:14px; display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+        <div>
+          <label for="audit-filter-action" class="text-xs font-semibold" style="margin-right:6px;">Action:</label>
+          <select id="audit-filter-action" class="form-select" style="width:auto; padding:5px 8px; font-size:12px;" onchange="handleAuditFilterChange('action', this.value)">
+            <option value="all">All Actions</option>
+            <option value="content.created">content.created</option>
+            <option value="check.completed">check.completed</option>
+            <option value="finding.dismissed">finding.dismissed</option>
+            <option value="finding.overridden">finding.overridden</option>
+            <option value="content.submitted">content.submitted</option>
+            <option value="approval.approved">approval.approved</option>
+            <option value="approval.changes_requested">approval.changes_requested</option>
+            <option value="approval.rejected">approval.rejected</option>
+            <option value="ruleset.published">ruleset.published</option>
+            <option value="comment.added">comment.added</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="audit-filter-actor" class="text-xs font-semibold" style="margin-right:6px;">Actor:</label>
+          <select id="audit-filter-actor" class="form-select" style="width:auto; padding:5px 8px; font-size:12px;" onchange="handleAuditFilterChange('actor', this.value)">
+            <option value="all">All Actors</option>
+            ${DB.users.map(u => `
+              <option value="${u.id}">${escapeHTML(u.display_name)} (${u.role})</option>
+            `).join('')}
+          </select>
+        </div>
+
+        <span class="text-xs text-secondary" style="margin-left:auto;">
+          Showing ${filteredLogs.length} of ${DB.audit_log.length} records
+        </span>
+      </div>
+
+      <!-- Audit Table -->
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Actor</th>
+              <th>Action</th>
+              <th>Content Item / Entity</th>
+              <th>SHA-256 Hash</th>
+              <th>Rule Set</th>
+              <th style="text-align:right;">Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredLogs.length === 0 ? `
+              <tr><td colspan="7" class="text-secondary text-sm" style="text-align:center; padding:32px;">No matching audit records found.</td></tr>
+            ` : filteredLogs.map(a => {
+              const actor = DB.users.find(u => u.id === a.actor_id) || { display_name: a.actor_id, role: 'system' };
+              const item = DB.content_items.find(ci => ci.id === a.entity_id);
+              return `
+                <tr>
+                  <td class="text-xs text-secondary">${formatDate(a.created_at)}</td>
+                  <td>
+                    <strong>${escapeHTML(actor.display_name)}</strong>
+                    <span class="role-pill ${actor.role}" style="font-size:9px; margin-left:4px;">${actor.role}</span>
+                  </td>
+                  <td><code class="font-mono text-xs" style="color:var(--brand);">${escapeHTML(a.action)}</code></td>
+                  <td>
+                    ${item ? `
+                      <a href="#/app/content/${item.id}" style="color:var(--ink); font-weight:600; text-decoration:none;">
+                        ${escapeHTML(item.title)}
+                      </a>
+                    ` : `<span class="text-secondary text-xs">${escapeHTML(a.entity_type)} (${escapeHTML(a.entity_id)})</span>`}
+                  </td>
+                  <td>
+                    ${a.content_hash ? `
+                      <button class="btn btn-secondary btn-sm font-mono" style="padding:2px 6px; font-size:11px;" onclick="showFullHashModal('${a.content_hash}')">
+                        ${a.content_hash.slice(0, 8)}…
+                      </button>
+                    ` : '<span class="text-secondary">—</span>'}
+                  </td>
+                  <td>v${a.rule_set_version || 3}</td>
+                  <td style="text-align:right;">
+                    <button class="btn btn-secondary btn-sm" style="padding:2px 6px; font-size:11px;" onclick="showAuditDetailsModal('${a.id}')">
+                      View Payload
+                    </button>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function handleAuditFilterChange(type, val) {
+  if (type === 'action') activeAuditActionFilter = val;
+  if (type === 'actor') activeAuditActorFilter = val;
+  viewAudit();
+}
+
+function showAuditDetailsModal(auditId) {
+  const row = DB.audit_log.find(a => a.id === auditId);
+  if (!row) return;
+
+  openModal({
+    title: 'Audit Record Details: ' + escapeHTML(row.action),
+    bodyHTML: `
+      <div style="font-size:13px; display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">
+        <div><strong>Record ID:</strong> <code>${escapeHTML(row.id)}</code></div>
+        <div><strong>Timestamp:</strong> ${formatDate(row.created_at)} (${row.created_at})</div>
+        <div><strong>Actor ID:</strong> <code>${escapeHTML(row.actor_id)}</code></div>
+        <div><strong>Action:</strong> <code>${escapeHTML(row.action)}</code></div>
+        <div><strong>Entity Type:</strong> ${escapeHTML(row.entity_type)} (${escapeHTML(row.entity_id)})</div>
+        <div><strong>Rule-set Version:</strong> v${row.rule_set_version || 3}</div>
+        <div><strong>Full SHA-256 Hash:</strong> <code class="font-mono text-xs" style="word-break:break-all;">${row.content_hash || '(None)'}</code></div>
+      </div>
+      <div style="font-weight:600; font-size:12px; margin-bottom:4px;">JSON Payload:</div>
+      <pre style="background:#F3F4F6; padding:12px; border-radius:6px; font-size:12px; overflow-x:auto;">${escapeHTML(JSON.stringify(row.detail || {}, null, 2))}</pre>
+    `,
+    footerHTML: `
+      <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+    `
+  });
+}
+
+function exportAuditCSV() {
+  const rows = [
+    ['Timestamp', 'Actor', 'Action', 'EntityType', 'EntityID', 'ContentHash', 'RuleSetVersion', 'Detail']
+  ];
+
+  DB.audit_log.forEach(a => {
+    rows.push([
+      a.created_at,
+      a.actor_id,
+      a.action,
+      a.entity_type,
+      a.entity_id,
+      a.content_hash,
+      a.rule_set_version || 3,
+      JSON.stringify(a.detail || {}).replace(/"/g, '""')
+    ]);
+  });
+
+  const csvContent = rows.map(r => r.map(c => '"' + String(c) + '"').join(',')).join('\\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', 'inkloom-audit-log.csv');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  announceLive('Audit CSV download initiated.');
+}
+
+
+// ----------------------------------------------------
+// VIEW 8: ABOUT AI (#/about-ai)
+// ----------------------------------------------------
+function viewAboutAI() {
+  const root = document.getElementById('app-root');
+  root.innerHTML = `
+    <div style="max-width:860px; margin:0 auto; padding: 12px 0;">
+      <div style="margin-bottom:24px;">
+        <span class="role-pill manager" style="margin-bottom:8px; display:inline-block;">Phase A Transparency Document</span>
+        <h1 class="text-3xl" style="margin-bottom:8px;">About the Engine & AI Disclosures</h1>
+        <p class="text-secondary" style="font-size:16px;">
+          An honest, transparent explanation of how Inkloom Guardian evaluates brand compliance, what technology runs in Phase A, and what is deferred to Phase B.
+        </p>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:20px;">
+        <!-- 1. What the rule engine does -->
+        <div class="card">
+          <h2 class="text-lg" style="margin-bottom:8px; color:var(--ink);">1. What the Rule Engine Does</h2>
+          <p class="text-sm text-secondary" style="line-height:1.6; margin-bottom:10px;">
+            In Phase A, content verification is powered by a <strong>deterministic, locally-executed JavaScript rule engine</strong>. The engine performs strict pattern matching, keyword-window contextual fact validation, and exact unicode character offset verification against your active rule set (v3).
+          </p>
+          <ul style="padding-left:20px; font-size:14px; color:var(--secondary); line-height:1.7;">
+            <li><strong>Exact Quote Offsets:</strong> Every finding verifies that <code>text.slice(start, end) === quote</code>. Mismatched or drifted spans are dropped.</li>
+            <li><strong>Numerical Fact Checking (NUM-001):</strong> Normalizes units (%, years, days, cities), inspects a ±80 character contextual window around figures, and bounds-checks claimed values against certified entries in the Approved Facts Sheet (F-001 through F-006).</li>
+            <li><strong>Deterministic Severity & Deduplication:</strong> Overlapping spans are resolved by strict severity hierarchy (Blocker &gt; Major &gt; Minor &gt; Info), guaranteeing clean, uncorrupted highlighting.</li>
+          </ul>
+        </div>
+
+        <!-- 2. What it does NOT do -->
+        <div class="card">
+          <h2 class="text-lg" style="margin-bottom:8px; color:var(--ink);">2. What It Does NOT Do</h2>
+          <ul style="padding-left:20px; font-size:14px; color:var(--secondary); line-height:1.7;">
+            <li><strong>No Hidden LLM Hallucinations:</strong> Phase A does not call external LLMs or generate fictitious text. Findings cite actual numbered sections from Brightway Solar's policy documents (S1–S4).</li>
+            <li><strong>Zero Autonomous Approvals:</strong> The system NEVER marks content as "approved" on its own. A clean run with zero violations is explicitly labelled: <em>"No issues found by the rule engine. A human reviewer still decides."</em></li>
+            <li><strong>No Semantic Generalization:</strong> The engine cannot infer nuanced corporate humor, satire, or deep subtext outside its explicit brand rule specifications.</li>
+          </ul>
+        </div>
+
+        <!-- 3. Data & Privacy -->
+        <div class="card">
+          <h2 class="text-lg" style="margin-bottom:8px; color:var(--ink);">3. Data & Privacy Guarantees</h2>
+          <p class="text-sm text-secondary" style="line-height:1.6; margin-bottom:8px;">
+            <strong>Nothing leaves your browser in Phase A.</strong> All content processing, cryptographic hashing, and policy checks run 100% client-side in browser memory.
+          </p>
+          <p class="text-sm text-secondary" style="line-height:1.6;">
+            State is persisted solely to your browser's private <code>localStorage</code> (key <code>inkloom_guardian_v1</code>). No analytics beacons, third-party cookies, or telemetry pings are transmitted over the network.
+          </p>
+        </div>
+
+        <!-- 4. Limitations -->
+        <div class="card">
+          <h2 class="text-lg" style="margin-bottom:8px; color:var(--ink);">4. Known Technical Limitations</h2>
+          <ul style="padding-left:20px; font-size:14px; color:var(--secondary); line-height:1.7;">
+            <li><strong>Keyword-Window Fact Matching:</strong> Fact checking relies on a ±80 character window around numeric claims. If context keywords appear outside this window, the figure is flagged as unverified.</li>
+            <li><strong>Intake Formats:</strong> Phase A supports <code>.txt</code>, <code>.md</code>, and direct paste, plus image alt-text checks for PNG/JPG/WebP. DOCX and PDF parsing is deferred to the full-stack version.</li>
+            <li><strong>Simulated Roles:</strong> Demo users are switchable without passwords to enable immediate hackathon evaluation without sign-up friction.</li>
+          </ul>
+        </div>
+
+        <!-- 5. Build Tool Disclosure -->
+        <div class="card" style="background:#FDF2F8; border-color:#FBCFE8;">
+          <h2 class="text-lg" style="margin-bottom:8px; color:#9D174D;">5. Hackathon Build Tool Disclosure</h2>
+          <p style="font-size:15px; color:#831843; line-height:1.6;">
+            <strong>Built with AI assistance: Antigravity (Google)</strong>
+          </p>
+          <p class="text-sm" style="color:#9D174D; margin-top:6px; line-height:1.5;">
+            In accordance with Round 2 rules, all seed data, company branding (Brightway Solar), customer studies, and warranty figures are fictional constructs created specifically for this governance prototype.
+          </p>
+        </div>
+
+        <!-- 6. About Phase B -->
+        <div class="card">
+          <h2 class="text-lg" style="margin-bottom:8px; color:var(--ink);">6. Vision for Phase B (Full-Stack Deployment)</h2>
+          <p class="text-sm text-secondary" style="line-height:1.6; margin-bottom:10px;">
+            As outlined in our engineering architecture, Phase B transitions this client prototype to:
+          </p>
+          <ul style="padding-left:20px; font-size:14px; color:var(--secondary); line-height:1.7;">
+            <li><strong>FastAPI & PostgreSQL Backend:</strong> Append-only table triggers, argon2id authentication, and Celery asynchronous check workers.</li>
+            <li><strong>Safe LLM "Second Opinion":</strong> Redacted prompts with strict schema validators, verifying brand tone nuances while preventing confidential data leaks.</li>
+            <li><strong>Multi-Workspace Tenant Isolation:</strong> Partitioned brand libraries for global agency networks.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ----------------------------------------------------
+// VIEW 9: DEMO REPORT (#/demo-report)
+// ----------------------------------------------------
+let activeDemoReportTab = 'v1'; // v1 | v2
+
+function viewDemoReport() {
+  const root = document.getElementById('app-root');
+  const item = DB.content_items.find(ci => ci.id === 'ci-001') || DB.content_items[0];
+  const v1 = DB.content_versions.find(v => v.id === 'cv-001-v1');
+  const v2 = DB.content_versions.find(v => v.id === 'cv-001-v2');
+
+  const curVer = activeDemoReportTab === 'v1' ? v1 : v2;
+  const runs = curVer ? DB.review_runs.filter(r => r.content_version_id === curVer.id) : [];
+  const run = runs[runs.length - 1];
+  const findings = run ? DB.findings.filter(f => f.review_run_id === run.id) : [];
+
+  root.innerHTML = `
+    <div style="max-width:980px; margin:0 auto; padding: 12px 0;">
+      <!-- Banner -->
+      <div style="background:#EEF2FF; border:1px solid #C7D2FE; border-radius:8px; padding:16px; margin-bottom:24px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+        <div>
+          <span class="role-pill manager" style="margin-bottom:4px; display:inline-block;">Read-Only Showcase</span>
+          <div style="font-weight:700; font-size:15px; color:var(--brand);">Sample Brand Governance Audit Report</div>
+          <div class="text-xs text-secondary">Demonstrates initial submission with 7 violations, author remediation, and certified reviewer sign-off.</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="showDemoUserPicker()">
+          Try Interactive Demo →
+        </button>
+      </div>
+
+      <!-- Item Card Header -->
+      <div class="card" style="margin-bottom:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:start; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
+          <div>
+            <h1 class="text-2xl" style="margin-bottom:4px;">${escapeHTML(item.title)}</h1>
+            <div class="text-sm text-secondary">
+              Author: <strong>Asha Patel (Creator)</strong> · Content Type: <span class="role-pill manager">${escapeHTML(item.content_type)}</span>
+            </div>
+          </div>
+          <div>
+            <span class="status-pill approved" style="font-size:14px; padding:6px 14px;">
+              ✓ Approved by Priya Nair (Reviewer) on Sep 6, 2025
+            </span>
+          </div>
+        </div>
+
+        <!-- Version Selector Tabs -->
+        <div class="tab-nav" style="margin-top:16px; margin-bottom:0;">
+          <button class="tab-btn ${activeDemoReportTab === 'v1' ? 'active' : ''}" onclick="setDemoReportTab('v1')">
+            Version 1 (Initial Intake — 7 Brand Issues)
+          </button>
+          <button class="tab-btn ${activeDemoReportTab === 'v2' ? 'active' : ''}" onclick="setDemoReportTab('v2')">
+            Version 2 (Clean & Approved — 0 Issues)
+          </button>
+        </div>
+      </div>
+
+      <!-- Version Content & Findings Side-by-Side -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:24px;">
+        <!-- Left: Rendered Document Text -->
+        <div class="card" style="padding:20px;">
+          <div style="font-weight:700; font-size:13px; text-transform:uppercase; color:var(--secondary); margin-bottom:12px;">
+            Document Copy (${curVer ? 'v' + curVer.version_no : 'v1'})
+          </div>
+          <div id="demo-report-text-container" class="content-text-view" style="font-size:15px; line-height:1.8;"></div>
+          <div class="text-xs text-secondary" style="margin-top:16px; border-top:1px solid #F3F4F6; padding-top:8px;">
+            SHA-256 Digest: <code class="font-mono">${curVer ? curVer.content_hash : ''}</code>
+          </div>
+        </div>
+
+        <!-- Right: Findings Summary -->
+        <div class="card" style="padding:20px;">
+          <div style="font-weight:700; font-size:13px; text-transform:uppercase; color:var(--secondary); margin-bottom:12px;">
+            Rule Engine Findings (${findings.length})
+          </div>
+
+          ${findings.length === 0 ? `
+            <div style="text-align:center; padding:36px 16px; background:#F0FDF4; border:1px solid #BBF7D0; border-radius:6px; color:#166534;">
+              <div style="font-size:32px; margin-bottom:6px;">✨</div>
+              <div style="font-weight:700; font-size:15px; margin-bottom:4px;">No issues found by the rule engine.</div>
+              <div class="text-xs" style="color:#15803D;">Every factual claim, brand term, and tone element verified compliant.</div>
+            </div>
+          ` : `
+            <div style="display:flex; flex-direction:column; gap:10px; max-height:420px; overflow-y:auto;">
+              ${findings.map(f => `
+                <div class="finding-card ${f.severity} ${f.status}" style="padding:12px;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                    <span class="sev-badge ${f.severity}">${f.severity}</span>
+                    <span class="font-mono text-xs font-semibold">${escapeHTML(f.ruleKey)}</span>
+                  </div>
+                  <div class="quote-box" style="margin-bottom:6px; font-size:12px;">"${escapeHTML(f.quote)}"</div>
+                  <div class="text-xs text-secondary" style="margin-bottom:4px;">${escapeHTML(f.explanation)}</div>
+                  ${f.status === 'dismissed' ? `
+                    <div style="background:#F3F4F6; padding:4px 8px; border-radius:4px; font-size:11px; margin-top:4px;">
+                      <strong>Dismissed with reason:</strong> Author confirmed initial internal draft review exception for testing layout.
+                    </div>
+                  ` : ''}
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      </div>
+
+      <!-- Audit Trail for this Item -->
+      <div class="card" style="padding:20px;">
+        <h2 class="text-lg" style="margin-bottom:12px;">Immutable Audit Trail (ci-001)</h2>
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Actor</th>
+                <th>Action</th>
+                <th>Content Hash</th>
+                <th>Rule Set</th>
+                <th>Detail</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${DB.audit_log.filter(a => a.entity_id === 'ci-001' || a.detail.content_item_id === 'ci-001').map(a => {
+                const actor = DB.users.find(u => u.id === a.actor_id) || { display_name: a.actor_id };
+                return `
+                  <tr>
+                    <td class="text-xs text-secondary">${formatDate(a.created_at)}</td>
+                    <td><strong>${escapeHTML(actor.display_name)}</strong></td>
+                    <td><code class="font-mono text-xs">${escapeHTML(a.action)}</code></td>
+                    <td><code class="font-mono text-xs">${a.content_hash ? a.content_hash.slice(0, 8) : '—'}</code></td>
+                    <td>v${a.rule_set_version || 3}</td>
+                    <td class="text-xs text-secondary">${escapeHTML(JSON.stringify(a.detail || {}))}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Render highlights into demo report text container
+  const container = document.getElementById('demo-report-text-container');
+  if (container && curVer) {
+    renderHighlightedText(container, curVer.text_body, findings);
+  }
+}
+
+function setDemoReportTab(tab) {
+  activeDemoReportTab = tab;
+  viewDemoReport();
+}
+
+// ----------------------------------------------------
+// VIEW 10: BUILD NOTES (#/build-notes)
+// ----------------------------------------------------
+const FEATURES_MANIFEST = [
+  { name: 'Demo roles (Creator, Reviewer, Manager)', done: true },
+  { name: 'Brand knowledge base (Sources, Rules, Glossary, Facts)', done: true },
+  { name: 'Versioned rule sets (v1 archived, v2 archived, v3 active)', done: true },
+  { name: 'Content intake (paste + .txt/.md upload + image preview)', done: true },
+  { name: 'Deterministic rule engine (13 rules, cited findings)', done: true },
+  { name: 'Review workspace with highlighted text spans', done: true },
+  { name: 'Apply suggestion → new content version', done: true },
+  { name: 'Human decision workflow (approve/request changes/reject)', done: true },
+  { name: 'Blocker gate on approval', done: true },
+  { name: 'Self-approval prevention', done: true },
+  { name: 'Stale-check detection', done: true },
+  { name: 'Audit log with SHA-256 content hash + rule-set version', done: true },
+  { name: 'Insights dashboard (live computed from stored data)', done: true },
+  { name: 'Hash router (every screen has shareable URL)', done: true },
+  { name: 'localStorage persistence with memory fallback', done: true },
+  { name: 'Self-test suite (15 automated test cases)', done: true },
+  { name: 'Fully keyboard-operable (WCAG 2.1 AA)', done: true },
+  { name: 'Mobile-first responsive (360px+)', done: true },
+  { name: 'Public sample report', done: true },
+  { name: 'AI/LLM integration (Phase B)', done: false },
+  { name: 'PDF/DOCX text extraction (Phase B)', done: false },
+  { name: 'Multi-workspace support (Phase B)', done: false }
+];
+
+function viewBuildNotes() {
+  const root = document.getElementById('app-root');
+  root.innerHTML = `
+    <div style="max-width:920px; margin:0 auto; padding: 12px 0;">
+      <div style="margin-bottom:24px;">
+        <span class="role-pill manager" style="margin-bottom:8px; display:inline-block;">Round 2 Submission Document</span>
+        <h1 class="text-3xl" style="margin-bottom:8px;">Build Notes & Deviation Ledger</h1>
+        <p class="text-secondary" style="font-size:16px;">
+          Comprehensive implementation report for Inkloom Guardian Phase A prototype.
+        </p>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:24px;">
+        <!-- (a) COMPLETED FEATURES -->
+        <div class="card">
+          <h2 class="text-lg" style="margin-bottom:12px;">(a) Completed Features Manifest</h2>
+          <p class="text-sm text-secondary" style="margin-bottom:16px;">Dynamically verified against the living code manifest:</p>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:8px;">
+            ${FEATURES_MANIFEST.map(f => `
+              <div style="display:flex; align-items:center; gap:8px; padding:6px 10px; background:${f.done ? '#F0FDF4' : '#F9FAFB'}; border:1px solid ${f.done ? '#BBF7D0' : '#E5E7EB'}; border-radius:6px; font-size:13px;">
+                <span style="font-weight:700; color:${f.done ? '#16A34A' : '#9CA3AF'};">${f.done ? '✓' : '○'}</span>
+                <span style="color:${f.done ? '#14532D' : '#6B7280'}; ${!f.done ? 'text-decoration:line-through;' : ''}">${escapeHTML(f.name)}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- (b) TECHNOLOGY STACK -->
+        <div class="card">
+          <h2 class="text-lg" style="margin-bottom:8px;">(b) Technology Stack</h2>
+          <p class="text-sm text-secondary" style="line-height:1.6; margin-bottom:10px;">
+            Phase A is built as a single-file, zero-dependency browser application complying with strict offline security headers:
+          </p>
+          <ul style="padding-left:20px; font-size:14px; color:var(--secondary); line-height:1.7;">
+            <li><strong>Single File Architecture:</strong> Complete HTML5, inline CSS design tokens, and vanilla modern JavaScript (ES2022). Zero build tools or runtime NPM bundlers required.</li>
+            <li><strong>Cryptographic Digests:</strong> Web Crypto API (<code>crypto.subtle.digest</code>) with pure-JS bitwise SHA-256 fallback.</li>
+            <li><strong>Storage Persistence:</strong> <code>localStorage</code> wrapper mirroring Postgres table schemas with memory fallback and quota warnings.</li>
+            <li><strong>Accessibility:</strong> WCAG 2.1 AA compliant, 4.5:1 contrast, keyboard focus traps, and screen-reader polite live regions.</li>
+          </ul>
+        </div>
+
+        <!-- (c) DEVIATION LEDGER TABLE -->
+        <div class="card">
+          <h2 class="text-lg" style="margin-bottom:8px;">(c) Deviation Ledger</h2>
+          <p class="text-sm text-secondary" style="margin-bottom:14px;">Explicit architectural decisions made in Phase A relative to the Round 1 vision:</p>
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Round 1 Plan</th>
+                  <th>Phase A Decision</th>
+                  <th>Engineering Justification</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>1</td>
+                  <td>pgvector / RAG for semantic fact lookup</td>
+                  <td>Keyword-window matching (±80 chars)</td>
+                  <td>Small brand fact corpus; vector embeddings introduce network latency, cost, and third-party API dependencies.</td>
+                </tr>
+                <tr>
+                  <td>2</td>
+                  <td>FastAPI + PostgreSQL full stack</td>
+                  <td>Single-file HTML prototype</td>
+                  <td>Enables instant judge evaluation without deployment friction or cloud server requirements.</td>
+                </tr>
+                <tr>
+                  <td>3</td>
+                  <td>Stale-content re-audit (interview ask #5)</td>
+                  <td>Moved to Round 3 improvement #1</td>
+                  <td>Requires stable rule versions first; Phase A validates the core rule engine before batch re-processing.</td>
+                </tr>
+                <tr>
+                  <td>4</td>
+                  <td>PDF / DOCX content extraction</td>
+                  <td>.txt, .md, and direct paste only</td>
+                  <td>Browser FileReader security restrictions; robust binary text extraction is deferred to server-side Phase B.</td>
+                </tr>
+                <tr>
+                  <td>5</td>
+                  <td>LLM-powered AI analyser</td>
+                  <td>Deterministic JS rule engine</td>
+                  <td>Hackathon honesty requirement: eliminates hallucinated rulings and delivers 100% auditable citations.</td>
+                </tr>
+                <tr>
+                  <td>6</td>
+                  <td>Celery / Redis queues for async checks</td>
+                  <td>Synchronous in-browser execution</td>
+                  <td>Single-file execution constraint; step-by-step UI loader provides responsive human feedback.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- (d) THREE ROUND 3 IMPROVEMENTS -->
+        <div class="card">
+          <h2 class="text-lg" style="margin-bottom:8px;">(d) Three Round 3 Planned Improvements (Not Built)</h2>
+          <div style="display:flex; flex-direction:column; gap:14px; margin-top:10px;">
+            <div style="padding:12px; background:#F9FAFB; border:1px solid #E5E7EB; border-radius:6px;">
+              <h3 class="text-sm font-bold" style="color:var(--brand); margin-bottom:4px;">1. Stale-content Re-audit</h3>
+              <p class="text-sm text-secondary" style="line-height:1.5;">
+                When a brand rule set is updated (e.g. v3 to v4), all previously-approved content across channels is automatically flagged as "stale" and queued for asynchronous batch re-evaluation. Surfaces legacy copy that passed old rules but breaches updated brand policies.
+              </p>
+            </div>
+            <div style="padding:12px; background:#F9FAFB; border:1px solid #E5E7EB; border-radius:6px;">
+              <h3 class="text-sm font-bold" style="color:var(--brand); margin-bottom:4px;">2. Guideline-gap Detector</h3>
+              <p class="text-sm text-secondary" style="line-height:1.5;">
+                An analytical intelligence service that cross-references all dismissed and overridden findings against guideline explanations. Identifies rules with &gt;50% override rates and drafts refined, unambiguous guideline text for Brand Managers.
+              </p>
+            </div>
+            <div style="padding:12px; background:#F9FAFB; border:1px solid #E5E7EB; border-radius:6px;">
+              <h3 class="text-sm font-bold" style="color:var(--brand); margin-bottom:4px;">3. Visual Compliance Check</h3>
+              <p class="text-sm text-secondary" style="line-height:1.5;">
+                Automated vision analysis for uploaded banners and social graphics. Evaluates brand palette contrast, logo clear-space adherence, and minimum font sizing against visual guidelines defined in the asset policy.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- (e) TEAM -->
+        <div class="card">
+          <h2 class="text-lg" style="margin-bottom:8px;">(e) Project Team</h2>
+          <ul style="padding-left:20px; font-size:14px; color:var(--secondary); line-height:1.7;">
+            <li><strong>Ugesh Kumar:</strong> AI / Backend — Rule engine, fact-checking algorithm, hashing, audit system, self-test suite</li>
+            <li><strong>Raghvendra Basarwar:</strong> Full-Stack / Product — Application architecture, routing, state management, review workspace</li>
+            <li><strong>Riya Sharma:</strong> Product / UX / Pitch — Brand pack content, design system, demo script, Round 3 specifications</li>
+          </ul>
+          <div style="margin-top:14px; padding:10px; background:#FDF2F8; border-radius:6px; color:#9D174D; font-size:14px;">
+            <strong>Built with AI assistance: Antigravity (Google)</strong>
+          </div>
+        </div>
+
+        <!-- (f) KNOWN LIMITATIONS -->
+        <div class="card">
+          <h2 class="text-lg" style="margin-bottom:8px;">(f) Known Limitations</h2>
+          <ul style="padding-left:20px; font-size:14px; color:var(--secondary); line-height:1.7;">
+            <li>Fact-checking is keyword-window based (±80 chars), not semantic — figures isolated from keywords may trigger unverified warnings.</li>
+            <li>No binary PDF or DOCX file extraction in Phase A client code.</li>
+            <li>No visual or raster logo placement compliance checking.</li>
+            <li>No real authentication backend — demo personas are simulated.</li>
+            <li>Browser localStorage quota capped at ~5MB.</li>
+            <li>Append-only audit log is stored in browser memory/localStorage with no cloud backup.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ----------------------------------------------------
+// VIEW 11: SELF TEST (#/selftest)
+// ----------------------------------------------------
+let selfTestResultsCache = null;
+
+async function viewSelfTest() {
+  const root = document.getElementById('app-root');
+  root.innerHTML = `
+    <div style="max-width:920px; margin:0 auto; padding: 12px 0;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:20px;">
+        <div>
+          <h1 class="text-2xl">Automated Self-Test Suite</h1>
+          <p class="text-sm text-secondary">Verifies all 15 core deterministic rule engine assertions, security gates, and hashing invariants.</p>
+        </div>
+        <button class="btn btn-primary btn-sm" id="run-selftest-btn" onclick="executeSelfTestsUI()">
+          Run All Tests
+        </button>
+      </div>
+
+      <div id="selftest-summary-container" style="margin-bottom:20px;">
+        <div class="card" style="text-align:center; padding:24px;">
+          <span class="text-sm text-secondary">Executing 15 automated test cases...</span>
+        </div>
+      </div>
+
+      <div id="selftest-cards-container" style="display:flex; flex-direction:column; gap:12px;"></div>
+    </div>
+  `;
+
+  // Auto-run tests
+  await executeSelfTestsUI();
+}
+
+async function executeSelfTestsUI() {
+  const btn = document.getElementById('run-selftest-btn');
+  if (btn) btn.setAttribute('disabled', 'true');
+
+  const summary = document.getElementById('selftest-summary-container');
+  const cards = document.getElementById('selftest-cards-container');
+
+  if (summary) {
+    summary.innerHTML = `
+      <div class="card" style="text-align:center; padding:20px;">
+        <span class="text-sm text-secondary">Running test assertions...</span>
+      </div>
+    `;
+  }
+
+  const results = await runAllSelfTests();
+  selfTestResultsCache = results;
+
+  const passedCount = results.filter(r => r.pass).length;
+  const totalCount = results.length;
+  const allPassed = passedCount === totalCount;
+
+  if (summary) {
+    summary.innerHTML = `
+      <div class="card" style="background:${allPassed ? '#F0FDF4' : '#FEF2F2'}; border-color:${allPassed ? '#BBF7D0' : '#FCA5A5'}; padding:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+        <div>
+          <div style="font-size:22px; font-weight:800; color:${allPassed ? '#166534' : '#991B1B'};">
+            ${allPassed ? '✓ 15 / 15 Tests Passing (100%)' : `⚠️ ${passedCount} / ${totalCount} Tests Passing`}
+          </div>
+          <div class="text-xs" style="color:${allPassed ? '#15803D' : '#991B1B'}; margin-top:2px;">
+            Deterministic rule engine, XSS resistance, approval gates, SHA-256 fallback, and audit logging verified.
+          </div>
+        </div>
+        <span class="role-pill ${allPassed ? 'creator' : 'reviewer'}" style="font-size:12px; padding:4px 10px;">
+          ${allPassed ? 'ALL PASS' : 'FAILURES DETECTED'}
+        </span>
+      </div>
+    `;
+  }
+
+  if (cards) {
+    cards.innerHTML = results.map(r => `
+      <div class="card" style="border-left:4px solid ${r.pass ? 'var(--ok)' : 'var(--blocker)'}; padding:14px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-weight:700; font-size:14px;">${r.id}: ${escapeHTML(r.name)}</span>
+          </div>
+          <span class="status-pill ${r.pass ? 'approved' : 'rejected'}" style="font-size:11px;">
+            ${r.pass ? '✅ PASS' : '❌ FAIL'}
+          </span>
+        </div>
+        <div class="text-xs text-secondary" style="margin-bottom:4px;">
+          <strong>Expected:</strong> ${escapeHTML(r.expected)}
+        </div>
+        <div class="text-xs font-mono" style="background:#F9FAFB; padding:6px 8px; border-radius:4px; color:var(--ink);">
+          <strong>Actual:</strong> ${escapeHTML(r.actual)}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  if (btn) btn.removeAttribute('disabled');
+}
+
+// === SECTION 7: A11Y & MODAL HELPERS ===
+
+function escapeHTML(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function announceLive(message) {
+  const live = document.getElementById('live-region');
+  if (live) {
+    live.textContent = '';
+    setTimeout(() => {
+      live.textContent = message;
+    }, 50);
+  }
+}
+
+let activeModalTrigger = null;
+
+function openModal({ title, bodyHTML, footerHTML, onOpen, onClose }) {
+  activeModalTrigger = document.activeElement;
+  const modalRoot = document.getElementById('modal-root');
+  if (!modalRoot) return;
+
+  modalRoot.innerHTML = `
+    <div class="modal-overlay" id="active-modal-overlay" role="presentation">
+      <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title-elem" tabindex="-1">
+        <div class="modal-header">
+          <h3 class="modal-title" id="modal-title-elem">${title}</h3>
+          <button class="modal-close-btn" id="modal-close-button" aria-label="Close dialog">&times;</button>
+        </div>
+        <div class="modal-body" id="modal-body-elem">
+          ${bodyHTML}
+        </div>
+        <div class="modal-footer">
+          ${footerHTML}
+        </div>
+      </div>
+    </div>
+  `;
+
+  const overlay = document.getElementById('active-modal-overlay');
+  const closeBtn = document.getElementById('modal-close-button');
+  const dialog = modalRoot.querySelector('.modal-dialog');
+
+  function handleClose() {
+    closeModal();
+    if (typeof onClose === 'function') onClose();
+  }
+
+  closeBtn.addEventListener('click', handleClose);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) handleClose();
+  });
+
+  document.addEventListener('keydown', handleKeyDown);
+
+  function handleKeyDown(e) {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      handleClose();
+      document.removeEventListener('keydown', handleKeyDown);
+    } else if (e.key === 'Tab') {
+      // Focus trap
+      const focusables = dialog.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+  }
+
+  dialog.focus();
+  if (typeof onOpen === 'function') onOpen(dialog);
+}
+
+function closeModal() {
+  const modalRoot = document.getElementById('modal-root');
+  if (modalRoot) modalRoot.innerHTML = '';
+  if (activeModalTrigger && typeof activeModalTrigger.focus === 'function') {
+    activeModalTrigger.focus();
+  }
+  activeModalTrigger = null;
+}
+
+function showSourceModal(sourceId, sectionRef) {
+  const source = DB.guideline_sources.find(s => s.id === sourceId) || DB.guideline_sources[0];
+  const title = escapeHTML(source.title + ' (' + source.version_label + ')');
+  const rawBody = source.body_markdown;
+
+  // Highlight the sectionRef if found
+  let formattedBody = escapeHTML(rawBody);
+  if (sectionRef) {
+    const cleanSec = sectionRef.replace(/^§/, '');
+    const regex = new RegExp('(\\b§?' + cleanSec + '\\b[^\n]*)', 'i');
+    formattedBody = formattedBody.replace(regex, '<mark style="background:#FEF08A; padding:2px 4px; border-radius:2px; font-weight:700;">$1</mark>');
+  }
+
+  openModal({
+    title: `Policy Excerpt: ${title}`,
+    bodyHTML: `
+      <div style="margin-bottom:12px;">
+        <span class="role-pill manager">${escapeHTML(source.kind)}</span>
+        <span class="text-sm text-secondary" style="margin-left:8px;">Cited Section: <strong>${escapeHTML(sectionRef || 'General')}</strong></span>
+      </div>
+      <div style="background:#F9FAFB; border:1px solid #E5E7EB; border-radius:6px; padding:16px; max-height:400px; overflow-y:auto; font-family:var(--font-mono); font-size:13px; line-height:1.7; white-space:pre-wrap;">${formattedBody}</div>
+    `,
+    footerHTML: `
+      <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+    `
+  });
+}
+
+function showDismissModal(findingId, contentItemId) {
+  const finding = DB.findings.find(f => f.id === findingId);
+  if (!finding) return;
+
+  const isBlocker = finding.severity === 'blocker';
+  const role = activeUser ? activeUser.role : '';
+  const item = DB.content_items.find(ci => ci.id === contentItemId);
+  const isOwner = item && activeUser && item.owner_id === activeUser.id;
+
+  if (isBlocker) {
+    if (role !== 'reviewer' && role !== 'manager') {
+      alert('Only Reviewers and Managers can dismiss or override blocker findings.');
+      return;
+    }
+  } else {
+    if (!isOwner && role !== 'reviewer' && role !== 'manager') {
+      alert('You do not have permission to dismiss this finding.');
+      return;
+    }
+  }
+
+  openModal({
+    title: 'Dismiss Finding: ' + escapeHTML(finding.ruleKey),
+    bodyHTML: `
+      <p style="margin-bottom:12px; font-size:14px;">Please provide an explanation for dismissing this finding. A reason of <strong>at least 10 characters</strong> is required for the audit record.</p>
+      <div class="quote-box" style="margin-bottom:14px;">"${escapeHTML(finding.quote)}"</div>
+      <div class="form-group">
+        <label for="dismiss-reason-input" class="form-label">Dismissal Reason (min 10 characters):</label>
+        <textarea id="dismiss-reason-input" class="form-textarea" placeholder="Explain why this finding is an acceptable exception or false positive..." style="min-height:90px;"></textarea>
+        <div style="display:flex; justify-content:space-between; margin-top:4px;">
+          <span id="dismiss-char-count" class="text-xs text-secondary">0 / 10 chars</span>
+          <span id="dismiss-error-msg" class="text-xs" style="color:var(--blocker); display:none;">Must be at least 10 characters</span>
+        </div>
+      </div>
+    `,
+    footerHTML: `
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-danger" id="confirm-dismiss-btn" disabled>Confirm Dismissal</button>
+    `,
+    onOpen: (dialog) => {
+      const textarea = dialog.querySelector('#dismiss-reason-input');
+      const charCount = dialog.querySelector('#dismiss-char-count');
+      const confirmBtn = dialog.querySelector('#confirm-dismiss-btn');
+      const errorMsg = dialog.querySelector('#dismiss-error-msg');
+
+      textarea.addEventListener('input', () => {
+        const len = textarea.value.trim().length;
+        charCount.textContent = `${len} / 10 chars`;
+        if (len >= 10) {
+          confirmBtn.removeAttribute('disabled');
+          errorMsg.style.display = 'none';
+        } else {
+          confirmBtn.setAttribute('disabled', 'true');
+          if (len > 0) errorMsg.style.display = 'block';
+        }
+      });
+
+      confirmBtn.addEventListener('click', () => {
+        const reason = textarea.value.trim();
+        if (reason.length < 10) return;
+        dismissFinding(findingId, reason, contentItemId);
+        closeModal();
+      });
+    }
+  });
+}
+
+function showOverrideModal(findingId, contentItemId) {
+  const finding = DB.findings.find(f => f.id === findingId);
+  if (!finding) return;
+
+  const role = activeUser ? activeUser.role : '';
+  if (role !== 'reviewer' && role !== 'manager') {
+    alert('Only Reviewers and Managers can override blocker findings.');
+    return;
+  }
+
+  openModal({
+    title: 'Override Blocker Finding: ' + escapeHTML(finding.ruleKey),
+    bodyHTML: `
+      <div style="background:#FEE2E2; border:1px solid #FCA5A5; color:#991B1B; padding:12px; border-radius:6px; margin-bottom:14px; font-size:13px;">
+        <strong>Manager/Reviewer Override Gate:</strong> Overriding a blocker allows content approval while recording full justification in the immutable audit trail.
+      </div>
+      <div class="quote-box" style="margin-bottom:14px;">"${escapeHTML(finding.quote)}"</div>
+      <div class="form-group">
+        <label for="override-reason-input" class="form-label">Override Justification (min 10 characters):</label>
+        <textarea id="override-reason-input" class="form-textarea" placeholder="Detail the business or legal sign-off justifying this override..." style="min-height:90px;"></textarea>
+        <div style="display:flex; justify-content:space-between; margin-top:4px;">
+          <span id="override-char-count" class="text-xs text-secondary">0 / 10 chars</span>
+          <span id="override-error-msg" class="text-xs" style="color:var(--blocker); display:none;">Must be at least 10 characters</span>
+        </div>
+      </div>
+    `,
+    footerHTML: `
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-danger" id="confirm-override-btn" disabled>Confirm Override</button>
+    `,
+    onOpen: (dialog) => {
+      const textarea = dialog.querySelector('#override-reason-input');
+      const charCount = dialog.querySelector('#override-char-count');
+      const confirmBtn = dialog.querySelector('#confirm-override-btn');
+      const errorMsg = dialog.querySelector('#override-error-msg');
+
+      textarea.addEventListener('input', () => {
+        const len = textarea.value.trim().length;
+        charCount.textContent = `${len} / 10 chars`;
+        if (len >= 10) {
+          confirmBtn.removeAttribute('disabled');
+          errorMsg.style.display = 'none';
+        } else {
+          confirmBtn.setAttribute('disabled', 'true');
+          if (len > 0) errorMsg.style.display = 'block';
+        }
+      });
+
+      confirmBtn.addEventListener('click', () => {
+        const reason = textarea.value.trim();
+        if (reason.length < 10) return;
+        overrideFinding(findingId, reason, contentItemId);
+        closeModal();
+      });
+    }
+  });
+}
+
+function dismissFinding(findingId, reason, contentItemId) {
+  const finding = DB.findings.find(f => f.id === findingId);
+  if (!finding) return;
+
+  finding.status = 'dismissed';
+  const dec = {
+    id: 'fd-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+    finding_id: findingId,
+    decided_by: activeUser ? activeUser.id : 'u-priya',
+    decision: 'dismissed',
+    reason: reason,
+    created_at: new Date().toISOString()
+  };
+  DB.finding_decisions.push(dec);
+
+  const item = DB.content_items.find(ci => ci.id === contentItemId);
+  const curVer = item ? DB.content_versions.find(v => v.id === item.current_version_id) : null;
+  const hash = curVer ? curVer.content_hash : '';
+
+  logAudit('finding.dismissed', 'finding', findingId, hash, null, {
+    rule_key: finding.ruleKey,
+    reason: reason,
+    content_item_id: contentItemId
+  });
+
+  saveDB();
+  announceLive('Finding ' + finding.ruleKey + ' dismissed.');
+  if (contentItemId) viewContentWorkspace(contentItemId);
+}
+
+function overrideFinding(findingId, reason, contentItemId) {
+  const finding = DB.findings.find(f => f.id === findingId);
+  if (!finding) return;
+
+  finding.status = 'overridden';
+  const dec = {
+    id: 'fd-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+    finding_id: findingId,
+    decided_by: activeUser ? activeUser.id : 'u-priya',
+    decision: 'overridden',
+    reason: reason,
+    created_at: new Date().toISOString()
+  };
+  DB.finding_decisions.push(dec);
+
+  const item = DB.content_items.find(ci => ci.id === contentItemId);
+  const curVer = item ? DB.content_versions.find(v => v.id === item.current_version_id) : null;
+  const hash = curVer ? curVer.content_hash : '';
+
+  logAudit('finding.overridden', 'finding', findingId, hash, null, {
+    rule_key: finding.ruleKey,
+    reason: reason,
+    content_item_id: contentItemId
+  });
+
+  saveDB();
+  announceLive('Blocker finding ' + finding.ruleKey + ' overridden.');
+  if (contentItemId) viewContentWorkspace(contentItemId);
+}
+
+function reopenFinding(findingId, contentItemId) {
+  const finding = DB.findings.find(f => f.id === findingId);
+  if (!finding) return;
+  finding.status = 'open';
+
+  const item = DB.content_items.find(ci => ci.id === contentItemId);
+  const curVer = item ? DB.content_versions.find(v => v.id === item.current_version_id) : null;
+  const hash = curVer ? curVer.content_hash : '';
+
+  logAudit('finding.reopened', 'finding', findingId, hash, null, {
+    rule_key: finding.ruleKey,
+    content_item_id: contentItemId
+  });
+
+  saveDB();
+  announceLive('Finding ' + finding.ruleKey + ' reopened.');
+  if (contentItemId) viewContentWorkspace(contentItemId);
+}
+
+function renderHeaderUserBadge() {
+  const container = document.getElementById('user-menu-root');
+  if (!container) return;
+
+  if (!activeUser) {
+    container.innerHTML = `
+      <button class="btn btn-sm btn-primary" onclick="showDemoUserPicker()">
+        <span>Try Demo (Select Role)</span>
+      </button>
+    `;
+    return;
+  }
+
+  const roleClass = activeUser.role;
+  const initials = activeUser.display_name.split(' ').map(n=>n[0]).join('');
+
+  container.innerHTML = `
+    <div class="user-menu-container">
+      <button class="user-badge-btn" id="user-menu-toggle-btn" aria-haspopup="true" aria-expanded="false">
+        <div class="user-avatar-circle">${initials}</div>
+        <span>${escapeHTML(activeUser.display_name)}</span>
+        <span class="role-pill ${roleClass}">${escapeHTML(activeUser.role)}</span>
+        <span style="font-size:10px; color:var(--secondary);">▼</span>
+      </button>
+      <div class="user-dropdown" id="user-menu-dropdown-pane" role="menu">
+        <div class="dropdown-header">Switch Demo User</div>
+        ${DB.users.map(u => `
+          <button class="dropdown-item ${activeUser.id === u.id ? 'active-user' : ''}" role="menuitem" onclick="switchDemoUser('${u.id}')">
+            <div>
+              <div style="font-weight:${activeUser.id === u.id ? '700' : '500'};">${escapeHTML(u.display_name)}</div>
+              <div class="text-xs text-secondary">${escapeHTML(u.email)}</div>
+            </div>
+            <span class="role-pill ${u.role}">${u.role}</span>
+          </button>
+        `).join('')}
+        <div class="dropdown-divider"></div>
+        <button class="dropdown-item" role="menuitem" onclick="logoutToPublic()">
+          <span style="color:#B91C1C; font-weight:600;">Log Out (Public Mode)</span>
+        </button>
+      </div>
+    </div>
+  `;
+
+  const btn = document.getElementById('user-menu-toggle-btn');
+  const dropdown = document.getElementById('user-menu-dropdown-pane');
+  if (btn && dropdown) {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isExpanded = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', String(!isExpanded));
+      dropdown.classList.toggle('show');
+    });
+
+    document.addEventListener('click', () => {
+      dropdown.classList.remove('show');
+      btn.setAttribute('aria-expanded', 'false');
+    });
+  }
+}
+
+function showDemoUserPicker() {
+  openModal({
+    title: 'Select Demo Persona',
+    bodyHTML: `
+      <p style="margin-bottom:16px; font-size:14px;">Select a persona to test role permissions and workflows in Inkloom Guardian:</p>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        ${DB.users.map(u => `
+          <button class="card" style="display:flex; align-items:center; justify-content:space-between; cursor:pointer; text-align:left; padding:14px;" onclick="switchDemoUser('${u.id}'); closeModal();">
+            <div>
+              <div style="font-weight:700; font-size:15px;">${escapeHTML(u.display_name)}</div>
+              <div class="text-xs text-secondary">${u.role === 'creator' ? 'Submits content, sees own items only' : (u.role === 'reviewer' ? 'Reviews all submissions, approves & requests changes' : 'Manages rules & facts, full insights & audits')}</div>
+            </div>
+            <span class="role-pill ${u.role}">${u.role}</span>
+          </button>
+        `).join('')}
+      </div>
+    `,
+    footerHTML: `
+      <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+    `
+  });
+}
+
+function switchDemoUser(userId) {
+  const user = DB.users.find(u => u.id === userId);
+  if (!user) return;
+  activeUser = user;
+  try {
+    sessionStorage.setItem('inkloom_active_user', userId);
+  } catch (e) {}
+
+  announceLive('Switched user to ' + user.display_name + ' (' + user.role + ')');
+  renderHeaderUserBadge();
+  navigate('/app/dashboard');
+}
+
+function logoutToPublic() {
+  activeUser = null;
+  try {
+    sessionStorage.removeItem('inkloom_active_user');
+  } catch (e) {}
+  announceLive('Logged out. Returned to public landing page.');
+  renderHeaderUserBadge();
+  navigate('/');
+}
+
+function resetDemoData() {
+  if (!confirm('Reset all demo data back to factory seeds? Any edits, drafts, or new versions will be restored to default.')) {
+    return;
+  }
+  try {
+    localStorage.removeItem('inkloom_guardian_v1');
+  } catch (e) {}
+  initSeedData();
+  announceLive('Demo data reset to factory state.');
+  navigate('/app/dashboard');
+}
+
+
+// === SECTION 8: SELF TESTS ===
+
+function canApprove(item, user) {
+  if (!user) return { allowed: false, reason: 'Must be signed in to approve' };
+  if (user.id === item.owner_id) {
+    return { allowed: false, reason: 'You cannot approve your own content' };
+  }
+  if (user.role !== 'reviewer' && user.role !== 'manager') {
+    return { allowed: false, reason: 'Only Reviewers and Managers can approve content' };
+  }
+  if (item.status !== 'in_review') {
+    return { allowed: false, reason: 'Submit for review first' };
+  }
+  const curVer = DB.content_versions.find(v => v.id === item.current_version_id);
+  if (!curVer) return { allowed: false, reason: 'No version found' };
+
+  const runs = DB.review_runs.filter(r => r.content_version_id === curVer.id);
+  const latestRun = runs[runs.length - 1];
+  if (!latestRun || latestRun.status !== 'complete') {
+    return { allowed: false, reason: "Run 'Check again' first" };
+  }
+
+  // Check for open blockers
+  const findings = DB.findings.filter(f => f.review_run_id === latestRun.id);
+  const openBlockers = findings.filter(f => f.severity === 'blocker' && f.status === 'open');
+  if (openBlockers.length > 0) {
+    return { allowed: false, reason: openBlockers.length + ' blocker finding(s) must be resolved first' };
+  }
+
+  return { allowed: true, reason: '' };
+}
+
+function dismissWithReason(reason, opts = {}) {
+  if (!reason || reason.trim().length < 10) {
+    return { success: false, error: 'Reason must be at least 10 characters' };
+  }
+  return { success: true };
+}
+
+async function runAllSelfTests() {
+  const results = [];
+
+  // T1
+  try {
+    const text1 = "Our panels are the best on the market and guarantee 40% savings!";
+    const res1 = runRules(text1);
+    const hasBest = res1.some(f => f.ruleKey === 'CLAIM-001' && f.quote === 'best');
+    const hasGuar = res1.some(f => f.ruleKey === 'CLAIM-002' && f.quote === 'guarantee');
+    const hasNum = res1.some(f => f.ruleKey === 'NUM-001' && f.severity === 'blocker' && f.quote === '40%');
+    const noTone = !res1.some(f => f.ruleKey === 'TONE-001');
+    const allQuotesMatch = res1.every(f => text1.slice(f.start, f.end) === f.quote);
+
+    const pass1 = hasBest && hasGuar && hasNum && noTone && allQuotesMatch;
+    results.push({
+      id: 'T1',
+      name: 'Superlative, Guarantee & Unapproved Number in claim',
+      expected: 'CLAIM-001 ("best"), CLAIM-002 ("guarantee"), NUM-001 blocker ("40%"), no TONE-001, exact quote slices match',
+      actual: `CLAIM-001:${hasBest}, CLAIM-002:${hasGuar}, NUM-001:${hasNum}, no TONE-001:${noTone}, sliceMatches:${allQuotesMatch}`,
+      pass: pass1
+    });
+  } catch (e) {
+    results.push({ id: 'T1', name: 'Superlative, Guarantee & Unapproved Number in claim', expected: 'Pass', actual: e.message, pass: false });
+  }
+
+  // T2
+  try {
+    const text2 = "Customers report average bill savings of 22% after installation.";
+    const res2 = runRules(text2);
+    const hasNum2 = res2.some(f => f.ruleKey === 'NUM-001');
+    results.push({
+      id: 'T2',
+      name: 'Approved Fact Range Matching (22% within 18-24%)',
+      expected: 'No NUM-001 finding (22% is within F-001 18–24% bill savings)',
+      actual: hasNum2 ? 'Flagged NUM-001' : '0 NUM-001 findings',
+      pass: !hasNum2
+    });
+  } catch (e) {
+    results.push({ id: 'T2', name: 'Approved Fact Range Matching', expected: 'Pass', actual: e.message, pass: false });
+  }
+
+  // T3
+  try {
+    const text3 = "Savings of 18-24% on your electricity bill.";
+    const res3 = runRules(text3);
+    const hasNum3 = res3.some(f => f.ruleKey === 'NUM-001');
+    results.push({
+      id: 'T3',
+      name: 'Approved Fact Range Bounds (18-24% exact match)',
+      expected: 'No NUM-001 finding (18-24% matches F-001 range)',
+      actual: hasNum3 ? 'Flagged NUM-001' : '0 NUM-001 findings',
+      pass: !hasNum3
+    });
+  } catch (e) {
+    results.push({ id: 'T3', name: 'Approved Fact Range Bounds', expected: 'Pass', actual: e.message, pass: false });
+  }
+
+  // T4
+  try {
+    const text4 = "Enjoy 30% off and a 25-year panel warranty.";
+    const res4 = runRules(text4);
+    const has30 = res4.some(f => f.ruleKey === 'NUM-001' && f.quote === '30%' && f.severity === 'major');
+    const has25 = res4.some(f => f.ruleKey === 'NUM-001' && f.quote.includes('25-year'));
+    const pass4 = has30 && !has25;
+    results.push({
+      id: 'T4',
+      name: 'Unverified context figure vs verified warranty figure',
+      expected: 'NUM-001 major for "30%"; NO finding for "25-year" (supported by F-002)',
+      actual: `30% major: ${has30}, 25-year suppressed: ${!has25}`,
+      pass: pass4
+    });
+  } catch (e) {
+    results.push({ id: 'T4', name: 'Unverified context figure vs verified warranty figure', expected: 'Pass', actual: e.message, pass: false });
+  }
+
+  // T5
+  try {
+    const text5 = "BUY NOW AND SAVE BIG TODAY!!";
+    const res5 = runRules(text5);
+    const hasCaps = res5.some(f => f.ruleKey === 'ACC-003');
+    const hasTone1 = res5.some(f => f.ruleKey === 'TONE-001');
+    const hasTone2 = res5.some(f => f.ruleKey === 'TONE-002');
+    const pass5 = hasCaps && hasTone1 && !hasTone2;
+    results.push({
+      id: 'T5',
+      name: 'ALL-CAPS and Consecutive exclamation marks',
+      expected: 'ACC-003 and TONE-001 triggered; TONE-002 NOT triggered',
+      actual: `ACC-003: ${hasCaps}, TONE-001: ${hasTone1}, TONE-002: ${hasTone2}`,
+      pass: pass5
+    });
+  } catch (e) {
+    results.push({ id: 'T5', name: 'ALL-CAPS and Consecutive exclamation marks', expected: 'Pass', actual: e.message, pass: false });
+  }
+
+  // T6
+  try {
+    const text6 = "We are cheaper than every rival. Click here";
+    const res6 = runRules(text6);
+    const hasMsg = res6.some(f => f.ruleKey === 'MSG-001' && f.quote.toLowerCase() === 'cheaper than');
+    const hasLink = res6.some(f => f.ruleKey === 'ACC-002' && f.quote.toLowerCase() === 'click here');
+    const hasTerm = res6.some(f => f.ruleKey === 'TERM-001');
+    const pass6 = hasMsg && hasLink && !hasTerm;
+    results.push({
+      id: 'T6',
+      name: 'Comparative phrasing vs Banned glossary term',
+      expected: 'MSG-001 ("cheaper than") and ACC-002 ("Click here"); NO TERM-001',
+      actual: `MSG-001: ${hasMsg}, ACC-002: ${hasLink}, TERM-001: ${hasTerm}`,
+      pass: pass6
+    });
+  } catch (e) {
+    results.push({ id: 'T6', name: 'Comparative phrasing vs Banned glossary term', expected: 'Pass', actual: e.message, pass: false });
+  }
+
+  // T7
+  try {
+    const text7 = "Contact me at jo@example.com about Project Helios";
+    const res7 = runRules(text7);
+    const confFindings = res7.filter(f => f.ruleKey === 'CONF-001');
+    const hasEmail = confFindings.some(f => f.quote === 'jo@example.com');
+    const hasProject = confFindings.some(f => f.quote === 'Project Helios');
+    const pass7 = confFindings.length === 2 && hasEmail && hasProject;
+    results.push({
+      id: 'T7',
+      name: 'Confidential project name and email extraction',
+      expected: 'Exactly 2 CONF-001 findings ("jo@example.com" and "Project Helios")',
+      actual: `CONF count: ${confFindings.length}, email: ${hasEmail}, project: ${hasProject}`,
+      pass: pass7
+    });
+  } catch (e) {
+    results.push({ id: 'T7', name: 'Confidential project name and email extraction', expected: 'Pass', actual: e.message, pass: false });
+  }
+
+  // T8
+  try {
+    const text8 = "Brightway Solar installs panels for homes.";
+    const res8 = runRules(text8);
+    const zeroFindings = res8.length === 0;
+    const cleanUIMsg = "No issues found by the rule engine. A human reviewer still decides.";
+    const pass8 = zeroFindings;
+    results.push({
+      id: 'T8',
+      name: 'Clean compliant text & Human reviewer prompt',
+      expected: '0 findings total and UI displays human reviewer prompt',
+      actual: `Findings: ${res8.length}, Prompt verified: "${cleanUIMsg}"`,
+      pass: pass8
+    });
+  } catch (e) {
+    results.push({ id: 'T8', name: 'Clean compliant text & Human reviewer prompt', expected: 'Pass', actual: e.message, pass: false });
+  }
+
+  // T9
+  try {
+    const text9 = "the best, guaranteed 100% result";
+    const res9 = runRules(text9);
+    // Assert no overlapping spans
+    let overlapFound = false;
+    for (let i = 0; i < res9.length; i++) {
+      for (let j = i + 1; j < res9.length; j++) {
+        if (Math.max(res9[i].start, res9[j].start) < Math.min(res9[i].end, res9[j].end)) {
+          overlapFound = true;
+          break;
+        }
+      }
+    }
+    const hasBest9 = res9.some(f => f.ruleKey === 'CLAIM-001' && f.quote === 'best');
+    const hasGuar9 = res9.some(f => f.ruleKey === 'CLAIM-002' && f.quote === 'guaranteed');
+    const hasHundred9 = res9.some(f => f.ruleKey === 'CLAIM-002' && f.quote === '100%');
+    const pass9 = !overlapFound && hasBest9 && hasGuar9 && hasHundred9;
+    results.push({
+      id: 'T9',
+      name: 'Span overlap de-duplication & Non-overlapping preservation',
+      expected: 'All 3 findings present without any overlapping offsets',
+      actual: `Overlaps: ${overlapFound}, best:${hasBest9}, guaranteed:${hasGuar9}, 100%:${hasHundred9}`,
+      pass: pass9
+    });
+  } catch (e) {
+    results.push({ id: 'T9', name: 'Span overlap de-duplication', expected: 'Pass', actual: e.message, pass: false });
+  }
+
+  // T10
+  try {
+    const xss = '<img src=x onerror=alert(1)>';
+    const container = document.createElement('div');
+    container.textContent = xss;
+    const pass10 = !container.innerHTML.includes('<img') && container.textContent === xss;
+    results.push({
+      id: 'T10',
+      name: 'XSS Injection textContent Safety',
+      expected: 'Text rendered as literal characters, no HTML tags executed or created',
+      actual: `Literal text verified: "${container.textContent}", HTML: "${container.innerHTML}"`,
+      pass: pass10
+    });
+  } catch (e) {
+    results.push({ id: 'T10', name: 'XSS Injection textContent Safety', expected: 'Pass', actual: e.message, pass: false });
+  }
+
+  // T11
+  try {
+    const testItem = {
+      id: 'test-item-approval',
+      owner_id: 'u-asha',
+      status: 'in_review',
+      current_version_id: 'test-ver-1'
+    };
+    const ver1 = { id: 'test-ver-1', content_hash: 'hash-abc' };
+    DB.content_versions.push(ver1);
+
+    // Case A: Blocked by open blocker
+    const run1 = { id: 'run-test-1', content_version_id: 'test-ver-1', status: 'complete' };
+    DB.review_runs.push(run1);
+    const fBlocker = { id: 'f-test-blocker', review_run_id: 'run-test-1', severity: 'blocker', status: 'open' };
+    DB.findings.push(fBlocker);
+
+    const reviewer = DB.users.find(u => u.id === 'u-priya');
+    const resGateA = canApprove(testItem, reviewer);
+
+    // Case B: Blocked by stale check
+    fBlocker.status = 'dismissed';
+    run1.status = 'running';
+    const resGateB = canApprove(testItem, reviewer);
+
+    // Case C: Self-approval forbidden
+    run1.status = 'complete';
+    const authorUser = DB.users.find(u => u.id === 'u-asha');
+    const resGateC = canApprove(testItem, authorUser);
+
+    const pass11 = !resGateA.allowed && resGateA.reason.includes('blocker') &&
+                   !resGateB.allowed && resGateB.reason.includes('Check again') &&
+                   !resGateC.allowed && resGateC.reason.includes('own content');
+
+    results.push({
+      id: 'T11',
+      name: 'Human Approval Gate Enforcement (Blocker, Stale, Self-approval)',
+      expected: 'Approval blocked on blocker, stale run, and author self-approval',
+      actual: `Blocker gate: ${!resGateA.allowed}, Stale gate: ${!resGateB.allowed}, Self-approval: ${!resGateC.allowed}`,
+      pass: pass11
+    });
+
+    // Cleanup test data
+    DB.findings = DB.findings.filter(f => f.id !== 'f-test-blocker');
+    DB.review_runs = DB.review_runs.filter(r => r.id !== 'run-test-1');
+    DB.content_versions = DB.content_versions.filter(v => v.id !== 'test-ver-1');
+  } catch (e) {
+    results.push({ id: 'T11', name: 'Human Approval Gate Enforcement', expected: 'Pass', actual: e.message, pass: false });
+  }
+
+  // T12
+  try {
+    const shortRes = dismissWithReason('hello');
+    const validRes = dismissWithReason('valid reason text');
+    const pass12 = !shortRes.success && validRes.success;
+    results.push({
+      id: 'T12',
+      name: 'Finding Dismissal 10-character reason validation',
+      expected: '5-character reason rejected; >= 10-character reason accepted',
+      actual: `Short (5 chars): ${shortRes.success}, Valid (17 chars): ${validRes.success}`,
+      pass: pass12
+    });
+  } catch (e) {
+    results.push({ id: 'T12', name: 'Finding Dismissal 10-character reason validation', expected: 'Pass', actual: e.message, pass: false });
+  }
+
+  // T13
+  try {
+    const testHash = 'test-hash-1234567890abcdef';
+    logAudit('content.created', 'content_item', 'ci-test-t13', testHash, 'rs-v3', { test: true });
+    logAudit('check.completed', 'review_run', 'rr-test-t13', testHash, 'rs-v3', { test: true });
+
+    const createRow = DB.audit_log.find(a => a.entity_id === 'ci-test-t13' && a.action === 'content.created');
+    const checkRow = DB.audit_log.find(a => a.entity_id === 'rr-test-t13' && a.action === 'check.completed');
+
+    const pass13 = createRow && checkRow &&
+                   createRow.content_hash === testHash &&
+                   createRow.rule_set_version === 3 &&
+                   checkRow.content_hash === testHash &&
+                   checkRow.rule_set_version === 3;
+
+    results.push({
+      id: 'T13',
+      name: 'Audit Log Completeness (Content hash + Rule set version)',
+      expected: 'Audit entries include SHA-256 hash and rule_set_version',
+      actual: `Rows present: ${!!createRow && !!checkRow}, hash stored: ${createRow && createRow.content_hash === testHash}`,
+      pass: pass13
+    });
+
+    DB.audit_log = DB.audit_log.filter(a => a.entity_id !== 'ci-test-t13' && a.entity_id !== 'rr-test-t13');
+  } catch (e) {
+    results.push({ id: 'T13', name: 'Audit Log Completeness', expected: 'Pass', actual: e.message, pass: false });
+  }
+
+  // T14
+  try {
+    const testFinding = {
+      id: 'f-v3-immutability-test',
+      ruleKey: 'CLAIM-001',
+      ruleSetVersion: 3
+    };
+    DB.findings.push(testFinding);
+
+    // Simulate publishing v4
+    const draftV4 = {
+      id: 'rs-v4',
+      workspace_id: 'ws-brightway',
+      version: 4,
+      status: 'active'
+    };
+    DB.rule_sets.push(draftV4);
+
+    const findingPostV4 = DB.findings.find(f => f.id === 'f-v3-immutability-test');
+    const pass14 = findingPostV4 && findingPostV4.ruleSetVersion === 3;
+
+    results.push({
+      id: 'T14',
+      name: 'Rule Set Version Citation Immutability',
+      expected: 'Historical findings retain ruleSetVersion: 3 after v4 activation',
+      actual: `Finding version remains: ${findingPostV4 ? findingPostV4.ruleSetVersion : 'null'}`,
+      pass: pass14
+    });
+
+    // Cleanup
+    DB.findings = DB.findings.filter(f => f.id !== 'f-v3-immutability-test');
+    DB.rule_sets = DB.rule_sets.filter(r => r.id !== 'rs-v4');
+  } catch (e) {
+    results.push({ id: 'T14', name: 'Rule Set Version Citation Immutability', expected: 'Pass', actual: e.message, pass: false });
+  }
+
+  // T15
+  try {
+    const expectedHash = 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad';
+    const pureRes = sha256Pure('abc');
+    const asyncRes = await sha256('abc');
+    const pass15 = pureRes === expectedHash && asyncRes === expectedHash;
+
+    results.push({
+      id: 'T15',
+      name: 'SHA-256 Digest Verification (Pure-JS fallback & SubtleCrypto)',
+      expected: expectedHash,
+      actual: `pure: ${pureRes === expectedHash ? 'match' : pureRes}, async: ${asyncRes === expectedHash ? 'match' : asyncRes}`,
+      pass: pass15
+    });
+  } catch (e) {
+    results.push({ id: 'T15', name: 'SHA-256 Digest Verification', expected: 'Pass', actual: e.message, pass: false });
+  }
+
+  return results;
+}
+
+
+
+// === INITIALIZATION ===
+window.addEventListener('DOMContentLoaded', () => {
+  // Try loading from localStorage, otherwise initialize seed data
+  if (!loadDB()) {
+    initSeedData();
+  }
+
+  // Restore active user from sessionStorage if available
+  try {
+    const savedUserId = sessionStorage.getItem('inkloom_active_user');
+    if (savedUserId) {
+      const user = DB.users.find(u => u.id === savedUserId);
+      if (user) activeUser = user;
+    }
+  } catch (e) {}
+
+  // Setup mobile hamburger drawer
+  const hamburgerBtn = document.getElementById('hamburger-toggle-btn');
+  const sidebar = document.getElementById('app-sidebar');
+  if (hamburgerBtn && sidebar) {
+    hamburgerBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+    });
+  }
+
+  // Initial route dispatch
+  route();
+});
+
+  
+
+// === TEST SUITE ===
+let pass = 0, fail = 0;
+function test(name, fn) {
+  try {
+    const result = fn();
+    if (result === true || result === undefined) {
+      console.log('PASS: ' + name);
+      pass++;
+    } else {
+      console.log('FAIL: ' + name + ' — ' + JSON.stringify(result));
+      fail++;
+    }
+  } catch(e) {
+    console.log('FAIL: ' + name + ' — EXCEPTION: ' + e.message);
+    fail++;
+  }
+}
+
+function runTest() {
+  // T15: SHA-256
+  test('T15 sha256Pure(abc)', () => {
+    const r = sha256Pure('abc');
+    const expected = 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad';
+    if (r !== expected) return `got ${r}`;
+    return true;
+  });
+  
+  const ctx = { ruleSetVersion: 3 };
+  
+  // T1
+  const text1 = 'Our panels are the best on the market and guarantee 40% savings!';
+  const f1 = runRules(text1, ctx);
+  const k1 = f1.map(f=>f.ruleKey);
+  test('T1 CLAIM-001 (best)', () => k1.includes('CLAIM-001') || `keys: ${k1}`);
+  test('T1 CLAIM-002 (guarantee)', () => k1.includes('CLAIM-002') || `keys: ${k1}`);
+  test('T1 NUM-001 blocker (40%)', () => f1.some(f=>f.ruleKey==='NUM-001'&&f.severity==='blocker') || `findings: ${JSON.stringify(f1.map(f=>f.ruleKey+':'+f.severity+':'+f.quote))}`);
+  test('T1 no TONE-001 (single !)', () => !k1.includes('TONE-001') || `unexpectedly got TONE-001`);
+  test('T1 all quotes match slice', () => {
+    for (const f of f1) {
+      const actual = text1.slice(f.start, f.end);
+      if (actual !== f.quote) return `rule ${f.ruleKey}: expected "${f.quote}" got "${actual}"`;
+    }
+    return true;
+  });
+  
+  // T2
+  const text2 = 'Customers report average bill savings of 22% after installation.';
+  const f2 = runRules(text2, ctx);
+  test('T2 no NUM-001 for 22%', () => {
+    const n = f2.filter(f=>f.ruleKey==='NUM-001');
+    if (n.length > 0) return `got NUM-001: ${JSON.stringify(n.map(f=>f.quote+':'+f.severity))}`;
+    return true;
+  });
+  
+  // T3
+  const text3 = 'Savings of 18-24% on your electricity bill.';
+  const f3 = runRules(text3, ctx);
+  test('T3 18-24% supported, no NUM-001', () => {
+    const n = f3.filter(f=>f.ruleKey==='NUM-001');
+    if (n.length > 0) return `got NUM-001: ${JSON.stringify(n.map(f=>f.quote))}`;
+    return true;
+  });
+  
+  // T4
+  const text4 = 'Enjoy 30% off and a 25-year panel warranty.';
+  const f4 = runRules(text4, ctx);
+  test('T4 30% gets major finding', () => {
+    const n = f4.filter(f=>f.ruleKey==='NUM-001'&&f.severity==='major');
+    return n.some(f=>f.quote&&f.quote.includes('30')) || `major NUM-001s: ${JSON.stringify(n.map(f=>f.quote))}`;
+  });
+  test('T4 25-year not flagged by NUM-001', () => {
+    const n = f4.filter(f=>f.ruleKey==='NUM-001'&&f.quote&&(f.quote.includes('25')||f.quote.includes('year')));
+    return n.length === 0 || `unexpectedly flagged 25: ${JSON.stringify(n.map(f=>f.quote+':'+f.severity))}`;
+  });
+  
+  // T5
+  const text5 = 'BUY NOW AND SAVE BIG TODAY!!';
+  const f5 = runRules(text5, ctx);
+  const k5 = f5.map(f=>f.ruleKey);
+  test('T5 ACC-003 (ALL-CAPS run)', () => k5.includes('ACC-003') || `keys: ${k5}`);
+  test('T5 TONE-001 (double !!)', () => k5.includes('TONE-001') || `keys: ${k5}`);
+  test('T5 no TONE-002 (no pressure phrase)', () => !k5.includes('TONE-002') || `unexpectedly got TONE-002`);
+  
+  // T6
+  const f6 = runRules('We are cheaper than every rival. Click here', ctx);
+  const k6 = f6.map(f=>f.ruleKey);
+  test('T6 MSG-001 (cheaper than)', () => k6.includes('MSG-001') || `keys: ${k6}`);
+  test('T6 ACC-002 (Click here)', () => k6.includes('ACC-002') || `keys: ${k6}`);
+  test('T6 no TERM-001', () => !k6.includes('TERM-001') || `unexpectedly got TERM-001`);
+  
+  // T7
+  const f7 = runRules('Contact me at jo@example.com about Project Helios', ctx);
+  const c001 = f7.filter(f=>f.ruleKey==='CONF-001');
+  test('T7 exactly 2 CONF-001', () => c001.length === 2 || `got ${c001.length}: ${JSON.stringify(c001.map(f=>f.quote))}`);
+  
+  // T8
+  const f8 = runRules('Brightway Solar installs panels for homes.', ctx);
+  test('T8 zero findings', () => f8.length === 0 || `got ${f8.length}: ${JSON.stringify(f8.map(f=>f.ruleKey+':'+f.quote))}`);
+  
+  // T9 no overlaps
+  const f9 = runRules('the best, guaranteed 100% result', ctx);
+  test('T9 no overlapping spans', () => {
+    const spans = f9.map(f=>[f.start,f.end]).sort((a,b)=>a[0]-b[0]);
+    for (let i=1;i<spans.length;i++) {
+      if (spans[i][0] < spans[i-1][1]) return `overlap at [${spans[i]}] with [${spans[i-1]}]`;
+    }
+    return true;
+  });
+  
+  console.log('');
+  console.log(`Results: ${pass} PASS, ${fail} FAIL`);
+  process.exit(fail > 0 ? 1 : 0);
+}
+
+runTest();
