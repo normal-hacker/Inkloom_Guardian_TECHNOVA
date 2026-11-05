@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Navbar } from '@/../components/Navbar';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Plus, Search, Filter, AlertTriangle, ArrowRight, Clock, FileText } from 'lucide-react';
 
@@ -61,9 +60,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
-      <Navbar />
-
+    <div className="flex flex-col flex-1">
       <PageHeader
         title="Content Dashboard"
         description="What needs your attention and the status of your content"
@@ -78,7 +75,7 @@ export default function DashboardPage() {
         }
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
 
         {/* Filters & Search Toolbar */}
         <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-6 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
@@ -199,7 +196,7 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
-      </main>
+      </div>
     </div>
   );
 }

@@ -75,3 +75,25 @@ Judges evaluate engineering discipline through honest and reasoned adaptation to
 - [x] **Guidelines Tabs:** Integrated `ExpandableTabs` in `/guidelines` for Sources, Rules, Glossary, Facts, and Rule sets with `?tab=` query parameter persistence.
 - [x] **Verification:** `npm test` (99/99 passing), `npm run typecheck` (0 errors), `npm run lint` (0 errors), and `npm run build` (31/31 routes compiled).
 
+### Phase UI-Sidebar: Animated Collapsible Sidebar & App Shell
+- [x] **Component Reference:** Saved `docs/ui/sidebar-component.md`.
+- [x] **Defect Hardening:** Implemented `components/ui/sidebar.tsx` addressing all 12 prompt defects:
+  1. Desktop rail fixed slot (64px) avoiding layout jump on hover; pinned state expands flex width to 280px with zero CLS on main content.
+  2. Pin toggle persists across reloads in `localStorage` (`inkloom_sidebar_pinned`) with try/catch error safety.
+  3. Hover intent delay (~120ms) and collapse delay (~150ms) to prevent hair-trigger jitter.
+  4. BrandMark component keeps shield icon visible in collapsed rail and reveals "Inkloom Guardian" text only when expanded.
+  5. Distinguish navigational links (`SidebarLink` with Next.js `Link`) and action buttons (`SidebarButton` with native `<button type="button">`), avoiding `href="#"`.
+  6. Visible focus rings (`focus-visible:ring-2 focus-visible:ring-indigo-600`) and accessible tooltip titles.
+  7. Minimum 44px touch targets across desktop and mobile.
+  8. `useReducedMotion()` instant transitions when requested.
+  9. Mobile slide-in drawer dialog (`role="dialog"`, `aria-modal="true"`) with backdrop blur, Escape-to-close, and focus restoration to the trigger button.
+  10. Auto-close mobile drawer on route navigation click.
+  11. Clean semantic hierarchy: `<nav aria-label="Main">`, skip link (`a.sr-only[href="#main"]`), and main container `<main id="main">`.
+  12. Pure presentational isolation: `sidebar.tsx` contains zero fetch, session, or role logic.
+- [x] **App Shell & Layout Integration:**
+  - Implemented `components/layout/AppShell.tsx` wrapping all authenticated views in full-height layout (`h-dvh flex flex-col md:flex-row overflow-hidden bg-[#F8F9FA]`) with `rounded-tl-2xl` white main panel and top skip link.
+  - Implemented `components/layout/AppSidebar.tsx` consuming `lib/nav/config.ts`, persona badge, accessible demo user switcher, and logout.
+  - Retired deprecated top `Navbar` / `AppNav` while keeping `ExpandableTabs` active for in-page workspace and guideline tabs.
+- [x] **Verification:** `npm test` (108/108 passing across 12 suites), `npm run typecheck` (0 errors), `npm run lint` (0 errors), `npm run build` (31/31 routes compiled), unit test suite `tests/sidebar.test.ts` (9/9 passing), and Playwright E2E suite `e2e/sidebar.spec.ts`.
+
+

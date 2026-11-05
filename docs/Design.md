@@ -106,24 +106,34 @@ Plain, direct, no hype. Use "check", "finding", "version", "decision". Avoid "fa
 ## 9. Responsive
 Desktop-first (review work is desktop work). Below 1024 px panes stack with a sticky "Findings (n)" toggle. Minimum supported width 360 px for dashboard and the public report.
 
-## Navigation & Tabs (ExpandableTabs Component Architecture)
+## 10. Navigation Architecture (Animated Collapsible Sidebar & In-Page Tabs)
 
-Navigation and view controls use the presentational `ExpandableTabs` component with two distinct semantic modes:
+Application navigation and view controls use a two-tiered architecture:
 
-1. **Top Application Navigation (`variant="nav"`)**:
-   - Renders semantic `<nav aria-label="Main navigation">` with Next.js `<Link>` elements wrapped in `motion.create(Link)`.
-   - Single source of truth defined in `lib/nav/config.ts`: Dashboard, New content, Guidelines, Insights, Audit, Separator, and About AI.
-   - Client-side persona filtering: Creator role is restricted from seeing Insights and Audit links (server routes also strictly guard access).
-   - Non-collapsing active pill: active route retains its full icon + title pill label (`collapseOnOutsideClick={false}`).
-   - Subnav placement: Centered sticky row below the top header on desktop; horizontally scrollable container without page overflow at 360px.
-   - Animated `PageHeader`: detail strip cross-fades title and description with an 8px vertical slide on route change (`mode="wait"`).
+### 1. Primary Application Navigation: Collapsible Sidebar (`AppShell` & `AppSidebar`)
+- **Desktop (≥ 768px)**:
+  - Fixed 64px width (`w-16`) icon rail in default collapsed state.
+  - Smooth expansion on hover to 280px with hover intent delay (~120ms) and collapse delay (~150ms).
+  - Hover expansion renders as an overlay (`absolute top-0 left-0 bottom-0 z-40 shadow-lg`), maintaining zero CLS on the main content panel (`main#main`).
+  - Pin toggle button (`Pin` / `PinOff` icons) allows users to lock the sidebar at 280px width, expanding the flex column and persisting state across reloads via `localStorage['inkloom_sidebar_pinned']`.
+  - Main content panel styled with `overflow-y-auto bg-white md:rounded-tl-2xl md:border-t md:border-l border-slate-200 shadow-2xs`.
+  - Single source of truth defined in `lib/nav/config.ts`: Dashboard, New content, Guidelines, Insights, Audit, Separator, and About AI.
+  - Persona filtering: Creators cannot view Insights or Audit links; pending action badges display open items.
+  - Persona switcher & session controls at the bottom of the rail: one-click switching between demo personas (Asha, Priya, Marcus) and accessible logout button (`SidebarButton` native `<button>`).
+  - Top skip link (`a.sr-only[href="#main"]`) allows immediate keyboard bypass to `#main`.
 
-2. **Workspace & Guidelines Tabs (`variant="tabs"`)**:
-   - W3C ARIA tablist semantics (`role="tablist"`, `role="tab"`, `aria-selected`, `aria-controls`, `aria-labelledby`, roving `tabIndex`).
-   - Roving keyboard navigation: `ArrowRight` / `ArrowLeft` cycle between adjacent tabs with wrap-around; `Home` / `End` jump to edges.
-   - `/content/[id]` workspace:
-     - Desktop: bottom panel tabs for **Comments** (badge = total comments), **History** (badge = versions count), and **Audit** (badge = events count, hidden for creators).
-     - Mobile (< 1024px): top toggle between **Content** (`FileText`) and **Findings** (`TriangleAlert`, badge = open findings count), defaulting to Findings when blockers exist.
-   - `/guidelines`: persistent tab selection in URL query (`?tab=sources|rules|glossary|facts|rulesets`), enabling full browser Back/Forward navigation.
-   - Performance & Motion: spring transition (`bounce: 0, duration: 0.4`), zero-delay, layout-stable fixed `min-h-[52px]` preventing CLS, and instant transition under `prefers-reduced-motion`.
+- **Mobile (< 768px)**:
+  - Top header strip with brand mark and accessible hamburger button (`aria-expanded`, `aria-controls="mobile-sidebar-drawer"`).
+  - Modal drawer dialog (`role="dialog"`, `aria-modal="true"`) sliding from left (`w-[min(85vw,320px)]`) over a dimmed backdrop (`bg-slate-900/50`).
+  - Full keyboard trap with Escape-to-close and automatic focus restoration to the trigger button.
+  - Automatic drawer collapse upon clicking any route link.
+
+### 2. Workspace & In-Page Tabs (`ExpandableTabs` Component)
+- W3C ARIA tablist semantics (`role="tablist"`, `role="tab"`, `aria-selected`, `aria-controls`, `aria-labelledby`, roving `tabIndex`).
+- Roving keyboard navigation: `ArrowRight` / `ArrowLeft` cycle between adjacent tabs with wrap-around; `Home` / `End` jump to edges.
+- `/content/[id]` workspace:
+  - Desktop: bottom panel tabs for **Comments** (badge = total comments), **History** (badge = versions count), and **Audit** (badge = events count, hidden for creators).
+  - Mobile (< 1024px): top toggle between **Content** (`FileText`) and **Findings** (`TriangleAlert`, badge = open findings count), defaulting to Findings when blockers exist.
+- `/guidelines`: persistent tab selection in URL query (`?tab=sources|rules|glossary|facts|rulesets`), enabling full browser Back/Forward navigation.
+- Performance & Motion: spring transition (`bounce: 0, duration: 0.4`), zero-delay, layout-stable fixed `min-h-[52px]` preventing CLS, and instant transition under `prefers-reduced-motion`.
 

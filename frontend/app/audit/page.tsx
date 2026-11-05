@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Navbar } from '@/../components/Navbar';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Download } from 'lucide-react';
 
@@ -40,9 +39,7 @@ export default function AuditLogPage() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
-      <Navbar />
-
+    <div className="flex flex-col flex-1">
       <PageHeader
         title="Compliance Audit Trail"
         description="Who decided what, on which exact version"
@@ -60,7 +57,7 @@ export default function AuditLogPage() {
         }
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
 
         {/* Toolbar */}
         <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-6 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -144,7 +141,7 @@ export default function AuditLogPage() {
             </div>
           )}
         </div>
-      </main>
+      </div>
     </div>
   );
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Navbar } from '@/../components/Navbar';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Table } from 'lucide-react';
 
@@ -20,19 +19,14 @@ export default function InsightsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col">
-        <Navbar />
-        <div className="flex-1 flex items-center justify-center text-sm text-slate-400">
-          Computing SQL aggregation metrics…
-        </div>
+      <div className="flex-1 flex items-center justify-center text-sm text-slate-400 py-16">
+        Computing SQL aggregation metrics…
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
-      <Navbar />
-
+    <div className="flex flex-col flex-1">
       <PageHeader
         title="Governance Insights & Analytics"
         description="Recurring issues and rules reviewers keep overriding"
@@ -47,7 +41,7 @@ export default function InsightsPage() {
         }
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
         {/* 4 Top KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
@@ -182,7 +176,7 @@ export default function InsightsPage() {
             </table>
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

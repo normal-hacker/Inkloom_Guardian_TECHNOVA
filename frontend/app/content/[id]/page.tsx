@@ -3,7 +3,6 @@
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { Navbar } from '@/../components/Navbar';
 import { ExpandableTabs, TabItem } from '@/components/ui/expandable-tabs';
 import {
   ShieldAlert,
@@ -461,22 +460,17 @@ export default function ReviewWorkspacePage({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col">
-        <Navbar />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="flex items-center gap-3 text-slate-500 text-sm">
-            <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
-            <span>Loading review workspace…</span>
-          </div>
+      <div className="flex-1 flex items-center justify-center py-20">
+        <div className="flex items-center gap-3 text-slate-500 text-sm">
+          <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
+          <span>Loading review workspace…</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
-      <Navbar />
-
+    <div className="flex flex-col flex-1">
       {/* Workspace Subheader */}
       <div className="border-b border-slate-200 bg-white px-4 sm:px-6 lg:px-8 py-3">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -583,7 +577,7 @@ export default function ReviewWorkspacePage({
       </div>
 
       {/* Main Split Review Workspace */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Copy Viewer with Highlights (7 cols) */}
         <section className={`lg:col-span-7 flex flex-col gap-4 ${mobileTabIndex === 0 ? 'flex' : 'hidden lg:flex'}`}>
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex-1 flex flex-col">
@@ -979,7 +973,7 @@ export default function ReviewWorkspacePage({
             </AnimatePresence>
           </div>
         </section>
-      </main>
+      </div>
 
       {/* Decision / Reason Modal */}
       {decisionModal && (

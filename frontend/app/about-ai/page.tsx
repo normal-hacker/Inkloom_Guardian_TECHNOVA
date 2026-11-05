@@ -1,21 +1,18 @@
 'use client';
 
 import React from 'react';
-import { Navbar } from '@/../components/Navbar';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Lock, Cpu, CheckCircle2, Layers } from 'lucide-react';
 
 export default function AboutAiPage() {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between">
-      <Navbar />
-
+    <div className="flex flex-col flex-1">
       <PageHeader
         title="About AI, Safety & Privacy Guardrails"
         description="What the AI does, what data leaves the system, limits"
       />
 
-      <main className="max-w-4xl mx-auto px-4 py-8 flex-1 w-full space-y-8">
+      <div className="max-w-4xl mx-auto px-4 py-8 flex-1 w-full space-y-8">
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">
             Public Disclosure
@@ -89,7 +86,7 @@ export default function AboutAiPage() {
             </div>
           </div>
         </div>
-      </main>
+      </div>
 
       <footer className="border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-400">
         Inkloom Guardian · Round 2 Submission Public Disclosure

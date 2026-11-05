@@ -125,3 +125,4 @@ test.describe('ExpandableTabs & Navigation E2E Suite (§8 Acceptance)', () => {
     await page.screenshot({ path: 'tests/screenshots/dashboard-desktop-1280px.png' });
   });
 });
+

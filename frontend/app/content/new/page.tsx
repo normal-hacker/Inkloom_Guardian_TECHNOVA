@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Navbar } from '@/../components/Navbar';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { FileText, Upload, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
 
@@ -102,15 +101,13 @@ export default function NewContentPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
-      <Navbar />
-
+    <div className="flex flex-col flex-1">
       <PageHeader
         title="New Content Intake"
         description="Paste or upload content and run a brand check"
       />
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
 
         {error && (
           <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 flex items-start gap-3 text-red-800 text-sm">
@@ -269,7 +266,7 @@ export default function NewContentPage() {
             </button>
           </div>
         </form>
-      </main>
+      </div>
     </div>
   );
 }
