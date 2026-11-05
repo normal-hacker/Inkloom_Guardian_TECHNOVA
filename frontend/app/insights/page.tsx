@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Navbar } from '@/../components/Navbar';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Table } from 'lucide-react';
 
 export default function InsightsPage() {
@@ -32,27 +33,21 @@ export default function InsightsPage() {
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight font-serif">
-              Governance Insights & Analytics
-            </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              Aggregated statistics derived from verified audit logs and finding decisions across 90 days.
-            </p>
-          </div>
-
+      <PageHeader
+        title="Governance Insights & Analytics"
+        description="Recurring issues and rules reviewers keep overriding"
+        actions={
           <button
             onClick={() => setShowTable(!showTable)}
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 shadow-sm transition-all"
           >
-            <Table className="w-4 h-4 text-slate-500" />
-            <span>{showTable ? 'Hide Data Table' : 'Show Data Table'}</span>
+            <Table className="w-3.5 h-3.5" />
+            <span>{showTable ? 'Hide Table View' : 'Accessible Table View'}</span>
           </button>
-        </div>
+        }
+      />
 
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
         {/* 4 Top KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">

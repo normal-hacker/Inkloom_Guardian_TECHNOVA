@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShieldCheck, Plus, LogOut, ChevronDown, Check } from 'lucide-react';
+import { ShieldCheck, Plus, LogOut, ChevronDown, Check, Sparkles } from 'lucide-react';
+import { AppNav } from '@/components/layout/AppNav';
 
 interface CurrentUser {
   id: string;
@@ -54,64 +55,53 @@ export function Navbar() {
     }
   };
 
-  const navLinks = [
-    { href: '/dashboard', label: 'Dashboard' },
-    { href: '/guidelines', label: 'Guidelines' },
-    { href: '/insights', label: 'Insights' },
-    { href: '/audit', label: 'Audit Trail' },
-  ];
-
   return (
-    <header className="border-b border-slate-200 bg-white sticky top-0 z-30">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <header className="border-b border-border bg-white sticky top-0 z-30 shadow-xs">
+      {/* Top Header Bar */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
         {/* Brand */}
-        <div className="flex items-center gap-8">
-          <Link href="/dashboard" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-sm">
-              <ShieldCheck className="w-5 h-5" />
+        <div className="flex items-center gap-4">
+          <Link href="/dashboard" className="flex items-center gap-2.5 group">
+            <div className="w-8 h-8 bg-indigo-600 group-hover:bg-indigo-700 transition-colors rounded-xl flex items-center justify-center text-white shadow-xs">
+              <ShieldCheck className="w-4 h-4" />
             </div>
-            <span className="font-extrabold text-base text-slate-900 tracking-tight">Inkloom Guardian</span>
+            <span className="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">
+              Inkloom Guardian
+            </span>
           </Link>
-
-          {/* Links */}
-          <nav className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => {
-              const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
-                    active
-                      ? 'bg-slate-100 text-indigo-700'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              );
-            })}
-          </nav>
         </div>
 
-        {/* Right Actions */}
-        <div className="flex items-center gap-3">
+        {/* Right Actions: AI Disclosure + New Content + User Menu */}
+        <div className="flex items-center gap-2.5">
+          {/* AI Disclosure Link */}
           <Link
-            href="/content/new"
-            className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-indigo-600"
+            href="/about-ai"
+            className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-indigo-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors"
+            title="Read how our AI and deterministic checks work"
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>New Content</span>
+            <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+            <span>AI Disclosure</span>
           </Link>
 
-          {/* Role Switcher Pill */}
+          {/* New Content CTA */}
+          <Link
+            href="/content/new"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-xs transition-all focus:outline-none focus:ring-2 focus:ring-indigo-600"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span className="hidden xs:inline">New Content</span>
+          </Link>
+
+          {/* Role Switcher Persona Pill */}
           {user && (
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setRoleMenuOpen(!roleMenuOpen)}
-                className="flex items-center gap-2 p-1.5 pr-2.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-slate-50 text-xs text-left transition-colors"
+                className="flex items-center gap-2 p-1 pr-2 rounded-xl border border-slate-200 hover:border-slate-300 bg-slate-50 text-xs text-left transition-colors"
                 title="Switch demo persona"
+                aria-expanded={roleMenuOpen}
+                aria-haspopup="true"
               >
                 <div
                   className={`w-6 h-6 rounded-lg flex items-center justify-center text-white font-bold text-[10px] ${
@@ -171,6 +161,11 @@ export function Navbar() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Sticky Expandable Navigation Bar */}
+      <div className="border-t border-border/60 bg-slate-50/70 backdrop-blur-xs">
+        <AppNav userRole={user?.role} />
       </div>
     </header>
   );

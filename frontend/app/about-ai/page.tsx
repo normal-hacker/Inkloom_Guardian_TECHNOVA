@@ -1,28 +1,21 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
-import { ShieldCheck, ArrowLeft, Lock, Cpu, CheckCircle2, Layers } from 'lucide-react';
+import { Navbar } from '@/../components/Navbar';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { Lock, Cpu, CheckCircle2, Layers } from 'lucide-react';
 
 export default function AboutAiPage() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-indigo-600">
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Home</span>
-          </Link>
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center text-white">
-              <ShieldCheck className="w-4 h-4" />
-            </div>
-            <span className="font-extrabold text-sm text-slate-900">Inkloom Guardian</span>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
-      <main className="max-w-4xl mx-auto px-4 py-12 flex-1 w-full space-y-8">
+      <PageHeader
+        title="About AI, Safety & Privacy Guardrails"
+        description="What the AI does, what data leaves the system, limits"
+      />
+
+      <main className="max-w-4xl mx-auto px-4 py-8 flex-1 w-full space-y-8">
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">
             Public Disclosure

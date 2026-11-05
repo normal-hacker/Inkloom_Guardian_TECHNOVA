@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/../components/Navbar';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { FileText, Upload, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function NewContentPage() {
@@ -104,15 +105,12 @@ export default function NewContentPage() {
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
       <Navbar />
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
-        <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight font-serif">
-            New Content Intake
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Submit marketing copy, articles, or documents to verify against Brightway Solar rules.
-          </p>
-        </div>
+      <PageHeader
+        title="New Content Intake"
+        description="Paste or upload content and run a brand check"
+      />
+
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
 
         {error && (
           <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 flex items-start gap-3 text-red-800 text-sm">

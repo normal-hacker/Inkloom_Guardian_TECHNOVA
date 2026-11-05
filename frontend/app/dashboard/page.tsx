@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Navbar } from '@/../components/Navbar';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Plus, Search, Filter, AlertTriangle, ArrowRight, Clock, FileText } from 'lucide-react';
 
 interface ContentItem {
@@ -63,25 +64,21 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
-        {/* Top Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight font-serif">
-              Content Dashboard
-            </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              Review, check against brand guidelines, and track human decisions.
-            </p>
-          </div>
+      <PageHeader
+        title="Content Dashboard"
+        description="What needs your attention and the status of your content"
+        actions={
           <Link
             href="/content/new"
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-indigo-600"
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all focus:outline-none focus:ring-2 focus:ring-indigo-600"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             <span>Create New Content</span>
           </Link>
-        </div>
+        }
+      />
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
 
         {/* Filters & Search Toolbar */}
         <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-6 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
