@@ -2,16 +2,14 @@
 
 **Check before you publish.** Inkloom Guardian reviews content against an organisation's approved guidelines, terminology and facts, explains each issue with the exact rule and source, suggests fixes that keep the author's intent, and leaves the final decision to a human reviewer.
 
-> Hackathon: Inkloom AI — Brand Governance · **Round 2: The Build (Completed)**
-> Status: **Production-Grade Next.js 15 Full-Stack Application** — Unified Next.js 15.5.29 + React 19 + TypeScript architecture with Route Handlers (`app/api/v1/...`), Drizzle ORM PostgreSQL persistence with immutable audit triggers, pure deterministic 13-rule engine, role-based auth-lite with 1-click persona switching, and optional privacy-preserving LLM evaluation.
 
----
+## Links (test each in an incognito window with no sign-in)
+| What | URL |
+## What it does
+1. A manager loads the brand pack: guideline sources (S1–S4), versioned rules (v1–v3), glossary, approved facts (F-001–F-006).
 
-## Live Navigation & Routes
-Judges can explore the application without setup or sign-in:
-
-| Page / Route | Path | Description |
-|---|---|---|
+## Features completed
+_Phase A single-file prototype implementation status:_
 | **Landing Page** | `/` | Public product landing with demo quick access, 3-step workflow, and role personas |
 | **Login / Persona Picker** | `/login` | 1-click demo persona switcher (`Asha`, `Ben`, `Priya`, `Marcus`) or password login |
 | **Content Dashboard** | `/dashboard` | Filterable content repository with status badges, blocker counts, and quick actions |
@@ -25,25 +23,25 @@ Judges can explore the application without setup or sign-in:
 | **Build Notes & Roadmap** | `/build-notes` | Full architectural overview, deviations ledger, trade-offs, and Round 3 roadmap |
 | **In-Browser Self-Tests** | `/selftest` | Client-side test runner executing deterministic engine and algorithm verification |
 
----
+## Round 3 — three improvements we commit to
+1. **Stale-content re-audit** when rules or facts change.
+## Phase A single-file note
+**Phase A** is a fully working self-contained prototype: `index.html` (6 645 lines, ~256 KB). Open it by double-clicking or deploying to any static host (Netlify Drop, GitHub Pages, Vercel). No server, no sign-in, no network required. All 11 screens, 13 rules, role enforcement, localStorage persistence, SHA-256 hashing, and 15 automated self-tests run entirely in the browser.
 
-## Demo Personas & Credentials
-The application includes pre-seeded demo accounts. Click any persona button on `/login` to sign in instantly with signed HMAC session tokens:
-
+**Phase B** (not yet started) will add the full Next.js + FastAPI + PostgreSQL stack documented in `docs/Architecture.md`.
 | Persona | Name | Role | Access Scope |
-|---|---|---|---|
 | **Asha** | Asha Patel | `creator` | Draft content, run checks, apply suggestions, submit for review (cannot approve) |
 | **Ben** | Ben Cooper | `creator` | Secondary author persona for multi-user workflow and permission testing |
 | **Priya** | Priya Nair | `reviewer` | Review submissions, resolve findings, request changes, approve compliant content |
 | **Marcus** | Marcus Vance | `manager` | Full oversight: manage guidelines, import rules, inspect analytics, export CSV audit logs |
 
----
+## Tech stack (Phase A)
+- Single HTML file — vanilla JS, inline CSS, zero external dependencies
+## Tech stack (Phase B — planned)
+Next.js 15 · TypeScript · Tailwind · shadcn/ui — FastAPI · Pydantic · SQLAlchemy · Alembic — PostgreSQL 16 — JWT auth — pluggable LLM provider (Anthropic default, mock for tests). Details: [`docs/Architecture.md`](docs/Architecture.md).
 
-## Benchmark Results (Stage S7 Golden Set Evaluation)
-Evaluated across 20 labelled test cases covering tone, terminology, superlatives, guarantees, numerical fact ranges (NUM-001), confidentiality, accessibility, injection attacks, and clean controls:
-
-| Metric | Target | Measured Result | Status |
-|---|---|---|---|
+## Documentation map
+| Doc | Purpose |
 | **Precision** | $\ge 90\%$ | **95.24%** | PASSED |
 | **Recall** | $\ge 90\%$ | **100.00%** | PASSED |
 | **F1-Score** | $\ge 90\%$ | **97.56%** | PASSED |
@@ -51,8 +49,8 @@ Evaluated across 20 labelled test cases covering tone, terminology, superlatives
 | **False Positives** | - | 1 | - |
 | **False Negatives** | - | 0 | - |
 
+## Quick start
 ---
-
 ## What Inkloom Guardian Does
 1. **Brand Knowledge Base:** Loads Brightway Solar guideline sources (S1–S4), 13 versioned rules, glossary, and approved facts (F-001–F-006).
 2. **Multi-Format Intake:** Ingests copy via text paste, markdown (`.md`), plain text (`.txt`), Word documents (`.docx`), and PDFs (`.pdf`), alongside image alt-text extraction.
@@ -82,8 +80,8 @@ Evaluated across 20 labelled test cases covering tone, terminology, superlatives
 
 ### 1. Installation & Environment Setup
 ```bash
-# Clone the repository
-git clone <repo-url>
+# Phase A: just open the file — no install needed
+start index.html          # Windows
 cd Inkloom_Guardian/frontend
 
 # Install dependencies
@@ -93,29 +91,29 @@ npm install
 cp ../.env.example ../.env
 ```
 
-### 2. Database Migrations & Seeding
-```bash
+**To deploy for judges (3 steps):**
+1. Go to [Netlify Drop](https://app.netlify.com/drop) and drag-and-drop `index.html`.
 # Apply schema migrations
 npm run db:migrate
 
+**Phase B quick start (backend + frontend):**
 # Seed Brightway Solar guidelines, demo accounts, and sample content
-npm run db:seed
 ```
 
-### 3. Run Test Suites
-```bash
+## Team and contributions
+| Member | Role | Contribution (update with real commits/PRs) |
 # Run all 74 unit, integration, golden-set, and security tests
 npm test
 
-# Run TypeScript typecheck
-npm run typecheck
+## Disclosures (required by event rules)
+- **AI tools used to build:** Claude (planning docs, code assistance), Gamma (Round 1 deck), Perplexity (research), Antigravity (if used for code) — list exact usage per member before submitting.
 
-# Run ESLint validation
-npm run lint
+## Known limitations (honest list — update as you learn)
+- Small user-research sample (6 interviews); not statistically representative.
 ```
 
-### 4. Build & Start Production Server
-```bash
+## Licence
+_Choose before publishing (e.g. MIT) and keep dependency licences compatible._
 # Compile production build
 npm run build
 

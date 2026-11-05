@@ -41,6 +41,8 @@ Judges evaluate engineering discipline through honest and reasoned adaptation to
 | 4 | Client-side only single HTML file (`index.html`) | Full-stack Next.js + PostgreSQL database with append-only triggers | Hackathon prompt required robust multi-user workflow, audit trail, role enforcement, and server-side persistence. | 2026-11-05 |
 | 5 | Celery / Redis queue infrastructure | Direct asynchronous Next.js Route Handlers and database check runs | Avoids Redis dependency overhead; simplifies hosting on standard platforms like Supabase, Vercel, and Render. | 2026-11-05 |
 | 6 | Keyword-only `NUM-001` matching | Proximity-weighted context window matching with claim-value candidate tie-breaking | Prevents false positives where multiple facts share keywords (e.g. inverter warranty vs panel warranty). | 2026-11-05 |
+| 7 | Mandatory Google sign-in | Google OAuth is optional; degrades gracefully with clear explanation when unconfigured | Prevents judging friction; judges must never be blocked by OAuth configuration or testing status. | 2026-11-05 |
+| 8 | Self-registration / Sign-up wizard | Seeded demo accounts with 1-click login; registration out of scope for Round 2 | Hackathon judges need instant, frictionless evaluation across all roles (Creator, Reviewer, Manager). | 2026-11-05 |
 
 ---
 

@@ -1,14 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   color-scheme: light;
+  --background: #F9FAFB;
+  --foreground: #111827;
+  --card: #FFFFFF;
+  --card-foreground: #111827;
+  --primary: #4F46E5;
+  --primary-foreground: #FFFFFF;
+  --secondary: #E0E7FF;
+  --accent: #C7D2FE;
+  --muted-foreground: #4B5563;
+  --border: #E5E7EB;
+  --destructive: #B91C1C;
+  --chart-1: #6366F1;
+  --chart-2: #0EA5E9;
+  --chart-3: #8B5CF6;
+  --chart-4: #38BDF8;
+  --chart-5: #A5B4FC;
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-destructive: var(--destructive);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
   --bg: #f5f7fb;
   --panel: #ffffff;
   --ink: #1c2430;
   --muted: #5d7285;
-  --accent: #1746a2;
   --accent-soft: #ebf2ff;
   --danger: #b42318;
   --danger-soft: #fef3f2;
   --line: #d9e2ec;
+}
+
+/* Fallback for browsers without relative color / oklch support */
+@supports not (color: oklch(from red l c h)) {
+  .glass-button {
+    background: rgba(255, 255, 255, 0.85) !important;
+    border: 1px solid #d1d5db !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+  }
+  .glass-button-text {
+    color: #111827 !important;
+  }
+  .glass-input {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 1px solid #d1d5db !important;
+  }
 }
 
 * { box-sizing: border-box; }

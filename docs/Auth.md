@@ -43,12 +43,16 @@ POST /auth/refresh {refresh_token} → new access token (refresh rotated, old on
 - Minimum 10 characters; no composition rules; block the demo passwords in production (`APP_ENV=production` rejects seeded demo password hashes at startup unless `DEMO_MODE=true`).
 - Lockout/throttle: 10 attempts per minute per IP and per email → 429.
 
-## 5. Demo mode (so links work without sign-in)
-- `DEMO_MODE=true` enables `POST /auth/demo-login {role}` returning tokens for the seeded demo user of that role.
-- Demo users belong to the demo workspace containing only invented data.
-- Tokens issued this way live 2 hours; creation is rate-limited (30/hour/IP).
-- **Never enable DEMO_MODE in a workspace that holds real organisation data.** The `/about-ai` page and README state this.
-- The public sample report endpoint is read-only and needs no token.
+## 5. Demo mode & Hackathon Round 2 Auth Decisions
+- **1-Click Demo Personas:** `DEMO_MODE=true` enables `POST /api/v1/auth/demo-login` returning authenticated sessions for:
+  - `Asha Patel` (`creator`)
+  - `Ben Cooper` (`creator`)
+  - `Priya Nair` (`reviewer`)
+  - `Marcus Vance` (`manager`)
+- **Google OAuth (Optional):** Available via `/api/v1/auth/google/start` and `/api/v1/auth/google/callback` with PKCE code verification. Google sign-in is strictly optional; when unconfigured, the UI disables the button with a clear explanatory notice and never blocks access. New Google sign-ins default to the `creator` role.
+- **Scope Decision:** User self-registration and sign-up wizards are intentionally out of scope for Round 2 so judges face zero account creation or verification barriers.
+- **Redirect Security:** The `?next=` query parameter is validated by `sanitizeNextUrl` rejecting protocol-relative (`//evil.com`), backslash (`/\evil`), or absolute URI vectors.
+- **Session Tokens:** Signed HMAC-SHA256 stateless session cookies (`inkloom_session`), expiring in 2 hours for demo logins and 8 hours for standard logins. Strict multi-tenant workspace isolation is enforced on every API route.
 
 ## 6. Authorization implementation
 ```python
