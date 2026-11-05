@@ -32,6 +32,10 @@ const config: Config = {
           DEFAULT: 'var(--destructive)',
           foreground: '#FFFFFF',
         },
+        muted: {
+          DEFAULT: 'var(--muted)',
+          foreground: 'var(--muted-foreground)',
+        },
         border: 'var(--border)',
         'muted-foreground': 'var(--muted-foreground)',
         'color-primary': 'var(--color-primary)',
@@ -53,3 +57,4 @@ const config: Config = {
 };
 
 export default config;
+

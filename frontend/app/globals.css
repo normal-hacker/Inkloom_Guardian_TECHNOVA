@@ -12,6 +12,7 @@
   --primary-foreground: #FFFFFF;
   --secondary: #E0E7FF;
   --accent: #C7D2FE;
+  --muted: #F3F4F6;
   --muted-foreground: #4B5563;
   --border: #E5E7EB;
   --destructive: #B91C1C;
@@ -33,7 +34,7 @@
   --bg: #f5f7fb;
   --panel: #ffffff;
   --ink: #1c2430;
-  --muted: #5d7285;
+  --muted-legacy: #5d7285;
   --accent-soft: #ebf2ff;
   --danger: #b42318;
   --danger-soft: #fef3f2;
@@ -57,6 +58,14 @@
 }
 
 * { box-sizing: border-box; }
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
 html, body {
   margin: 0;
