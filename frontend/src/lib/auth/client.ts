@@ -88,3 +88,4 @@ export async function logoutUser() {
   const res = await fetch('/api/v1/auth/logout', { method: 'POST' });
   return res.ok;
 }
+

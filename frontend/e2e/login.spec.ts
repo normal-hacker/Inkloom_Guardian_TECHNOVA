@@ -57,3 +57,4 @@ test.describe('Login Screen E2E Suite (§10 Acceptance)', () => {
     expect(page.url()).toContain('/guidelines');
   });
 });
+

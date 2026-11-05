@@ -13,3 +13,4 @@ export function getAuthProviders(): AuthProvidersInfo {
     google: serverEnv.isGoogleAuthEnabled,
   };
 }
+
