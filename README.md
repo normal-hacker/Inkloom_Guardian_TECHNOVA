@@ -3,47 +3,60 @@
 **Check before you publish.** Inkloom Guardian reviews content against an organisation's approved guidelines, terminology and facts, explains each issue with the exact rule and source, suggests fixes that keep the author's intent, and leaves the final decision to a human reviewer.
 
 > Hackathon: Inkloom AI — Brand Governance · **Round 2: The Build**
-> Status: planning docs complete; implementation in progress (see `docs/Plan.md`).
+> Status: **Phase A Prototype Complete** — A self-contained, zero-dependency, single-file application (`index.html`) running entirely client-side with full offline support, hash routing (`#/`), deterministic rule checking, role-based access control, and localStorage persistence. See `docs/Plan.md` deviation ledger for architecture details.
 
-## Links (fill in before submitting; test each in an incognito window)
+## Links (test each in an incognito window with no sign-in)
 | What | URL |
 |---|---|
-| Live app (no sign-in; use "Try the demo") | _TBD_ |
-| Public sample review report | _TBD_ |
-| API docs (Swagger) | _TBD_ |
-| Source repository | _TBD_ |
-| Demo video / walkthrough | _TBD_ |
+| Single-file App | Open `index.html` directly in any modern browser |
+| Public sample review report | `index.html#/demo-report` |
+| About AI & Disclosures | `index.html#/about-ai` |
+| Build Notes & Deviations | `index.html#/build-notes` |
+| Automated Self-Tests | `index.html#/selftest` (15/15 tests passing) |
 
 ## What it does
-1. A manager loads the brand pack: guideline sources, versioned rules, glossary, approved facts.
-2. A creator submits content (paste text or upload `.txt .md .docx .pdf`; images get an alt-text check).
-3. The system runs deterministic rule checks plus an AI check constrained to the supplied rules and facts. A validator discards any finding that lacks a valid citation or an exact quote.
-4. The creator sees highlighted text, plain-language explanations, the rule and source behind each flag, and suggested corrections (never auto-applied).
-5. A reviewer resolves findings (dismiss/override needs a reason) and approves, requests changes, or rejects. Approval is impossible while a blocker is open.
-6. Every action is written to an audit log tied to the exact content hash and rule-set version. Managers see insights on repeated mistakes and rules that reviewers keep overriding.
+1. A manager loads the brand pack: guideline sources (S1–S4), versioned rules (v1–v3), glossary, approved facts (F-001–F-006).
+2. A creator submits content (paste text or upload `.txt`, `.md`, or image files with alt text).
+3. The system runs a deterministic 13-rule engine in local JavaScript. Every finding includes exact start/end character offsets, quote slice verification, guideline citation, and suggestions.
+4. The creator sees highlighted text with severity-coded underlines, plain-language explanations, and clickable "Open source" popovers.
+5. A human reviewer resolves findings (dismiss/override requires a reason ≥ 10 chars) and approves, requests changes, or rejects. Approval is strictly blocked while any blocker is open, if the check is stale, or if the author attempts self-approval.
+6. Every action writes to an immutable append-only audit log tied to the exact SHA-256 content hash and rule-set version. Managers inspect live compliance insights and export audit logs as CSV.
 
 ## Features completed
-_Keep this list honest and current. Move items here only when they work on the deployed link._
-- [ ] F1 Auth, roles, demo access
-- [ ] F2 Brand knowledge base (sources, rules, glossary, facts, rule-set versions)
-- [ ] F3 Content intake (paste, txt/md/docx/pdf, image alt text)
-- [ ] F4 Deterministic rule engine
-- [ ] F5 AI analyser + grounding validator
-- [ ] F6 Findings with explanations, sources, suggestions
-- [ ] F7 Review workspace UI
-- [ ] F8 Human decision workflow (no auto-approval)
-- [ ] F9 Comments and revision history with diff
-- [ ] F10 Audit trail
-- [ ] F11 Insights dashboard
-- [ ] F12 AI disclosure and redaction
-- [ ] F13 Public sample report and deployment
+_Phase A single-file prototype implementation status:_
+- [x] F1 Auth, roles, demo access (Creator Asha, Creator Ben, Reviewer Priya, Manager Marcus with permission matrix)
+- [x] F2 Brand knowledge base (Sources S1–S4, 13 versioned rules, glossary terms, approved facts F-001–F-006, rule sets v1–v3)
+- [x] F3 Content intake (Paste, `.txt`, `.md` file reader, image preview & required alt-text check; clear notice for DOCX/PDF)
+- [x] F4 Deterministic rule engine (13 rules: tone, banned terms, capitalization, comparative claims, superlatives, guarantees, numerical fact-checking, confidentiality, alt text, ALL-CAPS)
+- [ ] F5 AI analyser + grounding validator (Deferred to Phase B full-stack; deterministic engine used for 100% transparency)
+- [x] F6 Findings with explanations, sources, suggestions (Exact slice verification, popover citation, diff suggestion)
+- [x] F7 Review workspace UI (Desktop 2-column, mobile tabs, interactive highlights, filters by severity/category/status)
+- [x] F8 Human decision workflow (No auto-approval; blocker gate, stale check gate, self-approval prevention)
+- [x] F9 Comments and revision history with diff (Append-only versions, cryptographic SHA-256 digests, threaded comments)
+- [x] F10 Audit trail (Append-only audit log with content hash and rule-set version, CSV export for Manager)
+- [x] F11 Insights dashboard (Top violated rules, weekly category trends, most bypassed rules >50%, median approval time)
+- [x] F12 AI disclosure and redaction (Transparent disclosure: Built with AI assistance: Antigravity (Google))
+- [x] F13 Public sample report and deployment (Single-file `index.html` runs offline and without sign-in; public sample report at `#/demo-report`)
 
 ## Round 3 — three improvements we commit to
 1. **Stale-content re-audit** when rules or facts change.
 2. **Guideline-gap detector** that proposes clarifications for rules reviewers keep overriding.
 3. **Visual compliance check** (logo, palette, contrast) for images using image analysis and a vision model.
 
-## Tech stack
+## Phase A single-file note
+**Phase A** is a fully working self-contained prototype: `index.html` (6 645 lines, ~256 KB). Open it by double-clicking or deploying to any static host (Netlify Drop, GitHub Pages, Vercel). No server, no sign-in, no network required. All 11 screens, 13 rules, role enforcement, localStorage persistence, SHA-256 hashing, and 15 automated self-tests run entirely in the browser.
+
+**Phase B** (not yet started) will add the full Next.js + FastAPI + PostgreSQL stack documented in `docs/Architecture.md`.
+
+## Tech stack (Phase A)
+- Single HTML file — vanilla JS, inline CSS, zero external dependencies
+- Hash router (`#/route`) for shareable URLs and browser Back/Forward support
+- Web Crypto API (`crypto.subtle.digest`) + pure-JS SHA-256 fallback for content hashing
+- `localStorage` key `inkloom_guardian_v1` (schema v1) with in-memory fallback if storage is blocked
+- 13-rule deterministic brand engine: `runRules(text, ctx) → findings[]`
+- Labelled everywhere as **"Rule engine (local, deterministic)"** — no LLM claims
+
+## Tech stack (Phase B — planned)
 Next.js 15 · TypeScript · Tailwind · shadcn/ui — FastAPI · Pydantic · SQLAlchemy · Alembic — PostgreSQL 16 — JWT auth — pluggable LLM provider (Anthropic default, mock for tests). Details: [`docs/Architecture.md`](docs/Architecture.md).
 
 ## Documentation map
@@ -66,27 +79,18 @@ Next.js 15 · TypeScript · Tailwind · shadcn/ui — FastAPI · Pydantic · SQL
 
 ## Quick start
 ```bash
-cp .env.example .env
-
-docker compose up -d db
-cd backend
-python -m venv .venv
-. .venv/bin/activate    # Windows: .venv\Scripts\activate
-pip install -e ".[dev]"
-uvicorn app.main:app --reload --port 8000
+# Phase A: just open the file — no install needed
+start index.html          # Windows
+open index.html           # macOS
+xdg-open index.html       # Linux
 ```
 
-Then in a second terminal:
-```bash
-cd frontend
-cp .env.example .env.local
-npm install
-npm run dev
-```
+**To deploy for judges (3 steps):**
+1. Go to [Netlify Drop](https://app.netlify.com/drop) and drag-and-drop `index.html`.
+2. Copy the generated `.netlify.app` URL.
+3. Open it in an incognito window — the landing page should appear with no sign-in required.
 
-Open `http://localhost:3000` and try the demo content. This repository now includes a minimal working MVP for the brand-governance workflow, including a FastAPI review endpoint and a Next.js UI that displays rule findings.
-
-Full steps: [`docs/Setup.md`](docs/Setup.md).
+**Phase B quick start (backend + frontend):**
 
 ## Team and contributions
 | Member | Role | Contribution (update with real commits/PRs) |

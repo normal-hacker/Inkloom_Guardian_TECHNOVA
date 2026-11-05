@@ -45,7 +45,10 @@ Update this table as reality changes. Judges reward honest, reasoned deviations 
 | 3 | "Different content formats" | Round 2: text, md, docx, pdf, image alt-text; full visual checks in Round 3 | Scope/feasibility | 2026-11-04 |
 | 4 | LLM provider open | Provider-agnostic interface; default configured in env; mock for tests | Avoid lock-in, enable offline demo | 2026-11-04 |
 | 5 | Celery/queues (not in deck) | Persisted review-run state and polling in Next.js; no queue | Boring tech and fewer moving parts | 2026-11-04 |
-| 6 | Next.js frontend + FastAPI backend | Consolidate the product API in Next.js Route Handlers with TypeScript; use PostgreSQL + Drizzle migrations | One language and one deploy target are faster to build and maintain for a three-person team; Drizzle keeps SQL migrations explicit | 2026-11-04 |
+| 6 | Next.js frontend + FastAPI backend | Single-file prototype (`index.html`) in Phase A; full-stack FastAPI/Next.js in Phase B | Hackathon time constraint; allows immediate judge evaluation with no server or sign-in friction | 2026-11-05 |
+| 7 | LLM-powered AI analyser | Deterministic JS rule engine (13 rules, cited findings) in Phase A | Honesty requirement: eliminates hallucinated rulings; engine is 100% transparent and auditable | 2026-11-05 |
+| 8 | Server-side PostgreSQL DB | `localStorage` persistence with memory fallback mirroring Postgres schema | Enables complete offline workflow and instant evaluation without database provisioning | 2026-11-05 |
+| 9 | PDF/DOCX content extraction | `.txt` and `.md` via FileReader, images for alt-text check in Phase A | Browser FileReader limitations; full binary parsing deferred to server-side Phase B | 2026-11-05 |
 _Add rows during the build._
 
 ## 5. Submission checklist (Round 2)
