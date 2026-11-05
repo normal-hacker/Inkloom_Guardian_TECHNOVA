@@ -1,4 +1,5 @@
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { eq } from 'drizzle-orm';
 import * as schema from './schema';
 import { getDb } from './client';
 
@@ -570,6 +571,11 @@ export async function seedDatabase(customDb?: NodePgDatabase<typeof schema>) {
     .onConflictDoNothing();
 
   await db
+    .update(schema.contentItems)
+    .set({ currentVersionId: cv1Id })
+    .where(eq(schema.contentItems.id, contentItemsData[0].id));
+
+  await db
     .insert(schema.reviewRuns)
     .values({
       id: rr1Id,
@@ -617,6 +623,11 @@ export async function seedDatabase(customDb?: NodePgDatabase<typeof schema>) {
       createdAt: new Date('2026-02-02T09:00:00Z'),
     })
     .onConflictDoNothing();
+
+  await db
+    .update(schema.contentItems)
+    .set({ currentVersionId: cv2Id })
+    .where(eq(schema.contentItems.id, contentItemsData[1].id));
 
   await db
     .insert(schema.reviewRuns)
