@@ -24,7 +24,8 @@ export default function HomePage() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1'}/check`, {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '/api/v1';
+      const response = await fetch(`${apiBase}/check`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text }),
