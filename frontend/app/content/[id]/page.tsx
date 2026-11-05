@@ -2,10 +2,13 @@
 
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Navbar } from '@/../components/Navbar';
+import { ExpandableTabs, TabItem } from '@/components/ui/expandable-tabs';
 import {
   ShieldAlert,
   AlertTriangle,
+  TriangleAlert,
   Info,
   CheckCircle2,
   XCircle,
@@ -20,6 +23,8 @@ import {
   Send,
   Loader2,
   BookOpen,
+  ScrollText,
+  FileText,
 } from 'lucide-react';
 
 interface Finding {
@@ -86,7 +91,8 @@ export default function ReviewWorkspacePage({
 
   const [loading, setLoading] = useState(true);
   const [checking, setChecking] = useState(false);
-  const [activeTab, setActiveTab] = useState<'comments' | 'history' | 'audit'>('comments');
+  const [activeBottomTabIndex, setActiveBottomTabIndex] = useState<number>(0);
+  const [mobileTabIndex, setMobileTabIndex] = useState<number>(0);
   const [showDiff, setShowDiff] = useState(false);
   const [diffItems, setDiffItems] = useState<any[]>([]);
 
@@ -138,10 +144,28 @@ export default function ReviewWorkspacePage({
       }
 
       // 5. Current User
+      let userRole: string | undefined;
       const uRes = await fetch('/api/v1/auth/me');
       if (uRes.ok) {
         const uData = await uRes.json();
         setCurrentUser(uData.user);
+        userRole = uData.user?.role;
+      }
+
+      // 6. Audit Logs (Reviewer / Manager only)
+      if (userRole === 'reviewer' || userRole === 'manager') {
+        const aRes = await fetch(`/api/v1/audit?limit=50`);
+        if (aRes.ok) {
+          const aData = await aRes.json();
+          const list = Array.isArray(aData.items) ? aData.items : [];
+          const filtered = list.filter(
+            (item: any) =>
+              item.entityId === id ||
+              item.detail?.contentId === id ||
+              item.action?.includes('content')
+          );
+          setAuditLogs(filtered.length > 0 ? filtered : list.slice(0, 5));
+        }
       }
     } catch {
     } finally {
@@ -379,8 +403,61 @@ export default function ReviewWorkspacePage({
   };
 
   const openBlockers = findings.filter((f) => f.severity === 'blocker' && f.status === 'open');
+  const openFindings = findings.filter((f) => f.status === 'open');
   const isReviewerOrManager = currentUser && ['reviewer', 'manager'].includes(currentUser.role);
   const isAuthor = currentUser && content && content.ownerId === currentUser.id;
+  const shouldReduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (openBlockers.length > 0) {
+      setMobileTabIndex(1);
+    }
+  }, [openBlockers.length]);
+
+  const bottomTabs: TabItem[] = [
+    {
+      id: 'comments',
+      title: 'Comments',
+      icon: MessageSquare,
+      badge: comments.length,
+      badgeLabel: `Comments, ${comments.length} total`,
+    },
+    {
+      id: 'history',
+      title: 'History',
+      icon: History,
+      badge: versions.length,
+      badgeLabel: `History, ${versions.length} versions`,
+    },
+    ...(isReviewerOrManager
+      ? [
+          {
+            id: 'audit',
+            title: 'Audit',
+            icon: ScrollText,
+            badge: auditLogs.length,
+            badgeLabel: `Audit log, ${auditLogs.length} events`,
+          },
+        ]
+      : []),
+  ];
+
+  const mobileTabs: TabItem[] = [
+    {
+      id: 'content',
+      title: 'Content',
+      icon: FileText,
+    },
+    {
+      id: 'findings',
+      title: 'Findings',
+      icon: TriangleAlert,
+      badge: openFindings.length,
+      badgeLabel: `Findings, ${openFindings.length} open`,
+    },
+  ];
+
+  const activeBottomTab = bottomTabs[activeBottomTabIndex] || bottomTabs[0];
 
   if (loading) {
     return (
@@ -493,10 +570,22 @@ export default function ReviewWorkspacePage({
         </div>
       )}
 
+      {/* Mobile Content / Findings Switcher (< 1024px) */}
+      <div className="lg:hidden flex justify-center px-4 pt-4">
+        <ExpandableTabs
+          tabs={mobileTabs}
+          variant="tabs"
+          value={mobileTabIndex}
+          onChange={(idx) => setMobileTabIndex(idx ?? 0)}
+          ariaLabel="Switch content or findings view"
+          idPrefix="mobile-workspace"
+        />
+      </div>
+
       {/* Main Split Review Workspace */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Copy Viewer with Highlights (7 cols) */}
-        <section className="lg:col-span-7 flex flex-col gap-4">
+        <section className={`lg:col-span-7 flex flex-col gap-4 ${mobileTabIndex === 0 ? 'flex' : 'hidden lg:flex'}`}>
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex-1 flex flex-col">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <div>
@@ -596,7 +685,7 @@ export default function ReviewWorkspacePage({
         </section>
 
         {/* Right Column: Findings Panel & Tabs (5 cols) */}
-        <section className="lg:col-span-5 flex flex-col gap-4">
+        <section className={`lg:col-span-5 flex flex-col gap-4 ${mobileTabIndex === 1 ? 'flex' : 'hidden lg:flex'}`}>
           {/* Findings List Container */}
           <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
@@ -754,100 +843,140 @@ export default function ReviewWorkspacePage({
 
           {/* Bottom Tabs: Comments, History, Audit */}
           <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-            <div className="flex items-center gap-4 border-b border-slate-100 pb-2 mb-4 text-xs font-bold">
-              <button
-                onClick={() => setActiveTab('comments')}
-                className={`flex items-center gap-1.5 pb-2 border-b-2 transition-colors ${
-                  activeTab === 'comments'
-                    ? 'border-indigo-600 text-indigo-600'
-                    : 'border-transparent text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                <MessageSquare className="w-3.5 h-3.5" />
-                <span>Comments ({comments.length})</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('history')}
-                className={`flex items-center gap-1.5 pb-2 border-b-2 transition-colors ${
-                  activeTab === 'history'
-                    ? 'border-indigo-600 text-indigo-600'
-                    : 'border-transparent text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                <History className="w-3.5 h-3.5" />
-                <span>Version History ({versions.length})</span>
-              </button>
+            <div className="mb-4">
+              <ExpandableTabs
+                tabs={bottomTabs}
+                variant="tabs"
+                value={activeBottomTabIndex}
+                onChange={(idx) => setActiveBottomTabIndex(idx ?? 0)}
+                ariaLabel="Workspace discussion and history tabs"
+                idPrefix="workspace-bottom"
+              />
             </div>
 
-            {/* Comments Tab Content */}
-            {activeTab === 'comments' && (
-              <div className="space-y-4">
-                <div className="space-y-3 max-h-52 overflow-y-auto pr-1">
-                  {comments.length === 0 ? (
-                    <p className="text-xs text-slate-400 py-3 text-center">No comments yet.</p>
+            <AnimatePresence mode="wait">
+              {/* Comments Tab Content */}
+              {activeBottomTab.id === 'comments' && (
+                <motion.div
+                  key="comments"
+                  role="tabpanel"
+                  id="workspace-bottom-panel-comments"
+                  aria-labelledby="workspace-bottom-tab-comments"
+                  initial={shouldReduceMotion ? false : { opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={shouldReduceMotion ? undefined : { opacity: 0, y: -6 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-4"
+                >
+                  <div className="space-y-3 max-h-52 overflow-y-auto pr-1">
+                    {comments.length === 0 ? (
+                      <p className="text-xs text-slate-400 py-3 text-center">No comments yet.</p>
+                    ) : (
+                      comments.map((comm) => (
+                        <div key={comm.id} className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-bold text-slate-800">{comm.authorName}</span>
+                            <span className="text-[10px] text-slate-400">
+                              {new Date(comm.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          <p className="text-slate-600 leading-relaxed">{comm.body}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Add Comment Form */}
+                  <form onSubmit={handleAddComment} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      placeholder="Leave a review comment or note…"
+                      className="flex-1 px-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!commentText.trim()}
+                      className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all disabled:opacity-50"
+                    >
+                      Post
+                    </button>
+                  </form>
+                </motion.div>
+              )}
+
+              {/* History Tab Content */}
+              {activeBottomTab.id === 'history' && (
+                <motion.div
+                  key="history"
+                  role="tabpanel"
+                  id="workspace-bottom-panel-history"
+                  aria-labelledby="workspace-bottom-tab-history"
+                  initial={shouldReduceMotion ? false : { opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={shouldReduceMotion ? undefined : { opacity: 0, y: -6 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-2 max-h-60 overflow-y-auto"
+                >
+                  {versions.map((v) => (
+                    <div
+                      key={v.id}
+                      className={`p-3 rounded-xl border text-xs flex items-center justify-between ${
+                        v.versionNo === selectedVersionNo
+                          ? 'border-indigo-400 bg-indigo-50/30 font-semibold'
+                          : 'border-slate-100 bg-slate-50'
+                      }`}
+                    >
+                      <div>
+                        <p className="font-bold text-slate-900">Version {v.versionNo}</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">{v.changeNote || 'Draft revision'}</p>
+                        <p className="text-[10px] font-mono text-slate-400">{v.contentHash.slice(0, 16)}…</p>
+                      </div>
+                      <button
+                        onClick={() => setSelectedVersionNo(v.versionNo)}
+                        className="px-2.5 py-1 rounded bg-white border border-slate-200 text-[11px] font-bold text-indigo-600 hover:bg-slate-50"
+                      >
+                        View
+                      </button>
+                    </div>
+                  ))}
+                </motion.div>
+              )}
+
+              {/* Audit Tab Content (Reviewer / Manager only) */}
+              {activeBottomTab.id === 'audit' && isReviewerOrManager && (
+                <motion.div
+                  key="audit"
+                  role="tabpanel"
+                  id="workspace-bottom-panel-audit"
+                  aria-labelledby="workspace-bottom-tab-audit"
+                  initial={shouldReduceMotion ? false : { opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={shouldReduceMotion ? undefined : { opacity: 0, y: -6 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-2 max-h-60 overflow-y-auto"
+                >
+                  {auditLogs.length === 0 ? (
+                    <p className="text-xs text-slate-400 py-3 text-center">No audit entries for this item yet.</p>
                   ) : (
-                    comments.map((comm) => (
-                      <div key={comm.id} className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+                    auditLogs.map((log) => (
+                      <div key={log.id} className="p-3 rounded-xl border border-slate-100 bg-slate-50 text-xs">
                         <div className="flex items-center justify-between mb-1">
-                          <span className="font-bold text-slate-800">{comm.authorName}</span>
+                          <span className="font-bold font-mono text-indigo-700">{log.action}</span>
                           <span className="text-[10px] text-slate-400">
-                            {new Date(comm.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
-                        <p className="text-slate-600 leading-relaxed">{comm.body}</p>
+                        <p className="text-[11px] text-slate-600">
+                          Actor: <strong>{log.actorEmail || 'System'}</strong> ({log.actorRole || 'system'})
+                        </p>
                       </div>
                     ))
                   )}
-                </div>
-
-                {/* Add Comment Form */}
-                <form onSubmit={handleAddComment} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    placeholder="Leave a review comment or note…"
-                    className="flex-1 px-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!commentText.trim()}
-                    className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all disabled:opacity-50"
-                  >
-                    Post
-                  </button>
-                </form>
-              </div>
-            )}
-
-            {/* History Tab Content */}
-            {activeTab === 'history' && (
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {versions.map((v) => (
-                  <div
-                    key={v.id}
-                    className={`p-3 rounded-xl border text-xs flex items-center justify-between ${
-                      v.versionNo === selectedVersionNo
-                        ? 'border-indigo-400 bg-indigo-50/30 font-semibold'
-                        : 'border-slate-100 bg-slate-50'
-                    }`}
-                  >
-                    <div>
-                      <p className="font-bold text-slate-900">Version {v.versionNo}</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">{v.changeNote || 'Draft revision'}</p>
-                      <p className="text-[10px] font-mono text-slate-400">{v.contentHash.slice(0, 16)}…</p>
-                    </div>
-                    <button
-                      onClick={() => setSelectedVersionNo(v.versionNo)}
-                      className="px-2.5 py-1 rounded bg-white border border-slate-200 text-[11px] font-bold text-indigo-600 hover:bg-slate-50"
-                    >
-                      View
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </section>
       </main>
