@@ -1,0 +1,10 @@
+PASTE THE TEXT BELOW THE LINE INTO YOUR VS CODE AGENT.
+Do not paste the next phase until the agent's report shows every check PASSED with real command output.
+
+----------------------------------------
+
+# S5 — Wire the screens (functional first, plain styling)
+Build these routes using the existing look, plain semantic components, no redesign:
+`/` landing (public, "Try the demo" role buttons, links to sample report/About AI/Build Notes) · `/dashboard` · `/content/new` (Paste | Upload tabs, content type, alt text for images) · `/content/[id]` review workspace (highlighted text with underline style per severity, finding cards with severity/category/Rule-or-AI chip/rule key/why/source popover/suggestion, Apply / Dismiss… / Override…, filters, version selector + diff toggle, Check again, Submit, decision bar with disabled-reason text, tabs Comments | History | Audit; check progress via polling with step labels) · `/guidelines` (Sources | Rules | Glossary | Facts | Rule sets) · `/insights` · `/audit` · `/about-ai` · `/demo-report` (public read-only, seeded) · `/build-notes` (our Round 2 submission content: completed features generated from a features array, technology details, changes from the original plan, the three Round 3 improvements, team roles, honest limitations) · `/selftest` (runs engine tests in-browser).
+Rules: highlights must use UTF-16 offsets correctly (test with emoji and accented text); render user text only as text (never `dangerouslySetInnerHTML`); loading, empty and error states on every screen; everything keyboard-operable, labelled, `aria-live` for run status; the three Round 3 improvements (Stale-content re-audit, Guideline-gap detector, Visual compliance check) appear ONLY as text on Build Notes — do not build them.
+Acceptance: I can complete the whole flow in a browser: demo-login Creator → paste claim text → check → see cited blockers → apply a suggestion (v2) → check again → submit → switch to Reviewer → open → try to approve with an open blocker (blocked with visible reason) → resolve → approve → see audit rows → Manager sees insights. Show a screenshot or Playwright trace of it.

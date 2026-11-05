@@ -476,3 +476,4 @@ export const findingsRelations = relations(findings, ({ one, many }) => ({
   }),
   decisions: many(findingDecisions),
 }));
+

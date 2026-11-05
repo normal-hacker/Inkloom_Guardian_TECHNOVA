@@ -228,3 +228,4 @@ with open('_test_harness.js', 'w', encoding='utf-8') as f:
 
 print("Test harness written to _test_harness.js")
 print(f"Total JS test file size: {len(test_js.replace('// INJECT_SCRIPT_HERE', script))} chars")
+

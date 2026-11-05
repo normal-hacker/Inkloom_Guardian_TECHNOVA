@@ -115,3 +115,4 @@ export function getSessionFromRequest(req: Request): SessionData | null {
 
   return null;
 }
+

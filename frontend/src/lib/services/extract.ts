@@ -1,0 +1,145 @@
+import mammoth from 'mammoth';
+
+export class ExtractionError extends Error {
+  constructor(
+    public status: number,
+    public code: string,
+    message: string
+  ) {
+    super(message);
+    this.name = 'ExtractionError';
+  }
+}
+
+/**
+ * Normalises CRLF (\r\n) and legacy CR (\r) newlines to standard LF (\n)
+ */
+export function normaliseNewlines(text: string): string {
+  return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+}
+
+/**
+ * Validates magic bytes for binary formats to prevent file spoofing
+ */
+export function validateMagicBytes(buffer: Buffer, extension: string): void {
+  if (extension === 'pdf') {
+    const isPdf = buffer.length >= 4 && buffer.slice(0, 4).toString('ascii') === '%PDF';
+    if (!isPdf) {
+      throw new ExtractionError(415, 'unsupported_media_type', 'Invalid PDF file header.');
+    }
+  } else if (extension === 'docx') {
+    const isZip = buffer.length >= 4 && buffer[0] === 0x50 && buffer[1] === 0x4b && buffer[2] === 0x03 && buffer[3] === 0x04;
+    if (!isZip) {
+      throw new ExtractionError(415, 'unsupported_media_type', 'Invalid DOCX file header.');
+    }
+  } else if (['png', 'jpg', 'jpeg', 'webp'].includes(extension)) {
+    const isPng = buffer.length >= 4 && buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47;
+    const isJpg = buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+    const isWebp = buffer.length >= 12 && buffer.slice(0, 4).toString('ascii') === 'RIFF' && buffer.slice(8, 12).toString('ascii') === 'WEBP';
+
+    if (!isPng && !isJpg && !isWebp) {
+      throw new ExtractionError(415, 'unsupported_media_type', 'Invalid image file header.');
+    }
+  }
+}
+
+export async function extractTextFromFile(
+  filename: string,
+  buffer: Buffer,
+  maxMb: number = 10
+): Promise<{ textBody: string; sourceKind: string }> {
+  // 1. File size check
+  if (buffer.length > maxMb * 1024 * 1024) {
+    throw new ExtractionError(
+      413,
+      'payload_too_large',
+      `File exceeds maximum allowed upload size of ${maxMb} MB.`
+    );
+  }
+
+  const parts = filename.toLowerCase().split('.');
+  const ext = parts.length > 1 ? parts.pop()! : '';
+
+  // 2. Validate magic bytes
+  validateMagicBytes(buffer, ext);
+
+  // 3. Extract based on format
+  if (ext === 'txt' || ext === 'md') {
+    const raw = buffer.toString('utf8');
+    return {
+      textBody: normaliseNewlines(raw),
+      sourceKind: ext,
+    };
+  }
+
+  if (ext === 'docx') {
+    try {
+      const result = await mammoth.extractRawText({ buffer });
+      return {
+        textBody: normaliseNewlines(result.value),
+        sourceKind: 'docx',
+      };
+    } catch {
+      throw new ExtractionError(422, 'docx_parse_error', 'Could not read DOCX file contents.');
+    }
+  }
+
+  if (ext === 'pdf') {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const pdfModule = require('pdf-parse');
+      const PDFParser = pdfModule.PDFParse || pdfModule.default || pdfModule;
+
+      let extractedText = '';
+      if (typeof PDFParser === 'function') {
+        try {
+          const direct = await PDFParser(buffer);
+          extractedText = direct?.text || '';
+        } catch {
+          const instance = new PDFParser({ data: buffer });
+          const res = await instance.getText();
+          if (typeof res === 'string') {
+            extractedText = res;
+          } else if (res && typeof res.text === 'string') {
+            extractedText = res.text;
+          } else if (res && Array.isArray(res.pages)) {
+            extractedText = res.pages.map((p: { text?: string }) => p.text || '').join('\n');
+          }
+        }
+      }
+
+      const cleaned = (extractedText || '').trim();
+      if (cleaned.length < 10) {
+        throw new ExtractionError(
+          422,
+          'scanned_pdf_not_supported',
+          'Scanned image-only PDF without embedded text layer is not supported. Please upload a text-based PDF or paste text.'
+        );
+      }
+      return {
+        textBody: normaliseNewlines(extractedText),
+        sourceKind: 'pdf',
+      };
+    } catch (err) {
+      if (err instanceof ExtractionError) throw err;
+      throw new ExtractionError(
+        422,
+        'scanned_pdf_not_supported',
+        'Scanned image-only PDF without embedded text layer is not supported. Please upload a text-based PDF or paste text.'
+      );
+    }
+  }
+
+  if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) {
+    return {
+      textBody: '',
+      sourceKind: 'image',
+    };
+  }
+
+  throw new ExtractionError(
+    415,
+    'unsupported_media_type',
+    `Unsupported file type ".${ext}". Allowed formats are: .txt, .md, .docx, .pdf, and images (.png, .jpg, .webp).`
+  );
+}

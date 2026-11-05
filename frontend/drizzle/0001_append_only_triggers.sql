@@ -24,3 +24,4 @@ FOR EACH ROW EXECUTE FUNCTION prevent_update_or_delete();
 CREATE TRIGGER no_update_delete_audit_log
 BEFORE UPDATE OR DELETE ON "audit_log"
 FOR EACH ROW EXECUTE FUNCTION prevent_update_or_delete();
+

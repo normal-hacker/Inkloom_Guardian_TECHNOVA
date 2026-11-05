@@ -26,3 +26,17 @@ test-results/
 
 # OS / tooling
 .DS_Store
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+v/
+
+# Build files
+dist/
+build/
