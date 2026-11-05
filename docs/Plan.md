@@ -49,6 +49,7 @@ Update this table as reality changes. Judges reward honest, reasoned deviations 
 | 7 | LLM-powered AI analyser | Deterministic JS rule engine (13 rules, cited findings) in Phase A | Honesty requirement: eliminates hallucinated rulings; engine is 100% transparent and auditable | 2026-11-05 |
 | 8 | Server-side PostgreSQL DB | `localStorage` persistence with memory fallback mirroring Postgres schema | Enables complete offline workflow and instant evaluation without database provisioning | 2026-11-05 |
 | 9 | PDF/DOCX content extraction | `.txt` and `.md` via FileReader, images for alt-text check in Phase A | Browser FileReader limitations; full binary parsing deferred to server-side Phase B | 2026-11-05 |
+| 10 | FastAPI backend (Architecture.md) | Single TypeScript full-stack Next.js app (Route Handlers + Drizzle ORM) | Our existing prototype is already JS; one language, one deploy, faster for a 3-person team | 2026-11-05 |
 _Add rows during the build._
 
 ## 5. Submission checklist (Round 2)
