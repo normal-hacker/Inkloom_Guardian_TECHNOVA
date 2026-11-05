@@ -6,7 +6,6 @@ import {
   redact,
   restoreSpan,
   validateAiFindings,
-  DEFAULT_FACTS,
 } from '../src/lib/engine';
 
 describe('Stage S2 — Pure TypeScript Rule Engine', () => {

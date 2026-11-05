@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import confetti from 'canvas-confetti';
 import { AuthComponent, DemoUser, Providers, Status } from '@/../components/ui/sign-up';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextUrl = searchParams.get('next') || '/dashboard';
@@ -60,28 +60,20 @@ export default function LoginPage() {
         return;
       }
 
-      setStatus({ state: 'success', message: `Welcome, ${user.name}!` });
+      // Trigger celebratory confetti
+      confetti({
+        particleCount: 50,
+        spread: 60,
+        origin: { y: 0.7 },
+      });
 
-      // Subtle confetti if reduced motion is not preferred
-      if (typeof window !== 'undefined' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        try {
-          confetti({
-            particleCount: 40,
-            spread: 60,
-            origin: { y: 0.7 },
-          });
-        } catch {
-          // ignore
-        }
-      }
+      setStatus({ state: 'success', message: `Welcome back, ${user.name}!` });
 
       setTimeout(() => {
-        // Only allow relative URLs to prevent open redirects
-        const safeNext = nextUrl.startsWith('/') && !nextUrl.startsWith('//') ? nextUrl : '/dashboard';
-        router.push(safeNext);
-      }, 600);
+        router.push(nextUrl);
+      }, 500);
     } catch {
-      setStatus({ state: 'error', message: 'Network error. Please check your connection.' });
+      setStatus({ state: 'error', message: 'Unable to reach the server. Please try again.' });
     }
   };
 
@@ -123,5 +115,19 @@ export default function LoginPage() {
       onPasswordLogin={handlePasswordLogin}
       onDismissError={() => setStatus({ state: 'idle' })}
     />
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-900 flex items-center justify-center text-slate-400">
+          Loading sign in...
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }

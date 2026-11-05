@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import crypto from 'node:crypto';
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
 import * as schema from '@/lib/db/schema';
 import { requireAuth, assertContentAccess } from '@/lib/auth/guards';

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Navbar } from '@/../components/Navbar';
-import { BarChart3, AlertTriangle, ShieldCheck, Clock, CheckCircle2, Table, Eye } from 'lucide-react';
+import { Table } from 'lucide-react';
 
 export default function InsightsPage() {
   const [data, setData] = useState<any>(null);

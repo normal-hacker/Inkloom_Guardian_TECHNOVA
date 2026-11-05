@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import { eq, desc } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
 import * as schema from '@/lib/db/schema';
-import { requireAuth, assertContentAccess } from '@/lib/auth/guards';
+import { requireAuth } from '@/lib/auth/guards';
 import { apiError } from '@/lib/api/errors';
 import { createContent } from '@/lib/services/content';
 

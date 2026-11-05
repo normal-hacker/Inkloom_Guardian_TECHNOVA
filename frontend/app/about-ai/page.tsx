@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ShieldCheck, ArrowLeft, Lock, Cpu, CheckCircle2, AlertTriangle, Layers } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, Lock, Cpu, CheckCircle2, Layers } from 'lucide-react';
 
 export default function AboutAiPage() {
   return (

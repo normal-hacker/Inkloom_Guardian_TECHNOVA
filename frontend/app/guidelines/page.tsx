@@ -9,7 +9,7 @@ export default function GuidelinesPage() {
   const [activeData, setActiveData] = useState<any>(null);
   const [draftData, setDraftData] = useState<any>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
 
   // YAML import state
   const [yamlText, setYamlText] = useState(`rules:

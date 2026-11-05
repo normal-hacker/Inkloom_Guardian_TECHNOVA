@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ShieldCheck, ArrowLeft, Play, CheckCircle2, XCircle, Clock, Cpu } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, Play, CheckCircle2, XCircle } from 'lucide-react';
 import { runRules } from '@/lib/engine/rules';
 import { sha256 } from '@/lib/engine/sha256';
 import { diffWords } from '@/lib/engine/diff';

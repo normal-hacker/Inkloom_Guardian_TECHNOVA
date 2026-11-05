@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ShieldCheck, ArrowLeft, CheckCircle2, AlertTriangle, Code, Layers, Sparkles } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, CheckCircle2, Layers, Sparkles } from 'lucide-react';
 
 export default function BuildNotesPage() {
   return (

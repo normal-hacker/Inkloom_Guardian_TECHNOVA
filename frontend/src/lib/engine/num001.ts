@@ -134,25 +134,46 @@ export function checkNumberClaims(
     // Find candidate facts with matching unit
     const unitFacts = approvedFacts.filter((f) => f.unit === claim.unit);
 
-    // Find matching fact by keywords in context window
-    let matchedFact: ApprovedFactItem | null = null;
-    let maxKeywordMatches = 0;
+    interface ScoredFact {
+      fact: ApprovedFactItem;
+      matches: number;
+      isSupported: boolean;
+      minDistance: number;
+    }
+
+    const scored: ScoredFact[] = [];
 
     for (const fact of unitFacts) {
       let matches = 0;
+      let minDistance = 9999;
       for (const kw of fact.keywords) {
-        const kwRegex = new RegExp(`\\b${kw.toLowerCase()}\\b`, 'i');
-        if (kwRegex.test(windowText)) {
+        const kwRegex = new RegExp(`\\b${kw.toLowerCase()}\\b`, 'gi');
+        let m: RegExpExecArray | null;
+        while ((m = kwRegex.exec(windowText)) !== null) {
           matches++;
+          const absIdx = windowStart + m.index;
+          const dist = Math.abs(absIdx - claim.start);
+          if (dist < minDistance) {
+            minDistance = dist;
+          }
         }
       }
-      if (matches > maxKeywordMatches) {
-        maxKeywordMatches = matches;
-        matchedFact = fact;
+
+      if (matches > 0) {
+        const factVal = fact.values[0];
+        let isSupported = false;
+        if (factVal) {
+          const factMin = factVal.min ?? factVal.value ?? 0;
+          const factMax = factVal.max ?? factVal.value ?? 0;
+          if (claim.min >= factMin && claim.max <= factMax) {
+            isSupported = true;
+          }
+        }
+        scored.push({ fact, matches, isSupported, minDistance });
       }
     }
 
-    if (!matchedFact || maxKeywordMatches === 0) {
+    if (scored.length === 0) {
       // No approved fact in window -> Major finding
       findings.push({
         id: `finding-num-major-${claim.start}`,
@@ -174,19 +195,22 @@ export function checkNumberClaims(
       continue;
     }
 
+    // Sort scored candidates:
+    // 1. Highest match count
+    // 2. Value supported status (prefer supported facts when tied on matches)
+    // 3. Proximity to claim (lower minDistance)
+    scored.sort((a, b) => {
+      if (b.matches !== a.matches) return b.matches - a.matches;
+      if (b.isSupported !== a.isSupported) return b.isSupported ? 1 : -1;
+      return a.minDistance - b.minDistance;
+    });
+
+    const best = scored[0];
+    const matchedFact = best.fact;
+
     // A fact was matched. Check if the claimed value/range is supported.
     const factVal = matchedFact.values[0];
-    let isSupported = false;
-
-    if (factVal) {
-      const factMin = factVal.min ?? factVal.value ?? 0;
-      const factMax = factVal.max ?? factVal.value ?? 0;
-
-      // Supported only if the claimed range is fully inside the fact range
-      if (claim.min >= factMin && claim.max <= factMax) {
-        isSupported = true;
-      }
-    }
+    const isSupported = best.isSupported;
 
     if (!isSupported) {
       const expectedStr = factVal.min !== undefined && factVal.max !== undefined

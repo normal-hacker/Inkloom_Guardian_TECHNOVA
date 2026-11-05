@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { newDb, DataType } from 'pg-mem';
 import { drizzle } from 'drizzle-orm/node-postgres';
-import { eq, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import * as schema from '../src/lib/db/schema';
 import { setCustomPool } from '../src/lib/db/client';
 import { seedDatabase, SEED_WORKSPACE_ID } from '../src/lib/db/seed';

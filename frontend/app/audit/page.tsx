@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Navbar } from '@/../components/Navbar';
-import { Download, ShieldCheck, Filter, Search, Clock, FileText } from 'lucide-react';
+import { Download } from 'lucide-react';
 
 export default function AuditLogPage() {
   const [logs, setLogs] = useState<any[]>([]);

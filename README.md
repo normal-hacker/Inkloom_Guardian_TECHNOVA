@@ -2,115 +2,146 @@
 
 **Check before you publish.** Inkloom Guardian reviews content against an organisation's approved guidelines, terminology and facts, explains each issue with the exact rule and source, suggests fixes that keep the author's intent, and leaves the final decision to a human reviewer.
 
-> Hackathon: Inkloom AI — Brand Governance · **Round 2: The Build**
-> Status: **Phase A Prototype Complete** — A self-contained, zero-dependency, single-file application (`index.html`) running entirely client-side with full offline support, hash routing (`#/`), deterministic rule checking, role-based access control, and localStorage persistence. See `docs/Plan.md` deviation ledger for architecture details.
+> Hackathon: Inkloom AI — Brand Governance · **Round 2: The Build (Completed)**
+> Status: **Production-Grade Next.js 15 Full-Stack Application** — Unified Next.js 15.5.29 + React 19 + TypeScript architecture with Route Handlers (`app/api/v1/...`), Drizzle ORM PostgreSQL persistence with immutable audit triggers, pure deterministic 13-rule engine, role-based auth-lite with 1-click persona switching, and optional privacy-preserving LLM evaluation.
 
-## Links (test each in an incognito window with no sign-in)
-| What | URL |
-|---|---|
-| Single-file App | Open `index.html` directly in any modern browser |
-| Public sample review report | `index.html#/demo-report` |
-| About AI & Disclosures | `index.html#/about-ai` |
-| Build Notes & Deviations | `index.html#/build-notes` |
-| Automated Self-Tests | `index.html#/selftest` (15/15 tests passing) |
+---
 
-## What it does
-1. A manager loads the brand pack: guideline sources (S1–S4), versioned rules (v1–v3), glossary, approved facts (F-001–F-006).
-2. A creator submits content (paste text or upload `.txt`, `.md`, or image files with alt text).
-3. The system runs a deterministic 13-rule engine in local JavaScript. Every finding includes exact start/end character offsets, quote slice verification, guideline citation, and suggestions.
-4. The creator sees highlighted text with severity-coded underlines, plain-language explanations, and clickable "Open source" popovers.
-5. A human reviewer resolves findings (dismiss/override requires a reason ≥ 10 chars) and approves, requests changes, or rejects. Approval is strictly blocked while any blocker is open, if the check is stale, or if the author attempts self-approval.
-6. Every action writes to an immutable append-only audit log tied to the exact SHA-256 content hash and rule-set version. Managers inspect live compliance insights and export audit logs as CSV.
+## Live Navigation & Routes
+Judges can explore the application without setup or sign-in:
 
-## Features completed
-_Phase A single-file prototype implementation status:_
-- [x] F1 Auth, roles, demo access (Creator Asha, Creator Ben, Reviewer Priya, Manager Marcus with permission matrix)
-- [x] F2 Brand knowledge base (Sources S1–S4, 13 versioned rules, glossary terms, approved facts F-001–F-006, rule sets v1–v3)
-- [x] F3 Content intake (Paste, `.txt`, `.md` file reader, image preview & required alt-text check; clear notice for DOCX/PDF)
-- [x] F4 Deterministic rule engine (13 rules: tone, banned terms, capitalization, comparative claims, superlatives, guarantees, numerical fact-checking, confidentiality, alt text, ALL-CAPS)
-- [ ] F5 AI analyser + grounding validator (Deferred to Phase B full-stack; deterministic engine used for 100% transparency)
-- [x] F6 Findings with explanations, sources, suggestions (Exact slice verification, popover citation, diff suggestion)
-- [x] F7 Review workspace UI (Desktop 2-column, mobile tabs, interactive highlights, filters by severity/category/status)
-- [x] F8 Human decision workflow (No auto-approval; blocker gate, stale check gate, self-approval prevention)
-- [x] F9 Comments and revision history with diff (Append-only versions, cryptographic SHA-256 digests, threaded comments)
-- [x] F10 Audit trail (Append-only audit log with content hash and rule-set version, CSV export for Manager)
-- [x] F11 Insights dashboard (Top violated rules, weekly category trends, most bypassed rules >50%, median approval time)
-- [x] F12 AI disclosure and redaction (Transparent disclosure: Built with AI assistance: Antigravity (Google))
-- [x] F13 Public sample report and deployment (Single-file `index.html` runs offline and without sign-in; public sample report at `#/demo-report`)
+| Page / Route | Path | Description |
+|---|---|---|
+| **Landing Page** | `/` | Public product landing with demo quick access, 3-step workflow, and role personas |
+| **Login / Persona Picker** | `/login` | 1-click demo persona switcher (`Asha`, `Ben`, `Priya`, `Marcus`) or password login |
+| **Content Dashboard** | `/dashboard` | Filterable content repository with status badges, blocker counts, and quick actions |
+| **Content Intake** | `/content/new` | Multi-format content intake: Text Paste or file upload (`.txt`, `.md`, `.docx`, `.pdf`, images) |
+| **Interactive Workspace** | `/content/[id]` | 2-column split workspace: highlighted text with severity underlines, findings cards, citation popovers, 1-click suggestion application, and blocker-enforced human decision bar |
+| **Brand Guidelines** | `/guidelines` | Sources (S1–S4), 13 active rules, glossary terms, approved facts (F-001–F-006), draft rule set editor, and YAML rule importer |
+| **Compliance Insights** | `/insights` | Aggregated analytics: top violated rules, high-friction rules (>40% dismissal rate), AI hallucination drop rate, and turnaround times |
+| **Immutable Audit Log** | `/audit` | Full cryptographically verified audit trail with content SHA-256 digests and 1-click CSV export |
+| **About AI & Privacy** | `/about-ai` | Transparent privacy disclosure, PII redaction pipeline, and "AI never approves" policy |
+| **Sample Review Report** | `/demo-report` | Public read-only review report with findings breakdown and decision history |
+| **Build Notes & Roadmap** | `/build-notes` | Full architectural overview, deviations ledger, trade-offs, and Round 3 roadmap |
+| **In-Browser Self-Tests** | `/selftest` | Client-side test runner executing deterministic engine and algorithm verification |
 
-## Round 3 — three improvements we commit to
-1. **Stale-content re-audit** when rules or facts change.
-2. **Guideline-gap detector** that proposes clarifications for rules reviewers keep overriding.
-3. **Visual compliance check** (logo, palette, contrast) for images using image analysis and a vision model.
+---
 
-## Phase A single-file note
-**Phase A** is a fully working self-contained prototype: `index.html` (6 645 lines, ~256 KB). Open it by double-clicking or deploying to any static host (Netlify Drop, GitHub Pages, Vercel). No server, no sign-in, no network required. All 11 screens, 13 rules, role enforcement, localStorage persistence, SHA-256 hashing, and 15 automated self-tests run entirely in the browser.
+## Demo Personas & Credentials
+The application includes pre-seeded demo accounts. Click any persona button on `/login` to sign in instantly with signed HMAC session tokens:
 
-**Phase B** (not yet started) will add the full Next.js + FastAPI + PostgreSQL stack documented in `docs/Architecture.md`.
+| Persona | Name | Role | Access Scope |
+|---|---|---|---|
+| **Asha** | Asha Patel | `creator` | Draft content, run checks, apply suggestions, submit for review (cannot approve) |
+| **Ben** | Ben Cooper | `creator` | Secondary author persona for multi-user workflow and permission testing |
+| **Priya** | Priya Nair | `reviewer` | Review submissions, resolve findings, request changes, approve compliant content |
+| **Marcus** | Marcus Vance | `manager` | Full oversight: manage guidelines, import rules, inspect analytics, export CSV audit logs |
 
-## Tech stack (Phase A)
-- Single HTML file — vanilla JS, inline CSS, zero external dependencies
-- Hash router (`#/route`) for shareable URLs and browser Back/Forward support
-- Web Crypto API (`crypto.subtle.digest`) + pure-JS SHA-256 fallback for content hashing
-- `localStorage` key `inkloom_guardian_v1` (schema v1) with in-memory fallback if storage is blocked
-- 13-rule deterministic brand engine: `runRules(text, ctx) → findings[]`
-- Labelled everywhere as **"Rule engine (local, deterministic)"** — no LLM claims
+---
 
-## Tech stack (Phase B — planned)
-Next.js 15 · TypeScript · Tailwind · shadcn/ui — FastAPI · Pydantic · SQLAlchemy · Alembic — PostgreSQL 16 — JWT auth — pluggable LLM provider (Anthropic default, mock for tests). Details: [`docs/Architecture.md`](docs/Architecture.md).
+## Benchmark Results (Stage S7 Golden Set Evaluation)
+Evaluated across 20 labelled test cases covering tone, terminology, superlatives, guarantees, numerical fact ranges (NUM-001), confidentiality, accessibility, injection attacks, and clean controls:
 
-## Documentation map
-| Doc | Purpose |
-|---|---|
-| [PRD](docs/PRD.md) | Product plan, requirements, rubric mapping |
-| [Architecture](docs/Architecture.md) | Stack, pipeline, folder structure, deviations |
-| [Design](docs/Design.md) | UI rulebook |
-| [Database](docs/Database.md) | Tables and relationships |
-| [API](docs/API.md) | Endpoints |
-| [Agents](docs/Agents.md) | AI rules and guardrails |
-| [Plan](docs/Plan.md) | Roadmap, deviation ledger, submission checklist |
-| [Setup](docs/Setup.md) | Run locally |
-| [Features](docs/Features.md) | Build guide per feature |
-| [Auth](docs/Auth.md) | Login, JWT, roles |
-| [MCP](docs/MCP.md) | Tool connections |
-| [Integrations](docs/Integrations.md) | External services |
-| [Testing](docs/Testing.md) | Test plan |
-| [Debugging](docs/Debugging.md) | Troubleshooting |
+| Metric | Target | Measured Result | Status |
+|---|---|---|---|
+| **Precision** | $\ge 90\%$ | **95.24%** | PASSED |
+| **Recall** | $\ge 90\%$ | **100.00%** | PASSED |
+| **F1-Score** | $\ge 90\%$ | **97.56%** | PASSED |
+| **True Positives** | - | 20 | - |
+| **False Positives** | - | 1 | - |
+| **False Negatives** | - | 0 | - |
 
-## Quick start
+---
+
+## What Inkloom Guardian Does
+1. **Brand Knowledge Base:** Loads Brightway Solar guideline sources (S1–S4), 13 versioned rules, glossary, and approved facts (F-001–F-006).
+2. **Multi-Format Intake:** Ingests copy via text paste, markdown (`.md`), plain text (`.txt`), Word documents (`.docx`), and PDFs (`.pdf`), alongside image alt-text extraction.
+3. **Deterministic Rule Engine:** Executes 13 deterministic pure TypeScript rules with zero external network dependencies. Extracts UTF-16 character offsets, verifies quote slices, provides source citations, and computes targeted word-level diff suggestions.
+4. **Interactive Review Workspace:** Renders severity-coded underlines (blocker, major, minor, info), interactive quote popovers, and 1-click suggestion application creating clean, unmutated version snapshots.
+5. **Human Decision Workflow:** Enforces rigorous safety gates:
+   - **Blocker Gate:** Content cannot be approved while any blocker finding remains unresolved.
+   - **Self-Approval Prevention:** Authors are forbidden from approving their own content.
+   - **Stale Check Protection:** Approvals require a complete check run on the latest content version.
+   - **Mandatory Justification:** Blocker dismissals and content rejections require clear human rationale ($\ge 10$ characters).
+6. **Immutable Audit Trail:** PostgreSQL triggers reject `UPDATE` and `DELETE` queries on audit and check run tables, guaranteeing an unalterable compliance ledger exportable as CSV.
+7. **Compliance Analytics:** Managers track rule friction, recurring violations, and turnaround durations to iteratively improve guidelines.
+
+---
+
+## Tech Stack & Architecture
+- **Framework:** Next.js 15.5.29 (App Router) + React 19 + TypeScript 5.7
+- **Styling & UI:** Tailwind CSS + Lucide Icons + Framer Motion
+- **Database & ORM:** PostgreSQL 16 via Drizzle ORM with schema migrations, SQL triggers, and `pg-mem` test adapter
+- **Deterministic Engine:** Pure TypeScript rule engine (`runRules`), regex word-boundary matchers, and proximity-weighted context windowing (`NUM-001`)
+- **Crypto & Integrity:** Universal pure-JS SHA-256 digest calculation and HMAC-SHA256 stateless session tokens
+- **File Ingestion:** Mammoth (`.docx`), PDF-Parse (`.pdf`), native UTF-8 streaming, and magic byte validation
+
+---
+
+## Quick Start & Verification
+
+### 1. Installation & Environment Setup
 ```bash
-# Phase A: just open the file — no install needed
-start index.html          # Windows
-open index.html           # macOS
-xdg-open index.html       # Linux
+# Clone the repository
+git clone <repo-url>
+cd Inkloom_Guardian/frontend
+
+# Install dependencies
+npm install
+
+# Configure environment (root .env is loaded automatically)
+cp ../.env.example ../.env
 ```
 
-**To deploy for judges (3 steps):**
-1. Go to [Netlify Drop](https://app.netlify.com/drop) and drag-and-drop `index.html`.
-2. Copy the generated `.netlify.app` URL.
-3. Open it in an incognito window — the landing page should appear with no sign-in required.
+### 2. Database Migrations & Seeding
+```bash
+# Apply schema migrations
+npm run db:migrate
 
-**Phase B quick start (backend + frontend):**
+# Seed Brightway Solar guidelines, demo accounts, and sample content
+npm run db:seed
+```
 
-## Team and contributions
-| Member | Role | Contribution (update with real commits/PRs) |
-|---|---|---|
-| Ugesh Kumar | AI / Backend Engineer | _rule engine, analyser, validator, API, DB_ |
-| Raghvendra Basarwar | Full-Stack / Product Builder | _frontend, integration, deployment_ |
-| Riya Sharma | Product, UX & Pitch Lead | _brand pack, UX, user testing, docs, demo_ |
+### 3. Run Test Suites
+```bash
+# Run all 74 unit, integration, golden-set, and security tests
+npm test
 
-## Disclosures (required by event rules)
-- **AI tools used to build:** Claude (planning docs, code assistance), Gamma (Round 1 deck), Perplexity (research), Antigravity (if used for code) — list exact usage per member before submitting.
-- **AI in the product:** one LLM provider (set in config) receives redacted text only; see in-app **About AI** page.
-- **Templates/boilerplate:** shadcn/ui components, framework starters — list exact ones here.
-- **Data:** all demo content and the "Brightway Solar" brand pack are invented for this event.
-- **Time window:** all product code was written inside the official build window; commit history shows this.
+# Run TypeScript typecheck
+npm run typecheck
 
-## Known limitations (honest list — update as you learn)
-- Small user-research sample (6 interviews); not statistically representative.
-- AI findings can be wrong or miss issues; humans must review. Accuracy is reported only on our own test set.
-- Round 2 handles text-centred formats; images get alt-text checks only.
-- Free-tier hosting may be slow on first request.
+# Run ESLint validation
+npm run lint
+```
 
-## Licence
-_Choose before publishing (e.g. MIT) and keep dependency licences compatible._
+### 4. Build & Start Production Server
+```bash
+# Compile production build
+npm run build
+
+# Start production server
+npm run start
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
+## Documentation Map
+| Document | Description |
+|---|---|
+| [PRD](docs/PRD.md) | Product requirements, problem statement, and scoring rubric alignment |
+| [Architecture](docs/Architecture.md) | System components, data flow, Next.js consolidation, and architectural decisions |
+| [Plan](docs/Plan.md) | Stage roadmap (S0–S7), progress logs, and deviation ledger |
+| [Testing](docs/Testing.md) | Complete test matrix, coverage metrics, and benchmark results |
+| [Database](docs/Database.md) | 16-table PostgreSQL schema, trigger definitions, and relational models |
+| [API](docs/API.md) | REST API specification, Route Handlers, error envelopes, and request payloads |
+| [Agents](docs/Agents.md) | AI agent responsibilities, PII redaction pipeline, and safety boundaries |
+| [Auth](docs/Auth.md) | Session token specification, RBAC matrix, and persona switching |
+| [Setup](docs/Setup.md) | Local development setup, Docker compose, and environment variables |
+
+---
+
+## Disclosures
+- **AI Tools Used to Build:** Google Antigravity, Claude, and Gemini API for design planning and test case authoring.
+- **AI in Product:** Pluggable AI adapter with PII redaction (email, phone, confidential codenames) and client-side deterministic validator. The AI never approves content.
+- **Brand Data:** All guidelines and assets for "Brightway Solar" are simulated for hackathon evaluation.
