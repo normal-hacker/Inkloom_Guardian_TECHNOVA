@@ -54,3 +54,24 @@ Judges evaluate engineering discipline through honest and reasoned adaptation to
 - [x] **Evaluation Evidence:** Golden Set benchmark table (20 test cases, 95.24% Precision, 100% Recall).
 - [x] **Round 3 Commitments:** Stale-content re-audits, guideline gap detection, and visual compliance analysis.
 - [x] **Zero Errors:** `npm test` (74/74 passing), `npm run typecheck` (0 errors), `npm run lint` (0 errors), `npm run build` (29/29 routes compiled).
+
+### Phase UI-Tabs: ExpandableTabs Component & Semantic Navigation
+- [x] **Component Reference:** Saved `docs/ui/expandable-tabs-component.md`.
+- [x] **Defect Hardening:** Implemented `components/ui/expandable-tabs.tsx` addressing all 11 prompt defects:
+  1. No collapse on outside click for active nav (`collapseOnOutsideClick={false}`).
+  2. Accessible names on collapsed state via `aria-label` and `title` tooltips, incorporating badge counts.
+  3. Strict `variant="nav" | "tabs"` semantics with roving tabindex and ArrowLeft/ArrowRight/Home/End keyboard handling.
+  4. Module-scope `Separator` component to prevent re-creation.
+  5. Stable `id` keys for all tabs and separators.
+  6. Framework `motion.create(Link)` integration for real anchor behavior.
+  7. 44px minimum touch targets and 360px viewport scroll protection without horizontal window overflow.
+  8. Spring transition (`bounce: 0, duration: 0.4`) with zero artificial delay and reserved `min-h` to eliminate CLS.
+  9. `useReducedMotion()` instant transitions when requested.
+  10. Badges with accessible names, hiding when 0/undefined.
+  11. Atomic click handling with single `onChange` invocation.
+- [x] **Single Source of Truth:** Authored `lib/nav/config.ts` with role-based filtering for creator, reviewer, and manager.
+- [x] **Layout & Headers:** Authored `components/layout/AppNav.tsx` and `components/layout/PageHeader.tsx` with animated detail strip.
+- [x] **Review Workspace Tabs:** Integrated `ExpandableTabs` in `/content/[id]` for mobile Content/Findings switching (<1024px) and desktop bottom panel tabs (Comments, History, and Audit for reviewers/managers).
+- [x] **Guidelines Tabs:** Integrated `ExpandableTabs` in `/guidelines` for Sources, Rules, Glossary, Facts, and Rule sets with `?tab=` query parameter persistence.
+- [x] **Verification:** `npm test` (99/99 passing), `npm run typecheck` (0 errors), `npm run lint` (0 errors), and `npm run build` (31/31 routes compiled).
+

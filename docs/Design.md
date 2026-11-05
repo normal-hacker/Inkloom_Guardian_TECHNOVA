@@ -105,3 +105,25 @@ Plain, direct, no hype. Use "check", "finding", "version", "decision". Avoid "fa
 
 ## 9. Responsive
 Desktop-first (review work is desktop work). Below 1024 px panes stack with a sticky "Findings (n)" toggle. Minimum supported width 360 px for dashboard and the public report.
+
+## Navigation & Tabs (ExpandableTabs Component Architecture)
+
+Navigation and view controls use the presentational `ExpandableTabs` component with two distinct semantic modes:
+
+1. **Top Application Navigation (`variant="nav"`)**:
+   - Renders semantic `<nav aria-label="Main navigation">` with Next.js `<Link>` elements wrapped in `motion.create(Link)`.
+   - Single source of truth defined in `lib/nav/config.ts`: Dashboard, New content, Guidelines, Insights, Audit, Separator, and About AI.
+   - Client-side persona filtering: Creator role is restricted from seeing Insights and Audit links (server routes also strictly guard access).
+   - Non-collapsing active pill: active route retains its full icon + title pill label (`collapseOnOutsideClick={false}`).
+   - Subnav placement: Centered sticky row below the top header on desktop; horizontally scrollable container without page overflow at 360px.
+   - Animated `PageHeader`: detail strip cross-fades title and description with an 8px vertical slide on route change (`mode="wait"`).
+
+2. **Workspace & Guidelines Tabs (`variant="tabs"`)**:
+   - W3C ARIA tablist semantics (`role="tablist"`, `role="tab"`, `aria-selected`, `aria-controls`, `aria-labelledby`, roving `tabIndex`).
+   - Roving keyboard navigation: `ArrowRight` / `ArrowLeft` cycle between adjacent tabs with wrap-around; `Home` / `End` jump to edges.
+   - `/content/[id]` workspace:
+     - Desktop: bottom panel tabs for **Comments** (badge = total comments), **History** (badge = versions count), and **Audit** (badge = events count, hidden for creators).
+     - Mobile (< 1024px): top toggle between **Content** (`FileText`) and **Findings** (`TriangleAlert`, badge = open findings count), defaulting to Findings when blockers exist.
+   - `/guidelines`: persistent tab selection in URL query (`?tab=sources|rules|glossary|facts|rulesets`), enabling full browser Back/Forward navigation.
+   - Performance & Motion: spring transition (`bounce: 0, duration: 0.4`), zero-delay, layout-stable fixed `min-h-[52px]` preventing CLS, and instant transition under `prefers-reduced-motion`.
+

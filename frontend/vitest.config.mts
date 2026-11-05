@@ -10,12 +10,18 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
 dotenv.config({ path: path.resolve(__dirname, '.env.local') });
 
 export default defineConfig({
+  oxc: {
+    jsx: {
+      runtime: 'automatic',
+    },
+  },
   test: {
     environment: 'node',
-    include: ['tests/**/*.test.ts'],
+    include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
   },
   resolve: {
     alias: {
+      '@/components': path.resolve(__dirname, './components'),
       '@': path.resolve(__dirname, './src'),
     },
   },
