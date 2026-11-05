@@ -10,13 +10,13 @@ const ipLimits = new Map<string, RateLimitRecord>();
  * @param ip Client IP address
  * @param maxRequests Maximum requests allowed within window
  * @param windowMs Time window in milliseconds
- * @returns { allowed: boolean, remaining: number, resetAt: number }
+ * @returns { allowed: boolean, remaining: number, resetAt: number, retryAfterSeconds: number }
  */
 export function checkRateLimit(
   ip: string,
   maxRequests: number = 30,
   windowMs: number = 60 * 60 * 1000 // 1 hour
-): { allowed: boolean; remaining: number; resetAt: number } {
+): { allowed: boolean; remaining: number; resetAt: number; retryAfterSeconds: number } {
   const now = Date.now();
   const existing = ipLimits.get(ip);
 
@@ -30,6 +30,7 @@ export function checkRateLimit(
       allowed: true,
       remaining: maxRequests - 1,
       resetAt: record.resetAt,
+      retryAfterSeconds: Math.max(1, Math.ceil((record.resetAt - now) / 1000)),
     };
   }
 
@@ -38,6 +39,7 @@ export function checkRateLimit(
       allowed: false,
       remaining: 0,
       resetAt: existing.resetAt,
+      retryAfterSeconds: Math.max(1, Math.ceil((existing.resetAt - now) / 1000)),
     };
   }
 
@@ -46,6 +48,7 @@ export function checkRateLimit(
     allowed: true,
     remaining: maxRequests - existing.count,
     resetAt: existing.resetAt,
+    retryAfterSeconds: Math.max(1, Math.ceil((existing.resetAt - now) / 1000)),
   };
 }
 
