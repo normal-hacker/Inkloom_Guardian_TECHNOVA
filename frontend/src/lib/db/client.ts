@@ -15,12 +15,27 @@ declare global {
 export function getPool(): pg.Pool {
   if (!globalThis.__inkloomPgPool) {
     const url = serverEnv.databaseUrl;
+    if (!url) {
+      console.warn('[DB Client] Warning: DATABASE_URL is not set in environment.');
+    }
+    const isRemote =
+      Boolean(url) &&
+      !url.includes('localhost') &&
+      !url.includes('127.0.0.1') &&
+      !url.includes('inkloom-guardian-db');
+
+    const requiresSsl =
+      Boolean(url) &&
+      (url.includes('supabase.') ||
+        url.includes('sslmode=require') ||
+        url.includes('neon.tech') ||
+        url.includes('amazonaws.com') ||
+        (process.env.NODE_ENV === 'production' && isRemote));
+
     globalThis.__inkloomPgPool = new Pool({
       connectionString: url,
-      ssl: url.includes('supabase.com') || url.includes('sslmode=require')
-        ? { rejectUnauthorized: false }
-        : false,
-      max: 5,
+      ssl: requiresSsl ? { rejectUnauthorized: false } : false,
+      max: process.env.NODE_ENV === 'production' ? 10 : 5,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 10000,
     });

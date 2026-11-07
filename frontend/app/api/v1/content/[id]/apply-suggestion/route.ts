@@ -104,6 +104,27 @@ export async function POST(
     return NextResponse.json(result, { status: 201, headers: { 'X-Request-ID': requestId } });
   } catch (err: any) {
     const status = err.status || 400;
-    return apiError(status, err.code || 'apply_suggestion_failed', err.message || 'Failed to apply suggestion.', requestId);
+    console.error('[API /content/[id]/apply-suggestion Failure]', {
+      operation: 'apply_suggestion',
+      requestId,
+      contentId: id,
+      findingId: body?.findingId,
+      status,
+      errorName: err.name,
+      errorMessage: err.message,
+      errorCode: err.code,
+      errorDetails: err.details,
+    });
+    return apiError(
+      status,
+      err.code || 'apply_suggestion_failed',
+      err.message || 'Failed to apply suggestion.',
+      requestId,
+      {
+        operation: 'apply_suggestion',
+        findingId: body?.findingId,
+        contentId: id,
+      }
+    );
   }
 }

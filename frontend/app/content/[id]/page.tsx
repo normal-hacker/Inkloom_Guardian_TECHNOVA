@@ -265,14 +265,32 @@ export default function ReviewWorkspacePage({
     setApplyingFindingId(findingId);
     setActionError(null);
     try {
-      const res = await fetch(`/api/v1/content/${id}/apply-suggestion`, {
+      const endpoint = `/api/v1/content/${id}/apply-suggestion`;
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ findingId, suggestion }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const errorMsg = data.error?.message || data.message || 'Failed to apply suggestion.';
+        const errorMsg =
+          data.error?.message ||
+          data.message ||
+          `Failed to apply suggestion (HTTP ${res.status}).`;
+
+        console.error('[Apply Suggestion Failure]', {
+          operation: 'apply_suggestion',
+          endpoint,
+          status: res.status,
+          statusText: res.statusText,
+          findingId,
+          contentId: id,
+          errorCode: data.error?.code,
+          errorMessage: data.error?.message,
+          errorDetails: data.error?.details,
+          requestId: res.headers.get('x-request-id') || data.error?.request_id,
+        });
+
         throw new Error(errorMsg);
       }
       const newVersion = data.newVersionNo || data.versionNo;
@@ -283,6 +301,12 @@ export default function ReviewWorkspacePage({
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
+      console.error('[Apply Suggestion Error]', {
+        operation: 'apply_suggestion',
+        findingId,
+        contentId: id,
+        error: msg,
+      });
       setActionError(msg);
     } finally {
       setApplyingFindingId(null);
