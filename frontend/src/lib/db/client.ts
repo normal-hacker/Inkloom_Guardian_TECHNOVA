@@ -34,8 +34,13 @@ export function getPool(): pg.Pool {
         url.includes('amazonaws.com') ||
         (process.env.NODE_ENV === 'production' && isRemote));
 
+    // Strip sslmode parameter from connection string so pg-connection-string
+    // does not overwrite our explicit ssl object ({ rejectUnauthorized: false })
+    // which causes 'self-signed certificate in certificate chain' errors with Supabase pooler.
+    const cleanUrl = url ? url.replace(/[?&]sslmode=[^&]+/gi, '') : url;
+
     globalThis.__inkloomPgPool = new Pool({
-      connectionString: url,
+      connectionString: cleanUrl,
       ssl: requiresSsl ? { rejectUnauthorized: false } : false,
       max: process.env.NODE_ENV === 'production' ? 10 : 5,
       idleTimeoutMillis: 30000,

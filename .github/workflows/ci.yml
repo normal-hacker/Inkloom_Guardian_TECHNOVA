@@ -12,10 +12,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DATABASE_URL: postgresql://postgres.dfjzcolgonwcsiqkpajq:UGESh@20071016%23@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?sslmode=require 
+      DATABASE_URL: postgresql://postgres.dfjzcolgonwcsiqkpajq:UGESh@20071016%23@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres
       SESSION_SECRET: 24d48cd3854a54d71604ba6ab968ef0e9a1d7e6c8fde1f147916bba79bfe806f
-      DEMO_MODE: "true"
-      AUTH_BASE_URL: http://localhost:3000
       AI_PROVIDER: mock
       AI_TIMEOUT_S: "20"
       MAX_UPLOAD_MB: "10"
