@@ -1,4 +1,3 @@
-
 name: CI
 
 on:
@@ -11,33 +10,23 @@ jobs:
   frontend:
     runs-on: ubuntu-latest
 
-    env:
-      DATABASE_URL: postgresql://postgres.dfjzcolgonwcsiqkpajq:UGESh@20071016%23@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres
-      SESSION_SECRET: 24d48cd3854a54d71604ba6ab968ef0e9a1d7e6c8fde1f147916bba79bfe806f
-      AI_PROVIDER: mock
-      AI_TIMEOUT_S: "20"
-      MAX_UPLOAD_MB: "10"
-      NEXT_PUBLIC_API_URL: /api/v1
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --include=optional
 
       - name: Run lint
         run: npm run lint
 
       - name: Run tests
-        run: npm test
+        run: npm run test
 
       - name: Build application
         run: npm run build
