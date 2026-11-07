@@ -183,7 +183,6 @@ export function ExpandableTabs({
     <div
       ref={outsideClickRef}
       className={cn(
-        'flex items-center gap-1.5 overflow-x-auto no-scrollbar max-w-full rounded-2xl border bg-card p-1 text-card-foreground shadow-sm min-h-[52px]',
         className
       )}
       {...(variant === 'tabs'
@@ -231,10 +230,10 @@ export function ExpandableTabs({
           'aria-label': accessibleName,
           className: cn(
             'relative inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-xl text-sm font-medium transition-colors duration-200 select-none shrink-0',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+            'focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-focus focus-visible:ring-offset-3',
             isSelected
               ? cn('bg-muted font-semibold shadow-xs', activeColor)
-              : 'text-muted-foreground hover:bg-muted/80 hover:text-foreground',
+              : 'text-ink-2 hover:bg-surface-2 hover:text-ink border-2 border-transparent',
             tab.disabled && 'cursor-not-allowed opacity-50'
           ),
           onKeyDown: (e: React.KeyboardEvent) => handleKeyDown(e, index),

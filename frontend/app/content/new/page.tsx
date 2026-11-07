@@ -1,25 +1,34 @@
 'use client';
 
-import React, { useState } from 'react';
+import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { FileText, Upload, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select } from '@/components/ui/select';
+import { Card, SectionLabel } from '@/components/ui/card';
+import { FileDrop } from '@/components/ui/file-drop';
+import { FileText, UploadCloud, ArrowRight, Loader2, OctagonX, Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export default function NewContentPage() {
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<'paste' | 'upload'>('paste');
-  const [title, setTitle] = useState('');
-  const [contentType, setContentType] = useState('blog');
-  const [textBody, setTextBody] = useState(
+  const [activeTab, setActiveTab] = React.useState<'paste' | 'upload'>('paste');
+  const [title, setTitle] = React.useState('');
+  const [contentType, setContentType] = React.useState('blog');
+  const [textBody, setTextBody] = React.useState(
     'Our panels are the best on the market and guarantee 40% savings! Call today for clean energy.'
   );
+  const [isMono, setIsMono] = React.useState(false);
 
   // File upload state
-  const [file, setFile] = useState<File | null>(null);
-  const [imageAltText, setImageAltText] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [file, setFile] = React.useState<File | null>(null);
+  const [imageAltText, setImageAltText] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+  const [loadingStep, setLoadingStep] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +45,7 @@ export default function NewContentPage() {
           return;
         }
 
+        setLoadingStep('Saving draft…');
         const res = await fetch('/api/v1/content', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -67,6 +77,7 @@ export default function NewContentPage() {
           return;
         }
 
+        setLoadingStep('Extracting document content…');
         const formData = new FormData();
         formData.append('file', file);
         formData.append('title', title.trim() || file.name);
@@ -88,6 +99,7 @@ export default function NewContentPage() {
       }
 
       // Automatically run checks on intake
+      setLoadingStep('Rules ✓ · AI … · Validating');
       await fetch(`/api/v1/content/${contentItemId}/check`, {
         method: 'POST',
       });
@@ -97,176 +109,172 @@ export default function NewContentPage() {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to process content.');
       setLoading(false);
+      setLoadingStep(null);
     }
   };
 
   return (
-    <div className="flex flex-col flex-1">
+    <div className="flex flex-col flex-1 bg-paper text-ink min-h-full pb-28">
       <PageHeader
-        title="New Content Intake"
-        description="Paste or upload content and run a brand check"
+        title="Submit Content"
+        description="Paste marketing copy or upload documents to audit against approved brand guidelines."
       />
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
-
+      <form onSubmit={handleSubmit} className="max-w-[1280px] w-full mx-auto px-6 md:px-8 py-8 space-y-8 flex-1">
         {error && (
-          <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 flex items-start gap-3 text-red-800 text-sm">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">{error}</div>
+          <div
+            role="alert"
+            className="p-4 border-2 border-ink bg-severity-blocker text-ink text-xs font-mono font-medium flex items-center gap-3 shadow-hard"
+          >
+            <OctagonX className="w-4 h-4 shrink-0" aria-hidden="true" />
+            <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
-          {/* Metadata Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="sm:col-span-2">
-              <label htmlFor="title" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Content Title
-              </label>
-              <input
-                id="title"
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Residential Solar Landing Page Q1"
-                required
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label htmlFor="contentType" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Content Type
-              </label>
-              <select
-                id="contentType"
-                value={contentType}
-                onChange={(e) => setContentType(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600"
-              >
-                <option value="blog">Blog Post</option>
-                <option value="social">Social Media</option>
-                <option value="ad">Ad Copy</option>
-                <option value="web">Website / Landing</option>
-                <option value="press">Press Release</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
+        {/* Boxy Segmented Switcher (Paste | Upload) */}
+        <div className="space-y-2">
+          <SectionLabel number="01" title="Intake Method" />
+          <div className="inline-flex border-2 border-ink bg-surface p-1 shadow-hard">
+            <button
+              type="button"
+              onClick={() => setActiveTab('paste')}
+              className={cn(
+                'px-5 py-2.5 font-mono text-xs font-bold uppercase transition-all flex items-center gap-2 select-none border-2',
+                activeTab === 'paste'
+                  ? 'bg-ink text-surface border-ink shadow-hard-sm'
+                  : 'bg-transparent text-ink-2 border-transparent hover:text-ink hover:bg-surface-2'
+              )}
+            >
+              <FileText className="w-4 h-4" />
+              <span>Paste Text</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('upload')}
+              className={cn(
+                'px-5 py-2.5 font-mono text-xs font-bold uppercase transition-all flex items-center gap-2 select-none border-2',
+                activeTab === 'upload'
+                  ? 'bg-ink text-surface border-ink shadow-hard-sm'
+                  : 'bg-transparent text-ink-2 border-transparent hover:text-ink hover:bg-surface-2'
+              )}
+            >
+              <UploadCloud className="w-4 h-4" />
+              <span>Upload Document</span>
+            </button>
           </div>
+        </div>
 
-          {/* Intake Tabs (Paste / Upload) */}
-          <div>
-            <div className="flex items-center gap-2 border-b border-slate-200 pb-2 mb-4">
-              <button
-                type="button"
-                onClick={() => setActiveTab('paste')}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-                  activeTab === 'paste'
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                <FileText className="w-4 h-4" />
-                <span>Paste Text</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('upload')}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-                  activeTab === 'upload'
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                <Upload className="w-4 h-4" />
-                <span>Upload Document (.txt, .md, .docx, .pdf, images)</span>
-              </button>
+        {/* Metadata Controls */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="space-y-4">
+            <SectionLabel number="02" title="Document Details" />
+            <Input
+              label="Document Title"
+              placeholder="e.g. Q3 Residential Solar Announcement"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              hint="Descriptive name visible in dashboard and audit trails."
+            />
+
+            <Select
+              label="Content Type"
+              value={contentType}
+              onChange={(e) => setContentType(e.target.value)}
+            >
+              <option value="blog">Editorial Blog</option>
+              <option value="social">Social Media Post</option>
+              <option value="ad">Paid Advertisement / Ad Copy</option>
+              <option value="web">Web Landing Page</option>
+              <option value="press">Press Release</option>
+              <option value="other">Other Document</option>
+            </Select>
+          </Card>
+
+          <Card className="space-y-4">
+            <SectionLabel number="03" title="Target Channel & Policy" />
+            <div className="p-4 bg-surface-2 border-2 border-ink space-y-2 text-xs font-mono text-ink">
+              <p className="font-bold uppercase text-ink">Active Brand Rule Set: Brightway Solar v3</p>
+              <p className="text-ink-2">
+                Automated checks evaluate tone, prohibited superlative terminology, substantiated metrics, and accessibility standards.
+              </p>
             </div>
+          </Card>
+        </div>
 
-            {activeTab === 'paste' ? (
-              <div>
-                <label htmlFor="textBody" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Draft Copy
-                </label>
-                <textarea
-                  id="textBody"
-                  value={textBody}
-                  onChange={(e) => setTextBody(e.target.value)}
-                  rows={8}
-                  placeholder="Paste marketing copy here…"
-                  required
-                  className="w-full p-4 rounded-xl border border-slate-200 text-sm font-sans focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent leading-relaxed"
-                />
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="border-2 border-dashed border-slate-200 hover:border-indigo-400 rounded-xl p-8 text-center bg-slate-50 transition-colors">
-                  <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                  <p className="text-sm font-semibold text-slate-700">Choose a file to extract</p>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Supports .txt, .md, .docx, .pdf, and PNG/JPEG/WebP images up to 10MB
-                  </p>
-                  <input
-                    type="file"
-                    accept=".txt,.md,.docx,.pdf,image/png,image/jpeg,image/webp"
-                    onChange={(e) => setFile(e.target.files?.[0] || null)}
-                    className="mt-4 text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
-                  />
-                  {file && (
-                    <p className="mt-2 text-xs font-bold text-indigo-700">
-                      Selected: {file.name} ({(file.size / 1024).toFixed(1)} KB)
-                    </p>
-                  )}
-                </div>
-
-                {file && file.type.startsWith('image/') && (
-                  <div>
-                    <label htmlFor="altText" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                      Image Alt Text (Required for accessibility)
-                    </label>
-                    <input
-                      id="altText"
-                      type="text"
-                      value={imageAltText}
-                      onChange={(e) => setImageAltText(e.target.value)}
-                      placeholder="e.g. Modern residential rooftop with 12 SunLink solar panels"
-                      required
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                    />
-                  </div>
-                )}
-              </div>
+        {/* Content Body / Upload Zone */}
+        <Card className="space-y-4">
+          <div className="flex items-center justify-between">
+            <SectionLabel number="04" title={activeTab === 'paste' ? 'Text Body' : 'File Upload'} />
+            {activeTab === 'paste' && (
+              <button
+                type="button"
+                onClick={() => setIsMono(!isMono)}
+                className="text-xs font-mono font-bold uppercase text-ink-2 hover:text-ink underline"
+              >
+                {isMono ? 'Standard Font' : 'Monospace Editor'}
+              </button>
             )}
           </div>
 
-          {/* Action buttons */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-800"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-indigo-600 disabled:opacity-50"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Checking Copy…</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  <span>Submit & Check Brand Rules</span>
-                </>
-              )}
-            </button>
+          {activeTab === 'paste' ? (
+            <Textarea
+              rows={8}
+              value={textBody}
+              onChange={(e) => setTextBody(e.target.value)}
+              placeholder="Paste content to check against guidelines…"
+              className={isMono ? 'font-mono' : ''}
+              required
+            />
+          ) : (
+            <FileDrop
+              onFileSelect={(selectedFile, alt) => {
+                setFile(selectedFile);
+                if (alt) setImageAltText(alt);
+              }}
+            />
+          )}
+        </Card>
+
+        {/* Sticky Bottom Action Bar */}
+        <div className="fixed bottom-0 left-0 right-0 z-30 bg-surface border-t-2 border-ink px-6 md:px-8 py-4 shadow-hard-lg">
+          <div className="max-w-[1280px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-xs font-mono text-ink-2 text-center sm:text-left">
+              Text is stored in the demo database. AI checks receive a redacted copy.
+            </p>
+
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => router.push('/dashboard')}
+                disabled={loading}
+              >
+                Cancel
+              </Button>
+
+              <Button
+                type="submit"
+                variant="primary"
+                size="md"
+                disabled={loading}
+              >
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-accent-ink" />
+                    <span>{loadingStep || 'Checking content…'}</span>
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <span>Save & check</span>
+                    <ArrowRight className="w-4 h-4 ml-1" />
+                  </span>
+                )}
+              </Button>
+            </div>
           </div>
-        </form>
-      </div>
+        </div>
+      </form>
     </div>
   );
 }

@@ -1,37 +1,107 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ExpandableTabs, TabItem } from '@/components/ui/expandable-tabs';
+import { Button } from '@/components/ui/button';
+import { SeverityBadge, RuleChip } from '@/components/ui/badge';
+import { SectionLabel, Card } from '@/components/ui/card';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { ConfirmDialog } from '@/components/ui/dialog';
 import {
   Library,
   ListChecks,
   BookA,
   BadgeCheck,
   GitBranch,
-  CheckCircle2,
-  AlertCircle,
-  FileText,
+  OctagonX,
+  ShieldCheck,
 } from 'lucide-react';
+import { useOptimisticMutation } from '@/lib/optimistic/useOptimisticMutation';
+import { PendingBadge } from '@/components/ui/pending-badge';
+import { InlineRetry } from '@/components/ui/inline-retry';
+import { Severity } from '@/lib/domain/types';
+
+interface DraftRuleItem {
+  id: string;
+  key: string;
+  category: string;
+  severity: Severity;
+  title: string;
+  explanation: string;
+  suggestionHint?: string | null;
+  enabled: boolean;
+  sourceSection?: string | null;
+  __pending?: boolean;
+}
+
+interface ActiveGuidelinesData {
+  ruleSet?: { id: string; version: number; name?: string };
+  rules?: DraftRuleItem[];
+  glossary?: Array<{ id: string; term: string; kind: string; preferredAlternative?: string; note?: string }>;
+  facts?: Array<{ id: string; key: string; statement: string; searchVector?: string }>;
+  sources?: Array<{ id: string; title: string; versionLabel?: string; kind: string }>;
+}
 
 function GuidelinesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const shouldReduceMotion = useReducedMotion();
 
-  const [activeData, setActiveData] = useState<any>(null);
-  const [draftData, setDraftData] = useState<any>(null);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [activeData, setActiveData] = useState<ActiveGuidelinesData | null>(null);
+  const [draftData, setDraftData] = useState<{
+    rules?: DraftRuleItem[];
+    ruleSet?: { id: string; version: number; name?: string };
+  } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ id: string; email: string; role: string; displayName?: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   // YAML import state
   const [yamlText, setYamlText] = useState('');
   const [yamlError, setYamlError] = useState<string | null>(null);
   const [yamlSuccess, setYamlSuccess] = useState<string | null>(null);
+  const [activateConfirmOpen, setActivateConfirmOpen] = useState(false);
+  const [rulesViewMode, setRulesViewMode] = useState<'active' | 'draft'>('active');
 
-  const loadGuidelines = async () => {
+  // Optimistic UI for toggling draft rules
+  const ruleToggleMutation = useOptimisticMutation<
+    DraftRuleItem[],
+    { ruleKey: string; enabled: boolean },
+    { success: boolean; ruleKey: string; updates: Record<string, unknown> }
+  >({
+    action: 'guidelines.draft_rule_toggle',
+    initialState: [],
+    apply: (current, input) => {
+      return current.map((r) =>
+        r.key === input.ruleKey ? { ...r, enabled: input.enabled, __pending: true } : r
+      );
+    },
+    mutate: async (input, { signal, idempotencyKey }) => {
+      const res = await fetch(`/api/v1/guidelines/draft/rules/${input.ruleKey}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': idempotencyKey,
+        },
+        body: JSON.stringify({ enabled: input.enabled }),
+        signal,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return { ok: false, status: res.status, errorJson: data, headers: res.headers };
+      }
+      return { ok: true, status: res.status, data, headers: res.headers };
+    },
+    reconcile: (current, result) => {
+      return current.map((r) =>
+        r.key === result.ruleKey ? { ...r, __pending: false } : r
+      );
+    },
+  });
+
+  const loadGuidelines = useCallback(async () => {
     try {
       const res = await fetch('/api/v1/guidelines/active');
       if (res.ok) {
@@ -43,6 +113,9 @@ function GuidelinesContent() {
       if (dRes.ok) {
         const dData = await dRes.json();
         setDraftData(dData);
+        if (dData?.rules) {
+          ruleToggleMutation.setState(dData.rules);
+        }
       }
 
       const uRes = await fetch('/api/v1/auth/me');
@@ -54,11 +127,41 @@ function GuidelinesContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [ruleToggleMutation]);
 
   useEffect(() => {
     loadGuidelines();
-  }, []);
+  }, [loadGuidelines]);
+
+  const tabParam = searchParams.get('tab') || 'sources';
+
+  const tabList: TabItem[] = [
+    { id: 'sources', title: 'Sources', icon: Library },
+    {
+      id: 'rules',
+      title: 'Rules',
+      icon: ListChecks,
+      badge: activeData?.rules?.length || 13,
+      badgeLabel: `Rules, ${activeData?.rules?.length || 13} total`,
+    },
+    { id: 'glossary', title: 'Glossary', icon: BookA },
+    { id: 'facts', title: 'Facts', icon: BadgeCheck },
+    { id: 'rulesets', title: 'Rule Sets', icon: GitBranch },
+  ];
+
+  const currentTabIndex = Math.max(
+    0,
+    tabList.findIndex((t) => t.id === tabParam)
+  );
+  const currentTabId = tabList[currentTabIndex]?.id || 'sources';
+
+  const handleTabChange = (index: number | null) => {
+    if (index === null) return;
+    const selected = tabList[index];
+    if (selected?.id) {
+      router.push(`/guidelines?tab=${selected.id}`);
+    }
+  };
 
   const isManager = currentUser && currentUser.role === 'manager';
 
@@ -73,8 +176,9 @@ function GuidelinesContent() {
 
   const handleActivateDraft = async () => {
     try {
-      const res = await fetch('/api/v1/guidelines/activate-draft', { method: 'POST' });
+      const res = await fetch('/api/v1/guidelines/draft/activate', { method: 'POST' });
       if (res.ok) {
+        setActivateConfirmOpen(false);
         await loadGuidelines();
       }
     } catch {}
@@ -95,156 +199,98 @@ function GuidelinesContent() {
       const data = await res.json();
       if (!res.ok) {
         setYamlError(data.message || 'YAML validation failed.');
-        return;
+      } else {
+        setYamlSuccess(`Successfully imported ${data.rulesCount} rules into Draft.`);
+        await loadGuidelines();
       }
-
-      setYamlSuccess(`Successfully imported ${data.count} rules into draft rule set.`);
-      await loadGuidelines();
-    } catch (err: any) {
-      setYamlError(err.message);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Network error.';
+      setYamlError(msg);
     }
   };
 
-  // Guidelines Tab Configuration
-  const tabDefs: TabItem[] = [
-    {
-      id: 'sources',
-      title: 'Sources',
-      icon: Library,
-      badgeLabel: 'Grounding policy sources',
-    },
-    {
-      id: 'rules',
-      title: 'Rules',
-      icon: ListChecks,
-      badge: activeData?.rules?.length || 13,
-      badgeLabel: `Rules, ${activeData?.rules?.length || 13} active`,
-    },
-    {
-      id: 'glossary',
-      title: 'Glossary',
-      icon: BookA,
-      badge: activeData?.glossary?.length || 4,
-      badgeLabel: `Glossary, ${activeData?.glossary?.length || 4} terms`,
-    },
-    {
-      id: 'facts',
-      title: 'Facts',
-      icon: BadgeCheck,
-      badge: activeData?.facts?.length || 6,
-      badgeLabel: `Facts, ${activeData?.facts?.length || 6} approved`,
-    },
-    {
-      id: 'rulesets',
-      title: 'Rule sets',
-      icon: GitBranch,
-      badgeLabel: 'Rule set versions & draft controls',
-    },
-  ];
-
-  // Derive active tab from URL query param ?tab=
-  const currentTabParam = searchParams.get('tab') || 'rules';
-  const foundIndex = tabDefs.findIndex((t) => t.id === currentTabParam);
-  const activeTabIndex = foundIndex !== -1 ? foundIndex : 1; // default to rules (index 1)
-  const currentTabId = tabDefs[activeTabIndex]?.id || 'rules';
-
-  const handleTabChange = (index: number | null) => {
-    if (index === null) return;
-    const selected = tabDefs[index];
-    if (!selected || selected.type === 'separator') return;
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('tab', selected.id);
-    router.push(`/guidelines?${params.toString()}`);
-  };
-
   return (
-    <div className="flex flex-col flex-1">
+    <div className="flex flex-col flex-1 bg-paper text-ink min-h-screen pb-20">
       <PageHeader
-        title="Brand Guidelines & Policy Grounding"
-        description="Approved rules, terminology and facts the checks use to evaluate copy."
-        chips={
-          <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 border border-indigo-200 text-indigo-700">
-            Active: {activeData?.ruleSet?.name || `Brightway Solar v${activeData?.ruleSet?.version || 3}`}
-          </span>
+        title="Brand Guidelines"
+        description="Approved source documents, pure TypeScript rules, glossary, and facts for governance audits."
+        actions={
+          isManager ? (
+            <span className="px-2.5 py-1 bg-ink text-surface font-mono text-xs font-bold uppercase">
+              Manager Mode: Editing Enabled
+            </span>
+          ) : (
+            <span className="px-2.5 py-1 bg-surface-2 border-2 border-rule text-ink-2 font-mono text-xs font-bold uppercase">
+              Managers can edit
+            </span>
+          )
         }
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
-        {/* Guidelines Tabs Switcher */}
-        <div className="flex justify-center sm:justify-start">
+      <div className="max-w-[1280px] w-full mx-auto px-6 md:px-8 py-8 space-y-8 flex-1">
+        {/* In-Page ExpandableTabs */}
+        <div className="flex justify-start">
           <ExpandableTabs
-            tabs={tabDefs}
+            tabs={tabList}
             variant="tabs"
-            value={activeTabIndex}
+            value={currentTabIndex}
             onChange={handleTabChange}
-            ariaLabel="Guidelines sections"
+            ariaLabel="Brand guideline sections"
             idPrefix="guidelines-tabs"
-            className="bg-white"
           />
         </div>
 
         {/* Tab Panels */}
-        <AnimatePresence mode="wait">
+        {loading ? (
+          <div className="space-y-4">
+            <div className="h-10 bg-surface-2 border-2 border-rule animate-pulse" />
+            <div className="h-32 bg-surface-2 border-2 border-rule animate-pulse" />
+            <div className="h-32 bg-surface-2 border-2 border-rule animate-pulse" />
+          </div>
+        ) : (
+          <AnimatePresence mode="wait">
           {/* TAB: Sources */}
           {currentTabId === 'sources' && (
             <motion.div
               key="sources"
-              role="tabpanel"
-              id="guidelines-tabs-panel-sources"
-              aria-labelledby="guidelines-tabs-tab-sources"
-              initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={shouldReduceMotion ? undefined : { opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-              className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-6"
+              exit={shouldReduceMotion ? undefined : { opacity: 0, y: -4 }}
+              transition={{ duration: 0.15 }}
+              className="space-y-6"
             >
-              <div>
-                <h3 className="text-base font-bold text-slate-900">Grounding Policy Documentation</h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  Every rule check in Inkloom Guardian cites one of these approved brand & legal documents.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <SectionLabel number="01" title="Approved Source Documents" />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[
                   {
-                    title: 'Brightway Brand Guidelines (2026-Q1)',
-                    section: '§ 3.2 Approved Claims, § 4.1 Prohibited Superlatives',
-                    desc: 'Defines acceptable savings claims, prohibited words (#1, best, cheapest), and warranty phrasing standards.',
+                    title: 'Brand Voice & Writing Guide v4',
+                    desc: 'Primary tone, language substantiation, and superlative advertising claims policy.',
+                    section: '§1 Tone · §3 Superlatives · §5 Proof',
                     badge: 'Core Policy',
                   },
                   {
-                    title: 'Solar Terminology & Phrasing Manual v2.4',
-                    section: '§ Terminology Standards & Prohibited Synonyms',
-                    desc: 'Authoritative dictionary of preferred terminology (e.g. photovoltaic module vs solar slab).',
-                    badge: 'Glossary Grounding',
+                    title: 'Approved Metrics Fact Sheet 2025-Q3',
+                    desc: 'Numeric parameters for residential solar efficiency, capacity, and average savings.',
+                    section: '6 Verified Facts (F-001 to F-006)',
+                    badge: 'Facts Base',
                   },
                   {
-                    title: 'Approved Performance Metrics Sheet 2025-Q3',
-                    section: '§ Verified Fact Sheet (NUM-001)',
-                    desc: 'Numeric fact registry: efficiency ranges (18.5% - 22.8%), warranty periods (25 years), payback timeline (5-7 years).',
-                    badge: 'Numeric Grounding',
-                  },
-                  {
-                    title: 'FTC Clean Energy Advertising Compliance Manual',
-                    section: '§ 12 Substantiated Environmental Benefit Claims',
-                    desc: 'Federal Trade Commission regulatory standards governing renewable energy and carbon reduction claims.',
-                    badge: 'Regulatory',
+                    title: 'Asset Policy & Accessibility 2025',
+                    desc: 'Requirements for alt-text presence, uppercase scan limits, and descriptive anchor text.',
+                    section: 'ACC-001 Alt · ACC-002 Caps',
+                    badge: 'Compliance',
                   },
                 ].map((doc, idx) => (
-                  <div key={idx} className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-2">
+                  <Card key={idx} className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-indigo-600" />
-                        {doc.title}
-                      </span>
-                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
+                      <span className="font-bold text-base text-ink">{doc.title}</span>
+                      <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 border border-ink bg-surface-2 text-ink">
                         {doc.badge}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-600 leading-relaxed">{doc.desc}</p>
-                    <p className="text-[11px] font-mono text-slate-500">{doc.section}</p>
-                  </div>
+                    <p className="text-xs text-ink-2 leading-relaxed">{doc.desc}</p>
+                    <p className="text-xs font-mono text-ink-3 pt-2 border-t border-rule">{doc.section}</p>
+                  </Card>
                 ))}
               </div>
             </motion.div>
@@ -254,56 +300,111 @@ function GuidelinesContent() {
           {currentTabId === 'rules' && (
             <motion.div
               key="rules"
-              role="tabpanel"
-              id="guidelines-tabs-panel-rules"
-              aria-labelledby="guidelines-tabs-tab-rules"
-              initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={shouldReduceMotion ? undefined : { opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-              className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden"
+              exit={shouldReduceMotion ? undefined : { opacity: 0, y: -4 }}
+              transition={{ duration: 0.15 }}
+              className="space-y-6"
             >
-              <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between text-xs">
-                <span className="font-bold text-slate-700">13 Pure TypeScript Rules (Deterministic & Grounded)</span>
-                <span className="text-slate-500">Sub-2ms Latency · 0 External Calls</span>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <SectionLabel
+                  number="02"
+                  title={
+                    rulesViewMode === 'draft' && draftData
+                      ? `Draft Policy Rule Set v${draftData.ruleSet?.version || 4} (Optimistic Staging)`
+                      : 'Active Policy Rule Set (Deterministic Engine)'
+                  }
+                />
+                <div className="flex items-center gap-2">
+                  {draftData && isManager && (
+                    <div className="flex border-2 border-ink bg-surface p-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setRulesViewMode('active')}
+                        className={`px-2.5 py-1 text-xs font-mono font-bold uppercase transition-colors ${
+                          rulesViewMode === 'active' ? 'bg-ink text-surface' : 'text-ink-2 hover:text-ink'
+                        }`}
+                      >
+                        Active (v{activeData?.ruleSet?.version || 3})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRulesViewMode('draft')}
+                        className={`px-2.5 py-1 text-xs font-mono font-bold uppercase transition-colors ${
+                          rulesViewMode === 'draft' ? 'bg-ink text-surface' : 'text-ink-2 hover:text-ink'
+                        }`}
+                      >
+                        Draft (v{draftData.ruleSet?.version || 4})
+                      </button>
+                    </div>
+                  )}
+                  <span className="font-mono text-xs text-ink-3 uppercase">13 Rules · 0ms External Latency</span>
+                </div>
               </div>
-              <div className="divide-y divide-slate-100">
-                {activeData?.rules?.map((r: any) => (
-                  <div key={r.id} className="p-5 flex flex-col sm:flex-row sm:items-start justify-between gap-4 text-xs">
-                    <div className="space-y-1.5 max-w-2xl">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">
-                          {r.key}
-                        </span>
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                            r.severity === 'blocker'
-                              ? 'bg-red-100 text-red-800'
-                              : r.severity === 'major'
-                                ? 'bg-orange-100 text-orange-800'
-                                : 'bg-amber-100 text-amber-800'
-                          }`}
-                        >
-                          {r.severity}
-                        </span>
-                        <span className="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-bold uppercase text-slate-600">
-                          {r.category}
-                        </span>
-                        <h3 className="font-bold text-slate-900 text-sm ml-1">{r.title}</h3>
-                      </div>
-                      <p className="text-slate-600 leading-relaxed">{r.explanation}</p>
-                      {r.suggestionHint && (
-                        <p className="text-[11px] text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-md inline-block">
-                          <strong>Fix pattern:</strong> {r.suggestionHint}
-                        </p>
+
+              {ruleToggleMutation.error && (
+                <InlineRetry
+                  error={ruleToggleMutation.error}
+                  onRetry={ruleToggleMutation.retry}
+                  onDiscard={ruleToggleMutation.discard}
+                  isRetrying={ruleToggleMutation.isBusy}
+                />
+              )}
+
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Rule Key</TableHead>
+                    <TableHead>Severity</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Source Document</TableHead>
+                    {rulesViewMode === 'draft' && isManager && <TableHead>Status</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(rulesViewMode === 'draft' && draftData && ruleToggleMutation.state.length > 0
+                    ? ruleToggleMutation.state
+                    : activeData?.rules
+                  )?.map((r) => (
+                    <TableRow key={r.id || r.key}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <RuleChip ruleKey={r.key} />
+                          {r.__pending && <PendingBadge label="Saving…" />}
+                        </div>
+                      </TableCell>
+                      <TableCell><SeverityBadge severity={r.severity} /></TableCell>
+                      <TableCell className="font-mono text-xs uppercase text-ink-2">{r.category}</TableCell>
+                      <TableCell>
+                        <p className="font-bold text-ink text-sm">{r.title}</p>
+                        <p className="text-xs text-ink-2 mt-0.5 max-w-lg leading-relaxed">{r.explanation}</p>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs text-ink-3">
+                        {r.sourceSection ? `§ ${r.sourceSection}` : 'Brand Policy'}
+                      </TableCell>
+                      {rulesViewMode === 'draft' && isManager && (
+                        <TableCell>
+                          <button
+                            type="button"
+                            disabled={ruleToggleMutation.isBusy}
+                            onClick={() =>
+                              ruleToggleMutation.mutate({ ruleKey: r.key, enabled: !r.enabled })
+                            }
+                            className={`px-2.5 py-1 text-xs font-mono font-bold uppercase border-2 border-ink transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-focus ${
+                              r.enabled
+                                ? 'bg-status-approved text-ink hover:bg-status-approved/80'
+                                : 'bg-surface-2 text-ink-3 hover:text-ink'
+                            }`}
+                          >
+                            {r.enabled ? 'Enabled' : 'Disabled'}
+                          </button>
+                        </TableCell>
                       )}
-                    </div>
-                    <div className="text-right text-[11px] text-slate-400 font-mono shrink-0">
-                      {r.sourceSection ? `§ ${r.sourceSection}` : 'Brand Policy'}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </motion.div>
           )}
 
@@ -311,40 +412,37 @@ function GuidelinesContent() {
           {currentTabId === 'glossary' && (
             <motion.div
               key="glossary"
-              role="tabpanel"
-              id="guidelines-tabs-panel-glossary"
-              aria-labelledby="guidelines-tabs-tab-glossary"
-              initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={shouldReduceMotion ? undefined : { opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-              className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden p-6"
+              exit={shouldReduceMotion ? undefined : { opacity: 0, y: -4 }}
+              transition={{ duration: 0.15 }}
+              className="space-y-6"
             >
-              <h3 className="text-sm font-bold text-slate-900 mb-4">Approved & Discouraged Terminology</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                {activeData?.glossary?.map((t: any) => (
-                  <div key={t.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-1">
+              <SectionLabel number="03" title="Approved & Discouraged Terminology" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {activeData?.glossary?.map((t) => (
+                  <Card key={t.id} className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-900 text-sm">{t.term}</span>
+                      <span className="font-bold text-base text-ink">{t.term}</span>
                       <span
-                        className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                        className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 border-2 border-ink ${
                           t.kind === 'preferred'
-                            ? 'bg-emerald-100 text-emerald-800'
+                            ? 'bg-status-approved text-ink'
                             : t.kind === 'banned'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-amber-100 text-amber-800'
+                              ? 'bg-severity-blocker text-ink'
+                              : 'bg-severity-major text-ink'
                         }`}
                       >
                         {t.kind}
                       </span>
                     </div>
                     {t.preferredAlternative && (
-                      <p className="text-slate-600">
-                        Use instead: <strong className="text-emerald-700">{t.preferredAlternative}</strong>
+                      <p className="text-xs text-ink">
+                        Preferred: <strong className="text-accent underline">{t.preferredAlternative}</strong>
                       </p>
                     )}
-                    {t.note && <p className="text-slate-500 text-[11px] italic">{t.note}</p>}
-                  </div>
+                    {t.note && <p className="text-xs font-mono text-ink-3 italic">{t.note}</p>}
+                  </Card>
                 ))}
               </div>
             </motion.div>
@@ -354,32 +452,25 @@ function GuidelinesContent() {
           {currentTabId === 'facts' && (
             <motion.div
               key="facts"
-              role="tabpanel"
-              id="guidelines-tabs-panel-facts"
-              aria-labelledby="guidelines-tabs-tab-facts"
-              initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={shouldReduceMotion ? undefined : { opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-              className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden p-6"
+              exit={shouldReduceMotion ? undefined : { opacity: 0, y: -4 }}
+              transition={{ duration: 0.15 }}
+              className="space-y-6"
             >
-              <h3 className="text-sm font-bold text-slate-900 mb-4">
-                Approved Metrics Sheet 2025-Q3 (NUM-001 Grounding)
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                {activeData?.facts?.map((f: any) => (
-                  <div key={f.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-2">
+              <SectionLabel number="04" title="Approved Metrics Sheet 2025-Q3 (NUM-001 Grounding)" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {activeData?.facts?.map((f) => (
+                  <Card key={f.id} className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">
-                        {f.key}
-                      </span>
-                      <span className="text-[10px] font-semibold text-slate-400">Verified 2025</span>
+                      <RuleChip ruleKey={f.key} />
+                      <span className="text-[10px] font-mono font-bold text-ink-3">VERIFIED 2025</span>
                     </div>
-                    <p className="font-bold text-slate-900">{f.statement}</p>
-                    <p className="text-[11px] text-slate-500 font-mono">
-                      Keywords: {f.searchVector}
+                    <p className="font-bold text-sm text-ink">{f.statement}</p>
+                    <p className="text-xs text-ink-3 font-mono pt-2 border-t border-rule">
+                      Context Keywords: {f.searchVector}
                     </p>
-                  </div>
+                  </Card>
                 ))}
               </div>
             </motion.div>
@@ -389,21 +480,17 @@ function GuidelinesContent() {
           {currentTabId === 'rulesets' && (
             <motion.div
               key="rulesets"
-              role="tabpanel"
-              id="guidelines-tabs-panel-rulesets"
-              aria-labelledby="guidelines-tabs-tab-rulesets"
-              initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={shouldReduceMotion ? undefined : { opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-6"
+              exit={shouldReduceMotion ? undefined : { opacity: 0, y: -4 }}
+              transition={{ duration: 0.15 }}
+              className="space-y-8"
             >
-              {/* Active & Draft Status */}
-              <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <Card className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b-2 border-rule">
                   <div>
-                    <h3 className="text-base font-bold text-slate-900">Rule Set Version Governance</h3>
-                    <p className="text-xs text-slate-500 mt-1">
+                    <SectionLabel number="05" title="Atomic Version Governance" />
+                    <p className="text-xs text-ink-2 mt-1">
                       Rule changes are versioned atomically so past audit logs remain strictly reproducible.
                     </p>
                   </div>
@@ -411,23 +498,25 @@ function GuidelinesContent() {
                   {isManager && (
                     <div className="flex items-center gap-2">
                       {!draftData ? (
-                        <button
+                        <Button
+                          variant="primary"
+                          size="sm"
                           onClick={handleCreateDraft}
-                          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
                         >
                           Create Draft Rule Set (v{(activeData?.ruleSet?.version || 3) + 1})
-                        </button>
+                        </Button>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-lg">
-                            Draft v{draftData.ruleSet.version} in progress
+                          <span className="text-xs font-mono font-bold text-severity-major border border-ink bg-severity-major/20 px-2.5 py-1">
+                            Draft v{draftData.ruleSet?.version || 4} in progress
                           </span>
-                          <button
-                            onClick={handleActivateDraft}
-                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => setActivateConfirmOpen(true)}
                           >
-                            Activate v{draftData.ruleSet.version}
-                          </button>
+                            Activate v{draftData.ruleSet?.version || 4}
+                          </Button>
                         </div>
                       )}
                     </div>
@@ -435,46 +524,47 @@ function GuidelinesContent() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-2">
-                  <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/50">
-                    <span className="text-[10px] font-bold uppercase text-emerald-700">Currently Active</span>
-                    <p className="font-bold text-slate-900 text-sm mt-1">
-                      {activeData?.ruleSet?.name || 'Brightway Solar'} (Version {activeData?.ruleSet?.version || 3})
+                  <div className="p-4 border-2 border-ink bg-surface-2 space-y-1">
+                    <span className="text-[10px] font-mono font-bold uppercase text-accent">Active Rule Set</span>
+                    <p className="font-bold text-ink text-sm">
+                      {activeData?.ruleSet?.name || 'Brightway Solar'} (v{activeData?.ruleSet?.version || 3})
                     </p>
-                    <p className="text-slate-600 mt-1">{activeData?.rules?.length || 13} rules active across all checks.</p>
+                    <p className="text-ink-2 font-mono">{activeData?.rules?.length || 13} rules active across all checks.</p>
                   </div>
 
-                  <div className="p-4 rounded-xl border border-slate-200 bg-slate-50">
-                    <span className="text-[10px] font-bold uppercase text-slate-500">Draft Status</span>
-                    <p className="font-bold text-slate-900 text-sm mt-1">
-                      {draftData ? `Draft v${draftData.ruleSet.version}` : 'No active draft'}
+                  <div className="p-4 border-2 border-ink bg-surface-2 space-y-1">
+                    <span className="text-[10px] font-mono font-bold uppercase text-ink-3">Draft Status</span>
+                    <p className="font-bold text-ink text-sm">
+                      {draftData?.ruleSet ? `Draft v${draftData.ruleSet.version}` : 'No active draft'}
                     </p>
-                    <p className="text-slate-600 mt-1">
+                    <p className="text-ink-2 font-mono">
                       {draftData ? 'Staged changes pending manager activation.' : 'Create a draft to test rule adjustments.'}
                     </p>
                   </div>
                 </div>
-              </div>
+              </Card>
 
               {/* YAML Import Section (Manager Only) */}
               {isManager && (
-                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-4">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900">Import Rule Guidelines from YAML</h3>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Upload or paste rules in YAML format. The parser will validate syntax and report exact line numbers if an error occurs.
-                    </p>
-                  </div>
+                <Card className="space-y-4">
+                  <SectionLabel number="06" title="Import Rule Guidelines from YAML" />
+                  <p className="text-xs text-ink-2">
+                    Upload or paste rules in YAML format. The parser validates syntax and reports line-numbered errors.
+                  </p>
 
                   {yamlError && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-800 flex items-start gap-2">
-                      <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                    <div
+                      role="alert"
+                      className="p-3 border-2 border-ink bg-severity-blocker text-ink text-xs font-mono font-medium flex items-center gap-2"
+                    >
+                      <OctagonX className="w-4 h-4 shrink-0" />
                       <span>{yamlError}</span>
                     </div>
                   )}
 
                   {yamlSuccess && (
-                    <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-start gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                    <div className="p-3 border-2 border-ink bg-status-approved text-ink text-xs font-mono font-bold flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 shrink-0" />
                       <span>{yamlSuccess}</span>
                     </div>
                   )}
@@ -483,23 +573,31 @@ function GuidelinesContent() {
                     <textarea
                       value={yamlText}
                       onChange={(e) => setYamlText(e.target.value)}
-                      rows={10}
+                      rows={8}
                       placeholder="Paste YAML rules configuration here…"
-                      className="w-full p-4 font-mono text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-slate-900 text-slate-100"
+                      className="w-full p-4 font-mono text-xs border-2 border-ink bg-surface text-ink focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-focus rounded-none"
                     />
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
-                    >
+                    <Button type="submit" variant="secondary" size="md">
                       Validate & Import into Draft
-                    </button>
+                    </Button>
                   </form>
-                </div>
+                </Card>
               )}
             </motion.div>
           )}
         </AnimatePresence>
+        )}
       </div>
+
+      {/* Confirm Activation Dialog */}
+      <ConfirmDialog
+        open={activateConfirmOpen}
+        onClose={() => setActivateConfirmOpen(false)}
+        onConfirm={handleActivateDraft}
+        title={`Publish Rule Set v${draftData?.ruleSet?.version || 4}`}
+        description="Activating this draft makes it the active rule set for all subsequent compliance checks. Existing approved items will remain pinned to their historical version."
+        confirmLabel={`Publish v${draftData?.ruleSet?.version || 4}`}
+      />
     </div>
   );
 }
@@ -508,8 +606,8 @@ export default function GuidelinesPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-          <div className="text-slate-400 text-xs">Loading guidelines…</div>
+        <div className="min-h-screen bg-paper flex items-center justify-center text-ink-2 font-mono text-xs">
+          Loading guidelines…
         </div>
       }
     >

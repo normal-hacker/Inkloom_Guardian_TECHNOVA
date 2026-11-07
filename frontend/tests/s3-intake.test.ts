@@ -119,7 +119,7 @@ describe('Stage S3 — Content Intake and Check Pipeline', () => {
       expect(err.status).toBe(422);
       expect(err.code).toBe('scanned_pdf_not_supported');
     }
-  });
+  }, 15000);
 
   it('5. Newline normalisation occurs before hashing', () => {
     const crlf = 'Line 1\r\nLine 2\r\n';

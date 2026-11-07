@@ -477,3 +477,23 @@ export const findingsRelations = relations(findings, ({ one, many }) => ({
   decisions: many(findingDecisions),
 }));
 
+// 17. idempotency_keys (for Optimistic UI duplicate submission protection)
+export const idempotencyKeys = pgTable(
+  'idempotency_keys',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    key: text('key').notNull(),
+    endpoint: text('endpoint').notNull(),
+    responseStatus: integer('response_status').notNull(),
+    responseBody: jsonb('response_body').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('idx_idempotency_user_key').on(table.userId, table.key),
+  ]
+);
+
+

@@ -2,134 +2,197 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ShieldCheck, ArrowLeft, CheckCircle2, AlertTriangle, BookOpen, Clock, FileCheck } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, CheckCircle2, Lock } from 'lucide-react';
+import { SeverityBadge, StatusPill, RuleChip } from '@/components/ui/badge';
 
 export default function DemoReportPage() {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-indigo-600">
+    <div className="min-h-screen bg-paper text-ink flex flex-col justify-between">
+      {/* Public Top Header */}
+      <header className="border-b-2 border-ink bg-surface">
+        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-ink hover:underline focus:outline-none focus:ring-2 focus:ring-accent"
+          >
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Home</span>
           </Link>
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center text-white">
-              <ShieldCheck className="w-4 h-4" />
+            <div className="w-8 h-8 bg-ink text-white flex items-center justify-center font-bold">
+              <ShieldCheck className="w-5 h-5" />
             </div>
-            <span className="font-extrabold text-sm text-slate-900">Inkloom Guardian</span>
+            <span className="font-mono font-bold text-sm tracking-tight">INKLOOM GUARDIAN</span>
           </div>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-12 flex-1 w-full space-y-6">
-        <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full">
-            Verified Governance Sample Report
+      {/* Main Content */}
+      <main className="max-w-5xl mx-auto px-4 py-10 flex-1 w-full space-y-8">
+        {/* Verification Band */}
+        <div className="p-4 bg-surface border-2 border-ink shadow-hard flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <StatusPill status="approved" />
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-ink">
+              Verified Governance Sample Report · Public Proof Artifact
+            </span>
+          </div>
+          <span className="text-xs font-mono text-ink-3">
+            Report ID: BRW-2026-081
           </span>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight font-serif mt-3">
-            Residential Solar Campaign Copy (Report #BRW-2026-081)
+        </div>
+
+        {/* Title & Metadata */}
+        <div className="space-y-2">
+          <h1 className="text-3xl sm:text-4xl font-mono font-bold tracking-tight text-ink uppercase">
+            Residential Solar Campaign Copy
           </h1>
-          <p className="mt-1 text-xs text-slate-500 font-mono">
-            Content Hash: ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
+          <p className="text-xs font-mono text-ink-2 break-all">
+            Content SHA-256: <span className="font-bold text-ink">ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad</span>
           </p>
         </div>
 
         {/* Executive Summary Card */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="bg-surface border-2 border-ink p-6 shadow-hard space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b-2 border-ink gap-4">
             <div>
-              <span className="text-xs text-slate-400 uppercase font-bold">Lifecycle State</span>
-              <p className="text-lg font-extrabold text-emerald-700 flex items-center gap-1.5 mt-0.5">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-ink-3">
+                Final Review Status
+              </span>
+              <p className="text-xl font-mono font-bold text-ink flex items-center gap-2 mt-1">
+                <CheckCircle2 className="w-5 h-5 text-ink" />
                 <span>Approved by Human Reviewer</span>
               </p>
             </div>
-            <div className="text-right">
-              <span className="text-xs text-slate-400 uppercase font-bold">Governance Rule Pack</span>
-              <p className="text-sm font-bold text-slate-900 mt-0.5">Brightway Solar v3 (Active)</p>
+            <div className="text-left sm:text-right">
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-ink-3">
+                Active Rule Pack
+              </span>
+              <p className="text-sm font-mono font-bold text-ink mt-1">
+                Brightway Solar v3 (Active Policy)
+              </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-            <div>
-              <span className="text-slate-400">Author</span>
-              <p className="font-bold text-slate-800">Asha Patel (Creator)</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono">
+            <div className="p-3 border border-ink bg-surface-2">
+              <span className="text-ink-3 text-[11px] uppercase block">Author</span>
+              <p className="font-bold text-ink mt-1">Asha Patel (Creator)</p>
             </div>
-            <div>
-              <span className="text-slate-400">Reviewed By</span>
-              <p className="font-bold text-slate-800">Priya Sharma (Reviewer)</p>
+            <div className="p-3 border border-ink bg-surface-2">
+              <span className="text-ink-3 text-[11px] uppercase block">Reviewer</span>
+              <p className="font-bold text-ink mt-1">Priya Sharma (Reviewer)</p>
             </div>
-            <div>
-              <span className="text-slate-400">Blockers Prevented</span>
-              <p className="font-bold text-red-600">2 Blockers Resolved</p>
+            <div className="p-3 border border-ink bg-surface-2">
+              <span className="text-ink-3 text-[11px] uppercase block">Blockers Handled</span>
+              <p className="font-bold text-ink mt-1">2 Blockers Resolved</p>
             </div>
-            <div>
-              <span className="text-slate-400">Turnaround</span>
-              <p className="font-bold text-slate-800">55 minutes</p>
+            <div className="p-3 border border-ink bg-surface-2">
+              <span className="text-ink-3 text-[11px] uppercase block">Turnaround</span>
+              <p className="font-bold text-ink mt-1">55 Minutes</p>
             </div>
           </div>
         </div>
 
-        {/* Text Progression (v1 → v2) */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">
-            Evolution from Draft to Approved Copy
-          </h2>
+        {/* Copy Evolution (v1 vs v2) */}
+        <div className="bg-surface border-2 border-ink p-6 shadow-hard space-y-6">
+          <div className="pb-3 border-b-2 border-ink">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-ink-3">
+              Version Progression
+            </span>
+            <h2 className="text-base font-bold text-ink uppercase tracking-tight mt-1">
+              Evolution from Draft to Compliant Copy
+            </h2>
+          </div>
 
-          <div className="space-y-3 text-xs">
+          <div className="space-y-6">
             {/* Version 1 */}
-            <div className="p-4 rounded-xl bg-red-50/50 border border-red-200 space-y-2">
-              <div className="flex items-center justify-between font-bold text-red-950">
-                <span>Version 1 (Initial Intake)</span>
-                <span className="text-[10px] uppercase px-2 py-0.5 rounded bg-red-200 text-red-900">
-                  2 Blockers Flagged
+            <div className="border-2 border-ink bg-surface-2 p-5 space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b border-rule">
+                <span className="font-mono text-xs font-bold uppercase tracking-wider text-ink">
+                  Version 1 (Initial Intake Draft)
                 </span>
+                <SeverityBadge severity="blocker" count={2} />
               </div>
-              <p className="font-mono text-slate-700 leading-relaxed">
-                &ldquo;Our panels are the <mark className="bg-red-200 text-red-950 px-1 py-0.5 rounded">best</mark> on the market and <mark className="bg-red-200 text-red-950 px-1 py-0.5 rounded">guarantee 40% savings</mark>!&rdquo;
-              </p>
-              <div className="text-[11px] text-red-800 space-y-1">
-                <p>• <strong>CLAIM-001 (Blocker):</strong> Superlative &ldquo;best&rdquo; cited against Brand Voice Guide § 5.2.</p>
-                <p>• <strong>NUM-001 (Blocker):</strong> &ldquo;40%&rdquo; exceeds approved range of 20% in Facts Sheet 2025-Q3.</p>
+
+              <div className="p-4 bg-paper border border-ink font-mono text-xs leading-relaxed text-ink">
+                &ldquo;Our panels are the{' '}
+                <mark className="bg-blocker text-ink font-bold px-1 border border-ink">
+                  best
+                </mark>{' '}
+                on the market and{' '}
+                <mark className="bg-blocker text-ink font-bold px-1 border border-ink">
+                  guarantee 40% savings
+                </mark>
+                !&rdquo;
+              </div>
+
+              <div className="space-y-2 text-xs font-mono">
+                <div className="flex items-start gap-2 p-2 border border-ink bg-paper">
+                  <RuleChip code="CLAIM-001" />
+                  <div>
+                    <span className="font-bold text-ink">CLAIM-001 (Blocker):</span> Superlative &ldquo;best&rdquo; cited against Brand Voice Guide § 5.2.
+                  </div>
+                </div>
+                <div className="flex items-start gap-2 p-2 border border-ink bg-paper">
+                  <RuleChip code="NUM-001" />
+                  <div>
+                    <span className="font-bold text-ink">NUM-001 (Blocker):</span> &ldquo;40%&rdquo; exceeds approved 20% benchmark in Facts Sheet 2025-Q3.
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Version 2 */}
-            <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-200 space-y-2">
-              <div className="flex items-center justify-between font-bold text-emerald-950">
-                <span>Version 2 (Approved by Priya Sharma)</span>
-                <span className="text-[10px] uppercase px-2 py-0.5 rounded bg-emerald-200 text-emerald-900">
-                  0 Open Blockers · Signed
+            <div className="border-2 border-ink bg-paper p-5 space-y-4 shadow-hard">
+              <div className="flex items-center justify-between pb-2 border-b-2 border-ink">
+                <span className="font-mono text-xs font-bold uppercase tracking-wider text-ink">
+                  Version 2 (Approved & Signed by Priya Sharma)
+                </span>
+                <span className="font-mono text-xs font-bold px-2 py-0.5 border border-ink bg-approved text-ink uppercase">
+                  0 Open Blockers · Cleared
                 </span>
               </div>
-              <p className="font-mono text-slate-700 leading-relaxed">
-                &ldquo;Switch to clean energy with Brightway Solar. Enjoy <mark className="bg-emerald-200 text-emerald-950 px-1 py-0.5 rounded">20% savings</mark> on your bill and a 25-year panel warranty.&rdquo;
-              </p>
-              <p className="text-[11px] text-emerald-800">
-                Approved note: <em>&ldquo;Verified against approved fact sheet and voice guidelines.&rdquo;</em>
-              </p>
+
+              <div className="p-4 bg-surface border border-ink font-mono text-xs leading-relaxed text-ink">
+                &ldquo;Switch to clean energy with Brightway Solar. Enjoy{' '}
+                <mark className="bg-approved text-ink font-bold px-1 border border-ink">
+                  20% savings
+                </mark>{' '}
+                on your electric bill and a 25-year panel warranty.&rdquo;
+              </div>
+
+              <div className="p-3 border border-ink bg-surface-2 text-xs font-mono text-ink">
+                <span className="font-bold uppercase tracking-wider text-ink-3 block text-[10px]">
+                  Reviewer Decision Note:
+                </span>
+                &ldquo;Updated claim to match approved 2025-Q3 residential benchmark. Superlative replaced with factual statement.&rdquo;
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Immutable Audit Log Entry */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-3">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">
-            Immutable Audit Trail Seal
-          </h2>
-          <div className="font-mono text-xs bg-slate-900 text-slate-200 p-4 rounded-xl space-y-1.5 overflow-x-auto">
-            <p><span className="text-slate-400">ACTION:</span> content.approve</p>
-            <p><span className="text-slate-400">ACTOR:</span> priya@brightway.example (Reviewer)</p>
-            <p><span className="text-slate-400">RULE_SET_ID:</span> 30000000-0000-0000-0000-000000000003</p>
-            <p><span className="text-slate-400">CONTENT_HASH:</span> ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad</p>
-            <p><span className="text-slate-400">HUMAN_GATE_STATUS:</span> PASSED_BLOCKER_CHECK</p>
+        {/* Cryptographic Seal */}
+        <div className="bg-surface border-2 border-ink p-6 shadow-hard space-y-4">
+          <div className="pb-3 border-b-2 border-ink flex items-center justify-between">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-ink">
+              Cryptographic Audit Seal
+            </span>
+            <Lock className="w-4 h-4 text-ink" />
+          </div>
+          <div className="font-mono text-xs bg-ink text-white p-4 space-y-1.5 overflow-x-auto leading-relaxed">
+            <p><span className="text-ink-3">ACTION:</span> content.approve</p>
+            <p><span className="text-ink-3">ACTOR:</span> priya@brightway.example (Role: reviewer)</p>
+            <p><span className="text-ink-3">RULE_SET_ID:</span> 30000000-0000-0000-0000-000000000003</p>
+            <p><span className="text-ink-3">CONTENT_HASH:</span> ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad</p>
+            <p><span className="text-ink-3">HUMAN_GATE_STATUS:</span> PASSED_ZERO_OPEN_BLOCKERS</p>
           </div>
         </div>
       </main>
 
-      <footer className="border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-400">
-        Inkloom Guardian · Public Proof of Execution
+      {/* Footer */}
+      <footer className="border-t-2 border-ink bg-surface py-6 text-center text-xs font-mono text-ink-3">
+        INKLOOM GUARDIAN · PUBLIC PROOF OF EXECUTION · HACKATHON ROUND 2
       </footer>
     </div>
   );

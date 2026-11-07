@@ -1,63 +1,25 @@
+@import '../styles/tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: light;
-  --background: #F9FAFB;
-  --foreground: #111827;
-  --card: #FFFFFF;
-  --card-foreground: #111827;
-  --primary: #4F46E5;
-  --primary-foreground: #FFFFFF;
-  --secondary: #E0E7FF;
-  --accent: #C7D2FE;
-  --muted: #F3F4F6;
-  --muted-foreground: #4B5563;
-  --border: #E5E7EB;
-  --destructive: #B91C1C;
-  --chart-1: #6366F1;
-  --chart-2: #0EA5E9;
-  --chart-3: #8B5CF6;
-  --chart-4: #38BDF8;
-  --chart-5: #A5B4FC;
-  --color-primary: var(--primary);
-  --color-secondary: var(--secondary);
-  --color-accent: var(--accent);
-  --color-destructive: var(--destructive);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-
-  --bg: #f5f7fb;
-  --panel: #ffffff;
-  --ink: #1c2430;
-  --muted-legacy: #5d7285;
-  --accent-soft: #ebf2ff;
-  --danger: #b42318;
-  --danger-soft: #fef3f2;
-  --line: #d9e2ec;
+* {
+  box-sizing: border-box;
 }
 
-/* Fallback for browsers without relative color / oklch support */
-@supports not (color: oklch(from red l c h)) {
-  .glass-button {
-    background: rgba(255, 255, 255, 0.85) !important;
-    border: 1px solid #d1d5db !important;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
-  }
-  .glass-button-text {
-    color: #111827 !important;
-  }
-  .glass-input {
-    background: rgba(255, 255, 255, 0.95) !important;
-    border: 1px solid #d1d5db !important;
-  }
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-geist, system-ui, sans-serif);
+  min-height: 100%;
 }
 
-* { box-sizing: border-box; }
+button, textarea, input, select {
+  font: inherit;
+}
 
 .no-scrollbar::-webkit-scrollbar {
   display: none;
@@ -65,157 +27,4 @@
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
-}
-
-html, body {
-  margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
-  background: var(--bg);
-  color: var(--ink);
-}
-
-button, textarea {
-  font: inherit;
-}
-
-.page-shell {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 40px 20px 80px;
-}
-
-.panel {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  box-shadow: 0 8px 24px rgba(20, 30, 50, 0.05);
-}
-
-.hero {
-  padding: 28px 32px 20px;
-  margin-bottom: 24px;
-}
-
-.eyebrow {
-  margin: 0 0 12px;
-  color: var(--accent);
-  font-size: 0.8rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  font-weight: 700;
-}
-
-h1 {
-  margin: 0;
-  font-size: clamp(2rem, 3vw, 3.2rem);
-  line-height: 1.1;
-}
-
-.lede {
-  margin: 14px 0 0;
-  color: var(--muted);
-  max-width: 700px;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: 20px;
-  padding: 20px;
-}
-
-.editor-panel, .results-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-label {
-  font-weight: 700;
-}
-
-textarea {
-  width: 100%;
-  min-height: 220px;
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  resize: vertical;
-  background: #fafcff;
-}
-
-button {
-  border: none;
-  border-radius: 12px;
-  background: var(--accent);
-  color: white;
-  padding: 12px 16px;
-  cursor: pointer;
-  font-weight: 700;
-}
-
-button:disabled {
-  opacity: 0.7;
-  cursor: wait;
-}
-
-.summary-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  color: var(--muted);
-  font-size: 0.95rem;
-}
-
-.findings-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.findings-list li {
-  padding: 14px 16px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--panel);
-}
-
-.findings-list li.blocker {
-  background: var(--danger-soft);
-  border-color: #f3b7b4;
-}
-
-.finding-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-
-.quote {
-  font-weight: 700;
-  margin: 0 0 8px;
-}
-
-.meta {
-  margin: 6px 0 0;
-  color: var(--muted);
-}
-
-.muted {
-  color: var(--muted);
-}
-
-.success {
-  color: #0b7a5a;
-  font-weight: 700;
-}
-
-@media (max-width: 760px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
 }

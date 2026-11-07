@@ -28,6 +28,7 @@ export async function addComment(params: {
   }
 
   const commentId = crypto.randomUUID();
+  const now = new Date();
 
   await db.insert(schema.comments).values({
     id: commentId,
@@ -36,6 +37,7 @@ export async function addComment(params: {
     findingId: findingId || null,
     authorId,
     body: body.trim(),
+    createdAt: now,
   });
 
   // Write audit
@@ -52,7 +54,116 @@ export async function addComment(params: {
     },
   });
 
-  return { id: commentId, contentItemId, body: body.trim() };
+  // Fetch author details for rich return
+  const users = await db
+    .select({
+      email: schema.users.email,
+      displayName: schema.users.displayName,
+      role: schema.users.role,
+    })
+    .from(schema.users)
+    .where(eq(schema.users.id, authorId))
+    .limit(1);
+
+  const author = users[0] || {
+    email: 'user@brightway.example',
+    displayName: 'User',
+    role: 'creator',
+  };
+
+  return {
+    id: commentId,
+    contentItemId,
+    contentVersionId: contentVersionId || null,
+    findingId: findingId || null,
+    authorId,
+    authorEmail: author.email,
+    authorName: author.displayName,
+    authorRole: author.role,
+    body: body.trim(),
+    createdAt: now.toISOString(),
+  };
+}
+
+export async function deleteComment(params: {
+  commentId: string;
+  authorId: string;
+  workspaceId: string;
+}) {
+  const { commentId, authorId, workspaceId } = params;
+
+  const existing = await db
+    .select()
+    .from(schema.comments)
+    .where(eq(schema.comments.id, commentId))
+    .limit(1);
+
+  if (!existing.length) {
+    // Idempotent delete: returns success even if already deleted
+    return { success: true, alreadyDeleted: true, id: commentId };
+  }
+
+  const comment = existing[0];
+  if (comment.authorId !== authorId) {
+    throw new Error('Forbidden: You can only delete your own comments.');
+  }
+
+  await db.delete(schema.comments).where(eq(schema.comments.id, commentId));
+
+  await db.insert(schema.auditLog).values({
+    workspaceId,
+    actorId: authorId,
+    action: 'comment.delete',
+    entityType: 'comment',
+    entityId: commentId,
+    detail: { contentItemId: comment.contentItemId },
+  });
+
+  return { success: true, id: commentId };
+}
+
+export async function editComment(params: {
+  commentId: string;
+  authorId: string;
+  workspaceId: string;
+  newBody: string;
+}) {
+  const { commentId, authorId, workspaceId, newBody } = params;
+
+  if (!newBody || newBody.trim().length === 0) {
+    throw new Error('Comment body cannot be empty.');
+  }
+
+  const existing = await db
+    .select()
+    .from(schema.comments)
+    .where(eq(schema.comments.id, commentId))
+    .limit(1);
+
+  if (!existing.length) {
+    throw new Error('Comment not found.');
+  }
+
+  const comment = existing[0];
+  if (comment.authorId !== authorId) {
+    throw new Error('Forbidden: You can only edit your own comments.');
+  }
+
+  await db
+    .update(schema.comments)
+    .set({ body: newBody.trim() })
+    .where(eq(schema.comments.id, commentId));
+
+  await db.insert(schema.auditLog).values({
+    workspaceId,
+    actorId: authorId,
+    action: 'comment.edit',
+    entityType: 'comment',
+    entityId: commentId,
+    detail: { contentItemId: comment.contentItemId },
+  });
+
+  return { success: true, id: commentId, body: newBody.trim() };
 }
 
 export async function getComments(contentItemId: string, workspaceId: string) {

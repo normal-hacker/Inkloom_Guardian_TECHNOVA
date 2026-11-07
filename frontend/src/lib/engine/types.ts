@@ -12,25 +12,7 @@ export type Category =
 
 export type Origin = 'rule' | 'ai';
 
-export interface Finding {
-  id: string;
-  ruleId?: string;
-  ruleKey: string;
-  ruleTitle: string;
-  ruleSetVersion: number;
-  sourceDoc: string;
-  sourceSection?: string;
-  origin: Origin;
-  category: Category;
-  severity: Severity;
-  spanStart: number;
-  spanEnd: number;
-  quote: string;
-  explanation: string;
-  suggestion?: string;
-  confidence: number;
-  status: 'open' | 'fixed' | 'dismissed' | 'overridden';
-}
+export type { Finding } from '../domain/types';
 
 export interface ApprovedFactItem {
   id: string;

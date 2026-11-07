@@ -130,19 +130,19 @@ export function BrandMark({ expanded, className }: { expanded?: boolean; classNa
 
   return (
     <div className={cn('flex items-center gap-3 select-none h-10', className)}>
-      <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-xs shrink-0">
-        <ShieldCheck className="w-5 h-5" aria-hidden="true" />
+      <div className="w-9 h-9 border-2 border-ink bg-ink flex items-center justify-center text-surface shadow-hard-sm shrink-0 rounded-none">
+        <ShieldCheck className="w-5 h-5 text-surface" aria-hidden="true" />
       </div>
       <div
         className={cn(
           'transition-all duration-200 overflow-hidden whitespace-nowrap',
-          isExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'
+          isExpanded ? 'opacity-100 max-w-48' : 'opacity-0 max-w-0'
         )}
       >
-        <span className="font-extrabold text-base text-slate-900 tracking-tight block">
+        <span className="font-bold text-sm text-ink tracking-tight font-mono uppercase block">
           Inkloom Guardian
         </span>
-        <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+        <span className="text-[10px] uppercase font-bold text-ink-3 tracking-wider font-mono block">
           Brand Integrity
         </span>
       </div>
@@ -233,8 +233,8 @@ export function DesktopSidebar({
             : { type: 'spring', bounce: 0, duration: 0.3 }
         }
         className={cn(
-          'h-full z-40 flex flex-col justify-between py-4 px-2.5 bg-[#F8F9FA] border-r border-slate-200 text-slate-800 select-none overflow-hidden',
-          pinned ? 'relative' : 'absolute top-0 left-0 bottom-0 shadow-lg',
+          'h-full z-40 flex flex-col justify-between py-4 px-2.5 bg-surface-2 border-r-2 border-ink text-ink select-none overflow-hidden rounded-none',
+          pinned ? 'relative' : 'absolute top-0 left-0 bottom-0 shadow-hard-lg',
           className
         )}
       >
@@ -250,8 +250,8 @@ export function DesktopSidebar({
                 aria-label={pinned ? 'Unpin sidebar' : 'Pin sidebar open'}
                 title={pinned ? 'Unpin sidebar' : 'Pin sidebar open'}
                 className={cn(
-                  'w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-200/70 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600',
-                  pinned && 'text-indigo-600 bg-indigo-50'
+                  'w-8 h-8 rounded-none border-2 border-ink bg-surface flex items-center justify-center text-ink hover:bg-surface-2 shadow-hard-sm transition-all focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-focus',
+                  pinned && 'bg-ink text-surface'
                 )}
               >
                 {pinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
@@ -304,7 +304,7 @@ export function MobileSidebar({
   }, [open, setOpen]);
 
   return (
-    <div className="md:hidden w-full bg-white border-b border-slate-200 px-4 py-2.5 flex items-center justify-between z-30 shrink-0">
+    <div className="md:hidden w-full bg-surface border-b-2 border-ink px-4 py-2.5 flex items-center justify-between z-30 shrink-0 text-ink">
       <BrandMark expanded={true} />
 
       <button
@@ -314,7 +314,7 @@ export function MobileSidebar({
         aria-expanded={open}
         aria-controls="mobile-sidebar-drawer"
         onClick={() => setOpen(!open)}
-        className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-700 hover:bg-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+        className="w-10 h-10 rounded-none border-2 border-ink bg-surface flex items-center justify-center text-ink hover:bg-surface-2 transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-focus"
       >
         <Menu className="w-5 h-5" aria-hidden="true" />
       </button>
@@ -332,7 +332,7 @@ export function MobileSidebar({
                 setOpen(false);
                 triggerRef.current?.focus();
               }}
-              className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs"
+              className="fixed inset-0 bg-ink/60 backdrop-blur-xs"
               aria-hidden="true"
             />
 
@@ -352,12 +352,12 @@ export function MobileSidebar({
                   : { type: 'spring', bounce: 0, duration: 0.3 }
               }
               className={cn(
-                'relative w-[min(85vw,320px)] h-full bg-[#F8F9FA] border-r border-slate-200 p-5 flex flex-col justify-between shadow-2xl z-10',
+                'relative w-[min(85vw,320px)] h-full bg-surface-2 border-r-2 border-ink p-5 flex flex-col justify-between shadow-hard-lg z-10 text-ink',
                 className
               )}
             >
               <div className="flex flex-col flex-1 min-h-0">
-                <div className="flex items-center justify-between pb-4 border-b border-slate-200 mb-4 shrink-0">
+                <div className="flex items-center justify-between pb-4 border-b-2 border-ink mb-4 shrink-0">
                   <BrandMark expanded={true} />
                   <button
                     type="button"
@@ -366,9 +366,9 @@ export function MobileSidebar({
                       setOpen(false);
                       triggerRef.current?.focus();
                     }}
-                    className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+                    className="w-8 h-8 rounded-none border-2 border-ink bg-surface flex items-center justify-center text-ink hover:bg-surface-2 transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-focus"
                   >
-                    <X className="w-5 h-5" aria-hidden="true" />
+                    <X className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </div>
 
@@ -413,21 +413,21 @@ export function SidebarLink({
       aria-current={active ? 'page' : undefined}
       title={link.label}
       className={cn(
-        'group flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 min-h-[44px] relative select-none',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2',
+        'group flex items-center gap-3 px-3 py-2.5 rounded-none text-xs font-mono font-bold transition-all duration-120 min-h-11 relative select-none',
+        'focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-focus focus-visible:ring-offset-3',
         active
-          ? 'bg-white text-indigo-700 font-bold shadow-xs border-l-4 border-indigo-600'
-          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70',
+          ? 'bg-ink text-surface border-2 border-ink shadow-hard-sm'
+          : 'text-ink-2 hover:text-ink hover:bg-surface border-2 border-transparent',
         className
       )}
     >
-      <span className={cn('shrink-0 flex items-center justify-center', active && 'text-indigo-600')}>
+      <span className={cn('shrink-0 flex items-center justify-center', active ? 'text-surface' : 'text-ink')}>
         {link.icon}
       </span>
       <span
         className={cn(
-          'transition-all duration-200 overflow-hidden whitespace-nowrap text-xs sm:text-sm group-hover:translate-x-0.5',
-          open ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'
+          'transition-all duration-200 overflow-hidden whitespace-nowrap text-xs group-hover:translate-x-0.5',
+          open ? 'opacity-100 max-w-48' : 'opacity-0 max-w-0'
         )}
       >
         {link.label}
@@ -435,7 +435,7 @@ export function SidebarLink({
       {link.badge !== undefined && link.badge > 0 && (
         <span
           className={cn(
-            'ml-auto flex h-4 min-w-4 items-center justify-center rounded-full bg-indigo-600 px-1 text-[10px] font-bold text-white transition-opacity',
+            'ml-auto flex h-4 min-w-4 items-center justify-center rounded-none border border-ink bg-severity-blocker px-1 text-[10px] font-mono font-bold text-ink transition-opacity',
             open ? 'opacity-100' : 'opacity-0'
           )}
           aria-hidden="true"
@@ -466,20 +466,20 @@ export function SidebarButton({
       aria-label={item.label}
       title={item.label}
       className={cn(
-        'w-full group flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 min-h-[44px] relative select-none text-left',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2',
+        'w-full group flex items-center gap-3 px-3 py-2.5 rounded-none text-xs font-mono font-bold transition-all duration-120 min-h-11 relative select-none text-left',
+        'focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-focus focus-visible:ring-offset-3',
         active
-          ? 'bg-white text-indigo-700 font-bold shadow-xs border-l-4 border-indigo-600'
-          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70',
+          ? 'bg-ink text-surface border-2 border-ink shadow-hard-sm'
+          : 'text-ink-2 hover:text-ink hover:bg-surface border-2 border-transparent',
         item.disabled && 'opacity-50 cursor-not-allowed',
         className
       )}
     >
-      <span className="shrink-0 flex items-center justify-center">{item.icon}</span>
+      <span className="shrink-0 flex items-center justify-center text-ink">{item.icon}</span>
       <span
         className={cn(
-          'transition-all duration-200 overflow-hidden whitespace-nowrap text-xs sm:text-sm group-hover:translate-x-0.5',
-          open ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'
+          'transition-all duration-200 overflow-hidden whitespace-nowrap text-xs group-hover:translate-x-0.5',
+          open ? 'opacity-100 max-w-48' : 'opacity-0 max-w-0'
         )}
       >
         {item.label}
@@ -487,7 +487,7 @@ export function SidebarButton({
       {item.badge !== undefined && item.badge > 0 && (
         <span
           className={cn(
-            'ml-auto flex h-4 min-w-4 items-center justify-center rounded-full bg-indigo-600 px-1 text-[10px] font-bold text-white transition-opacity',
+            'ml-auto flex h-4 min-w-4 items-center justify-center rounded-none border border-ink bg-severity-blocker px-1 text-[10px] font-mono font-bold text-ink transition-opacity',
             open ? 'opacity-100' : 'opacity-0'
           )}
           aria-hidden="true"

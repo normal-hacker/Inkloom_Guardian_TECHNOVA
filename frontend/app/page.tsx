@@ -1,201 +1,235 @@
 'use client';
 
-import React from 'react';
+import * as React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { ShieldCheck, CheckCircle2, Lock, Cpu, Sparkles } from 'lucide-react';
+import { ShieldCheck, ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { SectionLabel } from '@/components/ui/card';
+import { FindingCard } from '@/components/ui/finding-card';
+import { Finding } from '@/lib/domain/types';
 
 export default function LandingPage() {
-  const router = useRouter();
+  const sampleFinding1: Finding = {
+    id: 'sample-f1',
+    ruleKey: 'CLAIM-001',
+    ruleTitle: 'Unsubstantiated superlative claim',
+    sourceDoc: 'Brand Voice Guide v4',
+    sourceSection: '§5.2',
+    origin: 'rule',
+    category: 'claim',
+    severity: 'blocker',
+    spanStart: 0,
+    spanEnd: 18,
+    quote: 'best on the market',
+    explanation: 'Superlative claims such as "best" or "guarantee" without third-party laboratory verification violate advertising policy.',
+    suggestion: 'leading residential solar choice in the tri-state area',
+    confidence: 1.0,
+    status: 'open',
+  };
 
-  const handleQuickDemo = async (role: string) => {
-    try {
-      const res = await fetch('/api/v1/auth/demo-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role }),
-      });
-      if (res.ok) {
-        router.push('/dashboard');
-      } else {
-        router.push('/login');
-      }
-    } catch {
-      router.push('/login');
-    }
+  const sampleFinding2: Finding = {
+    id: 'sample-f2',
+    ruleKey: 'NUM-001',
+    ruleTitle: 'Unverified savings percentage',
+    sourceDoc: 'Approved Fact Sheet 2025-Q3',
+    sourceSection: 'F-001',
+    origin: 'rule',
+    category: 'fact',
+    severity: 'major',
+    spanStart: 0,
+    spanEnd: 11,
+    quote: '40% savings',
+    explanation: 'Approved savings claim is strictly "up to 25%" based on average regional kilowatt-hour utility data.',
+    suggestion: 'up to 25% average utility savings',
+    confidence: 1.0,
+    status: 'open',
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between">
-      {/* Navigation Bar */}
-      <header className="border-b border-slate-200 bg-white sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <div className="bg-paper min-h-screen text-ink flex flex-col justify-between selection:bg-accent selection:text-accent-ink">
+      {/* 1. Header */}
+      <header className="border-b-2 border-ink bg-surface sticky top-0 z-30">
+        <div className="max-w-[1280px] mx-auto px-6 md:px-8 h-18 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-indigo-100">
-              <ShieldCheck className="w-6 h-6" />
+            <div className="w-10 h-10 border-2 border-ink bg-ink text-surface flex items-center justify-center shadow-hard-sm">
+              <ShieldCheck className="w-6 h-6 text-surface" aria-hidden="true" />
             </div>
             <div>
-              <span className="font-extrabold text-lg text-slate-900 tracking-tight">Inkloom Guardian</span>
-              <span className="ml-2 text-[11px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full">
-                Round 2 Build
+              <span className="font-mono text-sm font-bold uppercase tracking-tight block">
+                INKLOOM GUARDIAN
+              </span>
+              <span className="text-[10px] uppercase font-bold text-ink-3 font-mono tracking-wider block">
+                Brand Integrity Platform
               </span>
             </div>
           </div>
-          <nav className="flex items-center gap-4">
-            <Link
-              href="/demo-report"
-              className="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors hidden sm:inline-block"
-            >
-              Sample Report
-            </Link>
-            <Link
-              href="/about-ai"
-              className="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors hidden sm:inline-block"
-            >
-              About AI
-            </Link>
-            <Link
-              href="/build-notes"
-              className="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors hidden sm:inline-block"
-            >
-              Build Notes
-            </Link>
-            <Link
-              href="/login"
-              className="px-4 py-2 text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2"
-            >
-              Sign In / Demo
+
+          <nav className="flex items-center gap-6">
+            <div className="hidden md:flex items-center gap-6 font-mono text-xs font-bold uppercase">
+              <Link href="/demo-report" className="text-ink-2 hover:text-ink underline">
+                Sample report
+              </Link>
+              <Link href="/about-ai" className="text-ink-2 hover:text-ink underline">
+                About AI
+              </Link>
+              <Link href="/build-notes" className="text-ink-2 hover:text-ink underline">
+                Build notes
+              </Link>
+            </div>
+            <Link href="/login">
+              <Button variant="primary" size="md">
+                <span>Try the demo</span>
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
             </Link>
           </nav>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 flex-1">
-        <div className="text-center max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-xs font-semibold text-indigo-700 mb-6">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>AI-Assisted Brand Governance · A Human Always Decides</span>
+      {/* 2. Hero Section */}
+      <main className="flex-1">
+        <section className="max-w-[1280px] mx-auto px-6 md:px-8 pt-16 md:pt-28 pb-16 md:pb-24 border-b-2 border-ink">
+          <div className="max-w-4xl space-y-6">
+            <SectionLabel number="00" title="Brand Governance Automation" />
+            <h1 className="text-5xl sm:text-7xl lg:text-8xl font-bold tracking-tight text-ink font-sans leading-[0.95]">
+              Check before you publish.
+            </h1>
+            <p className="text-lg sm:text-xl md:text-2xl text-ink-2 font-sans max-w-2xl leading-relaxed pt-2">
+              Brand checks that cite the rule, explain the issue, and leave the decision to a human.
+            </p>
+            <div className="flex flex-wrap items-center gap-4 pt-4">
+              <Link href="/login">
+                <Button variant="primary" size="lg">
+                  <span>Try the demo</span>
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+              </Link>
+              <Link href="/demo-report">
+                <Button variant="secondary" size="lg">
+                  View sample report
+                </Button>
+              </Link>
+            </div>
           </div>
-          <h1 className="text-4xl sm:text-6xl font-extrabold text-slate-900 tracking-tight font-serif leading-tight">
-            Check copy against brand guidelines <span className="text-indigo-600">before</span> you publish.
-          </h1>
-          <p className="mt-6 text-lg sm:text-xl text-slate-600 leading-relaxed">
-            Content goes in. It is verified against approved brand rules, terminology, and facts.
-            Every issue cites the exact rule and source document. Fixes are suggested, never auto-applied.
-          </p>
+        </section>
 
-          {/* Quick Demo Access Buttons */}
-          <div className="mt-10 p-6 sm:p-8 bg-white border border-slate-200 rounded-3xl shadow-xl">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4">
-              Instant Hackathon Judge Access — Click Any Role (No Sign-Up)
+        {/* 3. Proof Strip: Real Static Component Rendering */}
+        <section className="max-w-[1280px] mx-auto px-6 md:px-8 py-16 md:py-24 border-b-2 border-ink space-y-8">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <SectionLabel number="01" title="Example from the demo workspace" />
+            <span className="font-mono text-xs text-ink-3 uppercase">
+              SEEDED DEMO CONTENT · 2 CITED FINDINGS
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* Left: Highlighted Content Preview */}
+            <div className="lg:col-span-5 p-6 md:p-8 border-2 border-ink bg-surface shadow-hard space-y-4">
+              <span className="text-xs font-mono font-bold uppercase text-ink-3 block">
+                Draft Marketing Copy:
+              </span>
+              <p className="text-lg md:text-xl leading-relaxed text-ink font-sans">
+                &ldquo;Our panels are the{' '}
+                <mark className="bg-severity-blocker/40 text-ink px-1 border-b-2 border-ink font-semibold">
+                  best on the market
+                </mark>{' '}
+                and guarantee{' '}
+                <mark className="bg-severity-major/50 text-ink px-1 border-b-2 border-dashed border-ink font-semibold">
+                  40% savings
+                </mark>{' '}
+                on every residential energy bill.&rdquo;
+              </p>
+              <div className="pt-4 border-t-2 border-rule text-xs font-mono text-ink-2">
+                Clicking any highlighted phrase scrolls directly to the citing rule card.
+              </div>
+            </div>
+
+            {/* Right: Actual Finding Cards */}
+            <div className="lg:col-span-7 space-y-4">
+              <FindingCard finding={sampleFinding1} readOnly />
+              <FindingCard finding={sampleFinding2} readOnly />
+            </div>
+          </div>
+        </section>
+
+        {/* 4. How It Works: 4-Column Bordered Grid */}
+        <section className="max-w-[1280px] mx-auto px-6 md:px-8 py-16 md:py-24 border-b-2 border-ink space-y-8">
+          <SectionLabel number="02" title="How It Works" />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 border-2 border-ink bg-surface divide-y-2 sm:divide-y-0 sm:divide-x-2 divide-ink shadow-hard">
+            {[
+              {
+                step: '01',
+                title: 'Submit',
+                desc: 'Paste or upload content drafts into the intake workspace in markdown, text, docx, or pdf.',
+              },
+              {
+                step: '02',
+                title: 'Check',
+                desc: 'The deterministic rule engine and Gemini AI inspect text against the active guideline rule set.',
+              },
+              {
+                step: '03',
+                title: 'Review',
+                desc: 'Reviewers view exact citations, rule keys, and suggestions. Blockers prevent accidental publication.',
+              },
+              {
+                step: '04',
+                title: 'Decide',
+                desc: 'A designated reviewer approves or requests changes with mandatory audit justifications.',
+              },
+            ].map((col) => (
+              <div key={col.step} className="p-6 md:p-8 space-y-3">
+                <span className="px-2 py-0.5 bg-ink text-surface font-mono text-xs font-bold">
+                  {col.step}
+                </span>
+                <h3 className="text-xl font-bold text-ink">{col.title}</h3>
+                <p className="text-sm text-ink-2 leading-relaxed">{col.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 5. What It Won't Do Block */}
+        <section className="max-w-[1280px] mx-auto px-6 md:px-8 py-16 md:py-24 space-y-6">
+          <SectionLabel number="03" title="Ethical Boundary" />
+
+          <div className="p-8 md:p-12 border-2 border-ink bg-surface shadow-hard space-y-4">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-ink font-sans">
+              The AI never approves. A human decides.
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <button
-                onClick={() => handleQuickDemo('creator')}
-                className="p-4 rounded-2xl border border-slate-200 hover:border-indigo-400 bg-slate-50 hover:bg-indigo-50/50 text-left transition-all group focus:outline-none focus:ring-2 focus:ring-indigo-600"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-bold text-slate-900 group-hover:text-indigo-700">Asha</span>
-                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
-                    Creator
-                  </span>
-                </div>
-                <p className="text-xs text-slate-500">Intake content & apply suggestions</p>
-              </button>
-
-              <button
-                onClick={() => handleQuickDemo('creator')}
-                className="p-4 rounded-2xl border border-slate-200 hover:border-indigo-400 bg-slate-50 hover:bg-indigo-50/50 text-left transition-all group focus:outline-none focus:ring-2 focus:ring-indigo-600"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-bold text-slate-900 group-hover:text-indigo-700">Ben</span>
-                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
-                    Creator
-                  </span>
-                </div>
-                <p className="text-xs text-slate-500">Second author for isolation tests</p>
-              </button>
-
-              <button
-                onClick={() => handleQuickDemo('reviewer')}
-                className="p-4 rounded-2xl border border-slate-200 hover:border-indigo-400 bg-slate-50 hover:bg-indigo-50/50 text-left transition-all group focus:outline-none focus:ring-2 focus:ring-indigo-600"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-bold text-slate-900 group-hover:text-indigo-700">Priya</span>
-                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
-                    Reviewer
-                  </span>
-                </div>
-                <p className="text-xs text-slate-500">Approve, request changes, or reject</p>
-              </button>
-
-              <button
-                onClick={() => handleQuickDemo('manager')}
-                className="p-4 rounded-2xl border border-slate-200 hover:border-indigo-400 bg-slate-50 hover:bg-indigo-50/50 text-left transition-all group focus:outline-none focus:ring-2 focus:ring-indigo-600"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-bold text-slate-900 group-hover:text-indigo-700">Marcus</span>
-                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-purple-100 text-purple-800">
-                    Manager
-                  </span>
-                </div>
-                <p className="text-xs text-slate-500">Rules, insights & audit CSV export</p>
-              </button>
-            </div>
-            <p className="mt-3 text-xs text-slate-500 italic">
-              Workflow hint: Log in as Asha to submit copy → switch to Priya to review & approve.
+            <p className="text-base md:text-lg text-ink-2 max-w-3xl leading-relaxed">
+              Every approval is tied to the exact content hash and rule-set version. No automatic merges, no silent overrides, and no black-box decision making.
             </p>
-          </div>
-        </div>
-
-        {/* Core Pillars */}
-        <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4">
-              <CheckCircle2 className="w-6 h-6" />
+            <div className="pt-2">
+              <Link href="/about-ai">
+                <Button variant="secondary">
+                  <span>Read our AI disclosure & privacy guarantee</span>
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
             </div>
-            <h3 className="font-bold text-lg text-slate-900 mb-2">Grounded Citations</h3>
-            <p className="text-sm text-slate-600 leading-relaxed">
-              Every finding quotes the exact snippet, highlights it with UTF-16 offsets, and links to the official guideline document and section.
-            </p>
           </div>
-
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center mb-4">
-              <Lock className="w-6 h-6" />
-            </div>
-            <h3 className="font-bold text-lg text-slate-900 mb-2">Blocker Gate & Human Sign-Off</h3>
-            <p className="text-sm text-slate-600 leading-relaxed">
-              The AI never approves content. Content with open blocker findings cannot be approved until a human reviewer resolves, dismisses, or overrides them with a reason.
-            </p>
-          </div>
-
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center mb-4">
-              <Cpu className="w-6 h-6" />
-            </div>
-            <h3 className="font-bold text-lg text-slate-900 mb-2">Deterministic Engine & PII Redaction</h3>
-            <p className="text-sm text-slate-600 leading-relaxed">
-              13 brand rules run in pure TypeScript in under 2ms. PII and confidential terms are redacted before reaching optional external AI providers.
-            </p>
-          </div>
-        </div>
+        </section>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-indigo-600" />
-            <span className="font-bold text-slate-700">Inkloom Guardian</span>
-            <span>· Round 2 &ldquo;The Build&rdquo; Prototype</span>
-          </div>
-          <div className="flex items-center gap-4 font-semibold text-slate-600">
-            <Link href="/demo-report" className="hover:text-indigo-600">Demo Report</Link>
-            <Link href="/about-ai" className="hover:text-indigo-600">About AI & Privacy</Link>
-            <Link href="/build-notes" className="hover:text-indigo-600">Build Notes</Link>
-            <Link href="/selftest" className="hover:text-indigo-600">Engine Self-Test</Link>
+      {/* 6. Footer */}
+      <footer className="border-t-2 border-ink bg-surface px-6 md:px-8 py-8">
+        <div className="max-w-[1280px] mx-auto flex flex-col md:flex-row items-center justify-between gap-4 font-mono text-xs text-ink-2">
+          <p>Demo mode uses fictional data. Built for hackathon evaluation.</p>
+          <div className="flex flex-wrap items-center gap-6 font-bold uppercase">
+            <Link href="/demo-report" className="hover:text-ink underline">
+              Sample report
+            </Link>
+            <Link href="/about-ai" className="hover:text-ink underline">
+              About AI
+            </Link>
+            <Link href="/build-notes" className="hover:text-ink underline">
+              Build notes
+            </Link>
+            <Link href="/styleguide" className="hover:text-ink underline">
+              Styleguide
+            </Link>
           </div>
         </div>
       </footer>

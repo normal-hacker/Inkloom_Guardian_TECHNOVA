@@ -6,50 +6,83 @@ const config: Config = {
     './app/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/**/*.{js,ts,jsx,tsx,mdx}',
+    './styles/**/*.{js,ts,jsx,tsx,css}',
   ],
   theme: {
     extend: {
       colors: {
-        background: 'var(--background)',
-        foreground: 'var(--foreground)',
-        card: {
-          DEFAULT: 'var(--card)',
-          foreground: 'var(--card-foreground)',
-        },
-        primary: {
-          DEFAULT: 'var(--primary)',
-          foreground: 'var(--primary-foreground)',
-        },
-        secondary: {
-          DEFAULT: 'var(--secondary)',
-          foreground: 'var(--foreground)',
-        },
+        // Paper Brutalist Design Tokens (DESIGN_SYSTEM v2)
+        paper: 'var(--paper)',
+        surface: 'var(--surface)',
+        'surface-2': 'var(--surface-2)',
+        ink: 'var(--ink)',
+        'ink-2': 'var(--ink-2)',
+        'ink-3': 'var(--ink-3)',
+        rule: 'var(--rule)',
         accent: {
           DEFAULT: 'var(--accent)',
-          foreground: 'var(--foreground)',
+          ink: 'var(--accent-ink)',
         },
-        destructive: {
-          DEFAULT: 'var(--destructive)',
-          foreground: '#FFFFFF',
+        focus: 'var(--focus)',
+        'focus-on-dark': 'var(--focus-on-dark)',
+
+        // Severity fills
+        severity: {
+          blocker: 'var(--severity-blocker)',
+          major: 'var(--severity-major)',
+          minor: 'var(--severity-minor)',
+          info: 'var(--severity-info)',
+          approved: 'var(--severity-approved)',
+        },
+
+        // Status fills
+        status: {
+          draft: 'var(--status-draft)',
+          checked: 'var(--status-checked)',
+          in_review: 'var(--status-in-review)',
+          changes_requested: 'var(--status-changes-requested)',
+          approved: 'var(--status-approved)',
+          rejected: 'var(--status-rejected)',
+        },
+
+        // Compatibility aliases for existing UI code
+        background: 'var(--paper)',
+        foreground: 'var(--ink)',
+        card: {
+          DEFAULT: 'var(--surface)',
+          foreground: 'var(--ink)',
+        },
+        primary: {
+          DEFAULT: 'var(--ink)',
+          foreground: 'var(--paper)',
+        },
+        secondary: {
+          DEFAULT: 'var(--surface-2)',
+          foreground: 'var(--ink)',
         },
         muted: {
-          DEFAULT: 'var(--muted)',
-          foreground: 'var(--muted-foreground)',
+          DEFAULT: 'var(--surface-2)',
+          foreground: 'var(--ink-2)',
         },
-        border: 'var(--border)',
-        'muted-foreground': 'var(--muted-foreground)',
-        'color-primary': 'var(--color-primary)',
-        'color-secondary': 'var(--color-secondary)',
-        'color-accent': 'var(--color-accent)',
-        'color-destructive': 'var(--color-destructive)',
-        'color-chart-1': 'var(--color-chart-1)',
-        'color-chart-2': 'var(--color-chart-2)',
-        'color-chart-3': 'var(--color-chart-3)',
-        'color-chart-4': 'var(--color-chart-4)',
-        'color-chart-5': 'var(--color-chart-5)',
+        'muted-foreground': 'var(--ink-2)',
+        border: 'var(--ink)',
+        destructive: {
+          DEFAULT: 'var(--severity-blocker)',
+          foreground: 'var(--ink)',
+        },
       },
       fontFamily: {
-        serif: ['Georgia', 'Cambria', 'Times New Roman', 'serif'],
+        sans: ['var(--font-geist)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-geist-mono)', 'monospace'],
+      },
+      boxShadow: {
+        'hard-sm': '2px 2px 0 var(--ink)',
+        hard: '4px 4px 0 var(--ink)',
+        'hard-hover': '6px 6px 0 var(--ink)',
+        'hard-lg': '8px 8px 0 var(--ink)',
+      },
+      borderRadius: {
+        none: '0px',
       },
     },
   },
@@ -57,4 +90,3 @@ const config: Config = {
 };
 
 export default config;
-

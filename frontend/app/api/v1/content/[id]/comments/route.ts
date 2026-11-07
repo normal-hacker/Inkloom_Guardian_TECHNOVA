@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, AuthError } from '@/lib/auth/guards';
 import { addComment, getComments } from '@/lib/services/comments';
+import { handleIdempotentRequest } from '@/lib/optimistic/idempotency';
 
 export async function GET(
   req: NextRequest,
@@ -39,16 +40,22 @@ export async function POST(
       );
     }
 
-    const comment = await addComment({
-      contentItemId: id,
-      contentVersionId,
-      findingId,
-      authorId: session.sub,
-      workspaceId: session.wid,
-      body: commentBody,
+    return await handleIdempotentRequest({
+      req,
+      userId: session.sub,
+      endpoint: `/api/v1/content/${id}/comments`,
+      execute: async () => {
+        const comment = await addComment({
+          contentItemId: id,
+          contentVersionId,
+          findingId,
+          authorId: session.sub,
+          workspaceId: session.wid,
+          body: commentBody,
+        });
+        return { status: 201, body: comment };
+      },
     });
-
-    return NextResponse.json(comment, { status: 201 });
   } catch (err: unknown) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.code, message: err.message }, { status: err.status });

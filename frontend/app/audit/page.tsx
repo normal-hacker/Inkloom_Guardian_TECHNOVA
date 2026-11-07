@@ -2,13 +2,30 @@
 
 import React, { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Download } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { EmptyState, Skeleton } from '@/components/ui/states';
+import { Download, ChevronRight, ChevronDown, FileText } from 'lucide-react';
+
+interface AuditLogEntry {
+  id: number;
+  timestamp: string;
+  action: string;
+  actorEmail?: string | null;
+  actorRole?: string | null;
+  entityType?: string | null;
+  entityId?: string | null;
+  contentHash?: string | null;
+  detail?: any;
+}
 
 export default function AuditLogPage() {
-  const [logs, setLogs] = useState<any[]>([]);
+  const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [actionFilter, setActionFilter] = useState('');
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   useEffect(() => {
     fetch('/api/v1/audit?limit=100')
@@ -35,109 +52,182 @@ export default function AuditLogPage() {
 
   const filteredLogs = logs.filter((log) => {
     if (!actionFilter) return true;
-    return log.action.toLowerCase().includes(actionFilter.toLowerCase());
+    const q = actionFilter.toLowerCase();
+    return (
+      log.action.toLowerCase().includes(q) ||
+      (log.actorEmail && log.actorEmail.toLowerCase().includes(q)) ||
+      (log.contentHash && log.contentHash.toLowerCase().includes(q))
+    );
   });
 
+  const toggleExpand = (id: number) => {
+    setExpandedId((prev) => (prev === id ? null : id));
+  };
+
   return (
-    <div className="flex flex-col flex-1">
+    <div className="flex flex-col flex-1 bg-paper text-ink">
       <PageHeader
         title="Compliance Audit Trail"
-        description="Who decided what, on which exact version"
-        chips={
+        description="Append-only cryptographic ledger of human reviews, override rationales, and content hashes."
+        actions={
           isManager && (
             <a
               href="/api/v1/audit/export.csv"
               download="audit_log_export.csv"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all focus:outline-none focus:ring-2 focus:ring-indigo-600"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-ink text-white font-mono text-xs font-bold uppercase tracking-wider border-2 border-ink shadow-hard hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all focus:outline-none"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-4 h-4" />
               <span>Export CSV</span>
             </a>
           )
         }
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
-
-        {/* Toolbar */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-6 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-xs">
-            <span className="font-bold text-slate-500 uppercase tracking-wider">Total Records:</span>
-            <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-6">
+        {/* Filter Toolbar */}
+        <div className="bg-surface border-2 border-ink p-4 shadow-hard flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-ink-3">
+              Total Records:
+            </span>
+            <span className="font-mono text-xs font-bold px-2 py-0.5 border-2 border-ink bg-paper">
               {logs.length}
             </span>
           </div>
 
-          <div className="w-full sm:w-64">
-            <input
+          <div className="w-full sm:w-80">
+            <Input
               type="text"
               value={actionFilter}
               onChange={(e) => setActionFilter(e.target.value)}
-              placeholder="Filter by action (e.g. decision, submit)…"
-              className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+              placeholder="Filter by action, actor, or hash…"
+              aria-label="Filter audit log records"
+              className="w-full font-mono text-xs"
             />
           </div>
         </div>
 
         {/* Audit Log Table */}
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-surface border-2 border-ink shadow-hard overflow-hidden">
           {loading ? (
-            <div className="py-20 text-center text-sm text-slate-400">Loading audit trail…</div>
+            <div className="p-8 space-y-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
           ) : filteredLogs.length === 0 ? (
-            <div className="py-20 text-center text-sm text-slate-400">No audit records found.</div>
+            <div className="p-8">
+              <EmptyState
+                icon={<FileText className="w-6 h-6" />}
+                title="No audit records match your query"
+                description="Try clearing your filter or perform a review action in the workspace."
+              />
+            </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[11px]">
-                    <th className="py-3 px-4">ID</th>
-                    <th className="py-3 px-4">Timestamp</th>
-                    <th className="py-3 px-4">Action</th>
-                    <th className="py-3 px-4">Actor</th>
-                    <th className="py-3 px-4">Entity</th>
-                    <th className="py-3 px-4">Content Hash</th>
-                    <th className="py-3 px-4">Details</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredLogs.map((log) => (
-                    <tr key={log.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="py-3 px-4 font-mono font-bold text-slate-400">#{log.id}</td>
-                      <td className="py-3 px-4 text-slate-600 whitespace-nowrap">
-                        {log.timestamp ? new Date(log.timestamp).toLocaleString() : '—'}
-                      </td>
-                      <td className="py-3 px-4 font-semibold text-slate-800">
-                        <span className="px-2 py-0.5 rounded bg-slate-100 font-mono text-[11px]">
-                          {log.action}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-slate-700">
-                        {log.actorEmail ? (
-                          <div>
-                            <span className="font-semibold">{log.actorEmail}</span>
-                            {log.actorRole && (
-                              <span className="ml-1 text-[10px] uppercase font-bold text-slate-400">
-                                ({log.actorRole})
-                              </span>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12"></TableHead>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Timestamp</TableHead>
+                    <TableHead>Action</TableHead>
+                    <TableHead>Actor</TableHead>
+                    <TableHead>Target Entity</TableHead>
+                    <TableHead>Content Hash</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredLogs.map((log) => {
+                    const isExpanded = expandedId === log.id;
+                    return (
+                      <React.Fragment key={log.id}>
+                        <TableRow
+                          onClick={() => toggleExpand(log.id)}
+                          className="cursor-pointer hover:bg-surface-2 transition-colors"
+                        >
+                          <TableCell className="w-12 text-center text-ink-3">
+                            {isExpanded ? (
+                              <ChevronDown className="w-4 h-4 mx-auto" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4 mx-auto" />
                             )}
-                          </div>
-                        ) : (
-                          <span className="text-slate-400">System</span>
+                          </TableCell>
+                          <TableCell className="font-mono text-xs font-bold text-ink">
+                            #{log.id}
+                          </TableCell>
+                          <TableCell className="font-mono text-xs text-ink-2 whitespace-nowrap">
+                            {log.timestamp ? new Date(log.timestamp).toLocaleString() : '—'}
+                          </TableCell>
+                          <TableCell>
+                            <span className="font-mono text-xs font-bold uppercase tracking-wider px-2 py-0.5 border border-ink bg-paper">
+                              {log.action}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {log.actorEmail ? (
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-semibold text-ink">{log.actorEmail}</span>
+                                {log.actorRole && (
+                                  <Badge variant="neutral" className="text-[10px]">
+                                    {log.actorRole}
+                                  </Badge>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="font-mono text-xs text-ink-3">system</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="font-mono text-xs text-ink-2">
+                            {log.entityType ? (
+                              <span>
+                                {log.entityType}:
+                                <span className="text-ink font-bold">
+                                  {log.entityId ? log.entityId.slice(0, 8) + '…' : ''}
+                                </span>
+                              </span>
+                            ) : (
+                              '—'
+                            )}
+                          </TableCell>
+                          <TableCell className="font-mono text-xs text-ink-2">
+                            {log.contentHash ? (
+                              <span title={log.contentHash}>
+                                {log.contentHash.slice(0, 12)}…
+                              </span>
+                            ) : (
+                              '—'
+                            )}
+                          </TableCell>
+                        </TableRow>
+
+                        {isExpanded && (
+                          <TableRow className="bg-surface-2">
+                            <TableCell colSpan={7} className="p-4">
+                              <div className="border-2 border-ink bg-paper p-4 space-y-2">
+                                <div className="flex items-center justify-between pb-2 border-b border-rule">
+                                  <span className="text-xs font-mono font-bold uppercase tracking-wider text-ink">
+                                    Audit Record Payload Details (Record #{log.id})
+                                  </span>
+                                  {log.contentHash && (
+                                    <span className="font-mono text-[11px] text-ink-3">
+                                      Full SHA-256: {log.contentHash}
+                                    </span>
+                                  )}
+                                </div>
+                                <pre className="font-mono text-xs text-ink overflow-x-auto whitespace-pre-wrap leading-relaxed p-2 bg-surface-2 border border-rule">
+                                  {JSON.stringify(log.detail || {}, null, 2)}
+                                </pre>
+                              </div>
+                            </TableCell>
+                          </TableRow>
                         )}
-                      </td>
-                      <td className="py-3 px-4 font-mono text-[11px] text-slate-600">
-                        {log.entityType ? `${log.entityType}:${log.entityId ? log.entityId.slice(0, 8) + '…' : ''}` : '—'}
-                      </td>
-                      <td className="py-3 px-4 font-mono text-[10px] text-slate-400">
-                        {log.contentHash ? `${log.contentHash.slice(0, 12)}…` : '—'}
-                      </td>
-                      <td className="py-3 px-4 text-[11px] text-slate-500 max-w-xs truncate font-mono">
-                        {log.detail ? JSON.stringify(log.detail) : '{}'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </React.Fragment>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </div>
           )}
         </div>

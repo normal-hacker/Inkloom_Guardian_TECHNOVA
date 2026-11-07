@@ -10,6 +10,7 @@ Auto-generated OpenAPI is served at `/docs` (Swagger) and `/openapi.json`; link 
 {"error":{"code":"approval_blocked","message":"2 blocker findings are open.","details":{"open_blockers":2},"request_id":"r_9f2c"}}
 ```
 - Status codes: 200/201 ok · 204 no body · 400 bad request · 401 unauthenticated · 403 forbidden role · 404 · 409 state conflict · 413 file too large · 415 unsupported type · 422 validation · 429 rate limit · 502 AI provider failure (only for endpoints that require AI).
+- **Idempotency:** Creation endpoints (`POST /api/v1/content/{id}/comments`, glossary, facts) accept an optional `Idempotency-Key: <UUID>` header. Stored responses are returned on replays with header `Idempotent-Replay: true`. Authorization is strictly verified before cached responses are returned. Expired keys are purged after 24 hours.
 - Lists: `?limit=50&offset=0`, response `{"items":[…],"total":123}`.
 - Roles: **C** creator · **R** reviewer · **M** manager. "any" = all authenticated.
 
@@ -67,8 +68,10 @@ Auto-generated OpenAPI is served at `/docs` (Swagger) and `/openapi.json`; link 
 | GET | `/review-runs/{id}/findings` | any* | Findings (filters: `severity`, `category`, `status`, `origin`) |
 | GET | `/findings/{id}` | any* | Finding + rule + source + decision history |
 | POST | `/findings/{id}/decision` | owner (`fixed`,`dismissed` own low-severity), R,M (all) | `{decision, reason}` |
-| GET | `/comments?content_id=` | any* | List |
-| POST | `/comments` | any* | `{content_id, body, finding_id?, version_id?}` |
+| GET | `/content/{id}/comments` | any* | List comments for item |
+| POST | `/content/{id}/comments` | any* | Add comment `{body, version_id?}` (supports `Idempotency-Key`) |
+| DELETE | `/content/{id}/comments/{commentId}` | author, M | Delete comment (idempotent, records audit row) |
+| PATCH | `/content/{id}/comments/{commentId}` | author | Edit comment `{body}` (records audit row) |
 
 ### Decisions
 | Method | Path | Auth | Purpose |

@@ -2,128 +2,181 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ShieldCheck, ArrowLeft, CheckCircle2, Layers, Sparkles } from 'lucide-react';
+import { ShieldCheck, ArrowLeft } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 
 export default function BuildNotesPage() {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-indigo-600">
+    <div className="min-h-screen bg-paper text-ink flex flex-col justify-between">
+      {/* Header */}
+      <header className="border-b-2 border-ink bg-surface">
+        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-ink hover:underline focus:outline-none focus:ring-2 focus:ring-accent"
+          >
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Home</span>
           </Link>
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center text-white">
-              <ShieldCheck className="w-4 h-4" />
+            <div className="w-8 h-8 bg-ink text-white flex items-center justify-center font-bold">
+              <ShieldCheck className="w-5 h-5" />
             </div>
-            <span className="font-extrabold text-sm text-slate-900">Inkloom Guardian</span>
+            <span className="font-mono font-bold text-sm tracking-tight">INKLOOM GUARDIAN</span>
           </div>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-12 flex-1 w-full space-y-8">
+      {/* Main Content */}
+      <main className="max-w-5xl mx-auto px-4 py-10 flex-1 w-full space-y-8">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">
-            Hackathon Round 2 Submission
-          </span>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight font-serif mt-3">
+          <div className="flex items-center gap-2 mb-2">
+            <Badge variant="neutral">Round 2 Build Submission</Badge>
+            <span className="text-xs font-mono text-ink-3">Delivered 2026-11</span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-mono font-bold tracking-tight text-ink uppercase">
             Build Notes & Architectural Decisions
           </h1>
-          <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-            Detailed breakdown of what was built, our deliberate architectural consolidations, and our forward roadmap.
+          <p className="mt-2 text-sm text-ink-2 leading-relaxed">
+            Detailed breakdown of what was delivered in Round 2 &ldquo;The Build&rdquo;, architectural consolidation decisions, and our intentional Round 3 roadmap.
           </p>
         </div>
 
-        {/* Section 1: Completed Features in Round 2 */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <span>Delivered Features (Round 2 &ldquo;The Build&rdquo;)</span>
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <p className="font-bold text-slate-900">1. Deterministic Rule Engine</p>
-              <p className="text-slate-500 mt-0.5">13 pure TypeScript rules running in &lt;2ms with exact UTF-16 offset mapping.</p>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <p className="font-bold text-slate-900">2. NUM-001 Proximity Matcher</p>
-              <p className="text-slate-500 mt-0.5">Context window matching numbers against approved research metrics.</p>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <p className="font-bold text-slate-900">3. Human Governance Blocker Gate</p>
-              <p className="text-slate-500 mt-0.5">Hard prevention of approval when blocker findings are open.</p>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <p className="font-bold text-slate-900">4. Immutable Evidence & Triggers</p>
-              <p className="text-slate-500 mt-0.5">PostgreSQL append-only triggers preventing tampering of review runs and approvals.</p>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <p className="font-bold text-slate-900">5. Multi-Format Intake (.docx, .pdf)</p>
-              <p className="text-slate-500 mt-0.5">Text layer extraction, magic byte validation, and 10MB protection.</p>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <p className="font-bold text-slate-900">6. Compliance CSV Export & Insights</p>
-              <p className="text-slate-500 mt-0.5">Manager-only audit log download and real SQL aggregations.</p>
-            </div>
+        {/* Section 1: Delivered Features Matrix */}
+        <div className="bg-surface border-2 border-ink p-6 shadow-hard space-y-4">
+          <div className="pb-3 border-b-2 border-ink flex items-center justify-between">
+            <h2 className="text-base font-bold text-ink uppercase tracking-tight">
+              Delivered Features Checklist (Round 2)
+            </h2>
+            <span className="font-mono text-xs font-bold px-2 py-0.5 border border-ink bg-approved text-ink uppercase">
+              100% Complete
+            </span>
           </div>
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Capability</TableHead>
+                <TableHead>Implementation Scope</TableHead>
+                <TableHead>Verification Artifact</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell className="font-mono font-bold text-xs">Deterministic Rule Engine</TableCell>
+                <TableCell className="text-xs">13 pure TypeScript rules evaluating in &lt;2ms</TableCell>
+                <TableCell className="font-mono text-xs">/selftest & vitest suite</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-mono font-bold text-xs">NUM-001 Proximity Matcher</TableCell>
+                <TableCell className="text-xs">Context window matching numbers against approved research metrics</TableCell>
+                <TableCell className="font-mono text-xs">lib/engine/rules.ts</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-mono font-bold text-xs">Human Blocker Gate</TableCell>
+                <TableCell className="text-xs">Hard prevention of approval when blocker findings are open</TableCell>
+                <TableCell className="font-mono text-xs">lib/domain/derive.ts</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-mono font-bold text-xs">Immutable Audit Log</TableCell>
+                <TableCell className="text-xs">Append-only triggers preventing tampering of reviews & runs</TableCell>
+                <TableCell className="font-mono text-xs">/audit & CSV export</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-mono font-bold text-xs">Multi-Format Intake</TableCell>
+                <TableCell className="text-xs">Direct paste or file upload (.docx, .pdf) with text extraction</TableCell>
+                <TableCell className="font-mono text-xs">/content/new</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-mono font-bold text-xs">Paper Brutalist UI System</TableCell>
+                <TableCell className="text-xs">Custom tokens, Geist typography, hard shadows, zero radius</TableCell>
+                <TableCell className="font-mono text-xs">/styleguide & styles/tokens.css</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
         </div>
 
-        {/* Section 2: Deviations Ledger from Round 1 Plan */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 flex items-center gap-2">
-            <Layers className="w-4 h-4 text-indigo-600" />
-            <span>Deliberate Deviations from Round 1 Plan</span>
-          </h2>
+        {/* Section 2: Deliberate Architectural Consolidations */}
+        <div className="bg-surface border-2 border-ink p-6 shadow-hard space-y-4">
+          <div className="pb-3 border-b-2 border-ink">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-ink-3">
+              Deviations Ledger
+            </span>
+            <h2 className="text-base font-bold text-ink uppercase tracking-tight mt-1">
+              Deliberate Consolidations from Round 1 Plan
+            </h2>
+          </div>
 
-          <div className="space-y-3 text-xs text-slate-600 leading-relaxed">
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <strong className="text-slate-900">Stack Consolidation:</strong> We unified the architecture into Next.js 15 App Router route handlers with Drizzle ORM rather than deploying a standalone Python FastAPI service. This eliminated cross-service network hops, serialization overhead, and deployment fragility while maintaining full type-safety.
+          <div className="space-y-4">
+            <div className="p-4 border-2 border-ink bg-surface-2 space-y-2">
+              <span className="font-mono text-xs font-bold uppercase tracking-wider text-ink block">
+                1. Unified Next.js 15 App Router & Drizzle Stack
+              </span>
+              <p className="text-xs text-ink-2 leading-relaxed">
+                Rather than deploying an external Python FastAPI container alongside a Node frontend, we consolidated the engine and API into Next.js 15 App Router route handlers with Drizzle ORM. This eliminated inter-process latency, Docker orchestrator fragility, and duplicate type definitions while delivering full end-to-end type safety.
+              </p>
             </div>
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <strong className="text-slate-900">Pure TypeScript Rule Engine:</strong> Writing the 13 seed rules in pure TypeScript allowed the entire engine to run both on the server and in the browser (see our Engine Self-Test page), delivering sub-2ms evaluation without cold starts.
+
+            <div className="p-4 border-2 border-ink bg-surface-2 space-y-2">
+              <span className="font-mono text-xs font-bold uppercase tracking-wider text-ink block">
+                2. Dual-Execution Pure TypeScript Rule Engine
+              </span>
+              <p className="text-xs text-ink-2 leading-relaxed">
+                Writing the seed governance rules in zero-dependency TypeScript enabled the exact same rule evaluator to run server-side during content submission and client-side on the public Self-Test page for judges to test with zero network latency.
+              </p>
             </div>
           </div>
         </div>
 
         {/* Section 3: The Three Round 3 Improvements */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-600" />
-            <span>The Three Round 3 Improvements (Future Roadmap)</span>
-          </h2>
-          <p className="text-xs text-slate-500">
-            As specified in the hackathon rules, these improvements are planned for Round 3 and intentionally not built today:
+        <div className="bg-surface border-2 border-ink p-6 shadow-hard space-y-4">
+          <div className="pb-3 border-b-2 border-ink">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-ink-3">
+              Forward Roadmap
+            </span>
+            <h2 className="text-base font-bold text-ink uppercase tracking-tight mt-1">
+              The Three Round 3 Improvements
+            </h2>
+          </div>
+          <p className="text-xs text-ink-2">
+            In accordance with hackathon instructions, the following three architectural enhancements are scheduled for Round 3 and deliberately excluded from today&apos;s build:
           </p>
 
-          <div className="space-y-3 text-xs text-slate-700">
-            <div className="p-3.5 bg-amber-50/50 border border-amber-200 rounded-xl space-y-1">
-              <h3 className="font-bold text-slate-900">1. Stale-Content Re-Audit Pipeline</h3>
-              <p className="text-slate-600 leading-relaxed">
-                Automatically scans all historical approved content whenever a new brand rule set or fact sheet is activated, identifying copy that has become non-compliant over time.
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+            <div className="p-4 border-2 border-ink bg-surface-2 space-y-2 shadow-hard">
+              <span className="font-mono text-xs font-bold uppercase tracking-wider text-ink block">
+                01. Stale-Content Re-Audit Pipeline
+              </span>
+              <p className="text-xs text-ink-2 leading-relaxed">
+                Automatically re-scans historical approved campaigns whenever a new brand guideline or fact sheet is activated, flagging copy that has become non-compliant over time.
               </p>
             </div>
 
-            <div className="p-3.5 bg-amber-50/50 border border-amber-200 rounded-xl space-y-1">
-              <h3 className="font-bold text-slate-900">2. Guideline-Gap Detector</h3>
-              <p className="text-slate-600 leading-relaxed">
-                Uses aggregated finding override and dismissal telemetry to highlight blind spots in brand guidelines where creators and reviewers repeatedly diverge from current policy.
+            <div className="p-4 border-2 border-ink bg-surface-2 space-y-2 shadow-hard">
+              <span className="font-mono text-xs font-bold uppercase tracking-wider text-ink block">
+                02. Guideline-Gap Detector
+              </span>
+              <p className="text-xs text-ink-2 leading-relaxed">
+                Aggregates reviewer override and dismissal telemetry to detect ambiguities and friction in guidelines where human reviewers consistently diverge from policy.
               </p>
             </div>
 
-            <div className="p-3.5 bg-amber-50/50 border border-amber-200 rounded-xl space-y-1">
-              <h3 className="font-bold text-slate-900">3. Multimodal Visual Compliance Check</h3>
-              <p className="text-slate-600 leading-relaxed">
-                Expands beyond alt text to analyze layout balance, contrast ratios, and correct logo clearspace on uploaded creative banners.
+            <div className="p-4 border-2 border-ink bg-surface-2 space-y-2 shadow-hard">
+              <span className="font-mono text-xs font-bold uppercase tracking-wider text-ink block">
+                03. Multimodal Banner Inspection
+              </span>
+              <p className="text-xs text-ink-2 leading-relaxed">
+                Analyzes creative banner assets beyond alt-text to verify logo clearspace, WCAG color contrast ratios, and visual balance.
               </p>
             </div>
           </div>
         </div>
       </main>
 
-      <footer className="border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-400">
-        Inkloom Guardian · Round 2 Engineering Report
+      {/* Footer */}
+      <footer className="border-t-2 border-ink bg-surface py-6 text-center text-xs font-mono text-ink-3">
+        INKLOOM GUARDIAN · ROUND 2 ARCHITECTURAL REPORT
       </footer>
     </div>
   );

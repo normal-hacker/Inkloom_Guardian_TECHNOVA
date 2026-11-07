@@ -96,4 +96,29 @@ Judges evaluate engineering discipline through honest and reasoned adaptation to
   - Retired deprecated top `Navbar` / `AppNav` while keeping `ExpandableTabs` active for in-page workspace and guideline tabs.
 - [x] **Verification:** `npm test` (108/108 passing across 12 suites), `npm run typecheck` (0 errors), `npm run lint` (0 errors), `npm run build` (31/31 routes compiled), unit test suite `tests/sidebar.test.ts` (9/9 passing), and Playwright E2E suite `e2e/sidebar.spec.ts`.
 
+### Phase UI-Optimistic: Optimistic UI & Governance Gate Enforcement
+- [x] **Principles & Allowlist:** Defined single source of truth `lib/optimistic/allowlist.ts` with 18 categorized operations. Verified that Pending-only actions throw an invariant violation if wired to optimistic updates.
+- [x] **Reusable Hook Core:** Implemented `lib/optimistic/useOptimisticMutation.ts` (<200 lines, 0 heavy libraries):
+  1. Pure `apply` function with `client_request_id` and `__pending: true` tagging.
+  2. In-flight request deduplication ignoring rapid clicks or Enter spam.
+  3. Single UUID v4 `Idempotency-Key` reuse across retries.
+  4. Server truth reconciliation replacing temp items without duplicates or flicker.
+  5. Rollback on failure with full input text restoration and derived count reversion.
+  6. Out-of-order sequence protection (`currentSeqRef`).
+  7. Client timeout (10s) with single auto-retry for unknown connection failures.
+  8. Unmount abort via `AbortController`.
+- [x] **Server Idempotency:** Implemented `idempotency_keys` table with unique constraint on `(user_id, key)` in PostgreSQL, `handleIdempotentRequest()` wrapper with `Idempotent-Replay: true` header, and 24h cleanup.
+- [x] **UI Components:** Implemented `PendingBadge` (`border-2 border-dashed border-ink font-mono "SAVING…"`) and `InlineRetry` (`role="alert"` with plain language error, Retry, and Discard). Added to `docs/DESIGN_SYSTEM.md`.
+- [x] **Feature Wiring:**
+  - `/content/[id]`: Optimistic comment add/delete, tab badge derivation, input restoration on rollback, and strict `isDecisionPending` governance button protection on content approval.
+  - `/guidelines`: Optimistic draft rule enable/disable and severity edits with `PendingBadge` and `InlineRetry`.
+- [x] **Verification:**
+  - `npm run check:tokens`: 60 files scanned, 0 errors.
+  - `npm run check:types`: 100 files scanned, 0 errors.
+  - `npm run lint`: 0 errors. All warnings in `lib/optimistic/**` and edited files fixed.
+  - `npm test`: 17 test suites, 164 tests passing (100% PASS), including concurrent idempotency (`Promise.all`), authorization replay protection, and repeat PATCH/DELETE idempotency.
+  - `npm run build`: All 33 routes compiled successfully, including `/api/v1/cron/cleanup-idempotency`.
+  - `npx playwright test e2e/optimistic-ui.spec.ts`: 14/14 passing (offline handling, in-flight dedupe, navigate mid-flight safety, sequence preservation, plain-language HTTP errors, and 6 negative governance gates delayed 1.5s).
+  - Performance & Bundle: React render median 13.35 ms (20 runs), hook gzip size 3.15 KB.
+
 

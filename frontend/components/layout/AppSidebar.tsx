@@ -171,43 +171,34 @@ function SidebarFooter({
   const { open } = useSidebar();
 
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'U';
-  const roleColor =
-    user?.role === 'creator'
-      ? 'bg-blue-600'
-      : user?.role === 'reviewer'
-        ? 'bg-amber-600'
-        : 'bg-purple-600';
 
   const accessibleUserLabel = user
     ? `Signed in as ${user.name}, ${user.role}`
     : 'Signed in as guest';
 
   return (
-    <div className="pt-3 border-t border-slate-200/80 space-y-2 mt-auto shrink-0">
+    <div className="pt-3 border-t-2 border-ink space-y-2 mt-auto shrink-0">
       {/* User Card */}
       <div
         className={cn(
-          'flex items-center gap-3 px-2 py-2 rounded-xl transition-colors select-none',
-          open ? 'bg-slate-200/50' : 'justify-center'
+          'flex items-center gap-3 px-2 py-2 rounded-none transition-colors select-none',
+          open ? 'bg-surface border-2 border-ink' : 'justify-center'
         )}
         title={accessibleUserLabel}
         aria-label={accessibleUserLabel}
       >
         <div
-          className={cn(
-            'w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-2xs shrink-0',
-            roleColor
-          )}
+          className="w-8 h-8 rounded-none border-2 border-ink bg-ink flex items-center justify-center text-surface font-mono font-bold text-xs shrink-0"
           aria-hidden="true"
         >
           {userInitial}
         </div>
         {open && (
           <div className="min-w-0 flex-1 overflow-hidden">
-            <p className="font-bold text-xs text-slate-900 truncate leading-tight">
+            <p className="font-bold text-xs text-ink truncate leading-tight font-mono">
               {user?.name || 'Demo Persona'}
             </p>
-            <p className="text-[10px] uppercase font-bold text-slate-500 mt-0.5 tracking-wider">
+            <p className="text-[10px] uppercase font-bold text-ink-3 mt-0.5 tracking-wider font-mono">
               {user?.role || 'Guest'}
             </p>
           </div>
@@ -229,13 +220,13 @@ function SidebarFooter({
           {demoMenuOpen && (
             <div
               className={cn(
-                'absolute bottom-full mb-2 bg-white border border-slate-200 rounded-xl shadow-xl p-1.5 text-xs z-50 w-56',
+                'absolute bottom-full mb-2 bg-surface border-2 border-ink rounded-none shadow-hard-lg p-2 text-xs z-50 w-56 font-mono',
                 open ? 'left-0' : 'left-12'
               )}
               role="menu"
               aria-label="Switch demo persona"
             >
-              <div className="px-3 py-1.5 border-b border-slate-100 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+              <div className="px-2 py-1 border-b-2 border-ink text-[10px] text-ink-3 font-bold uppercase tracking-wider mb-1">
                 Select Persona
               </div>
               {DEMO_PERSONAS.map((p, idx) => (
@@ -244,14 +235,14 @@ function SidebarFooter({
                   type="button"
                   role="menuitem"
                   onClick={() => onSwitchRole(p.role)}
-                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 flex items-center justify-between transition-colors focus-visible:outline-none focus-visible:bg-slate-100"
+                  className="w-full text-left px-2 py-2 rounded-none hover:bg-surface-2 flex items-center justify-between transition-colors border border-transparent hover:border-ink mb-1"
                 >
                   <div>
-                    <p className="font-bold text-slate-800">{p.name}</p>
-                    <p className="text-[10px] text-slate-500">{p.desc}</p>
+                    <p className="font-bold text-ink">{p.name}</p>
+                    <p className="text-[10px] text-ink-2 uppercase">{p.desc}</p>
                   </div>
                   {user?.name?.startsWith(p.name.split(' ')[0]) && (
-                    <Check className="w-4 h-4 text-indigo-600" />
+                    <Check className="w-4 h-4 text-accent" />
                   )}
                 </button>
               ))}

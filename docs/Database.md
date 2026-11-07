@@ -232,6 +232,19 @@ Documents the rules come from (the thing we cite).
 | raw_output | text | debugging; purge after event |
 | created_at | timestamptz | |
 
+### idempotency_keys
+Stores recorded responses for creation mutations (comments, draft terms, draft facts) to prevent duplicates and enable safe retries.
+| col | type | notes |
+|---|---|---|
+| id | uuid PK | `gen_random_uuid()` |
+| user_id | uuid FK users(id) | ON DELETE CASCADE |
+| key | text NOT NULL | Client-supplied UUID v4 |
+| endpoint | text NOT NULL | e.g. `/api/v1/content/[id]/comments` |
+| response_status | integer NOT NULL | Cached HTTP status code (e.g. 201) |
+| response_body | jsonb NOT NULL | Serialized JSON response payload |
+| created_at | timestamptz DEFAULT now() | Cleaned up after 24h via `cleanupExpiredIdempotencyKeys()` |
+*Constraint:* UNIQUE INDEX on `(user_id, key)`. Different users with the same key never collide.
+
 ## 3. Constraints and indexes
 - `UNIQUE (workspace_id) WHERE status='active'` on `rule_sets` (partial unique index).
 - Triggers (or app-level checks plus tests) block `UPDATE`/`DELETE` on `content_versions`, `review_runs`, `approvals`, `audit_log`, `finding_decisions`.

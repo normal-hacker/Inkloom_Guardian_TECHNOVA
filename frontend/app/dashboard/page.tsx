@@ -1,40 +1,58 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Plus, Search, Filter, AlertTriangle, ArrowRight, Clock, FileText } from 'lucide-react';
-
-interface ContentItem {
-  id: string;
-  title: string;
-  contentType: string;
-  status: 'draft' | 'in_review' | 'changes_requested' | 'approved' | 'rejected' | 'checked';
-  ownerId: string;
-  ownerName?: string;
-  ownerRole?: string;
-  currentVersionNo?: number;
-  blockersCount?: number;
-  updatedAt: string;
-}
+import { Button } from '@/components/ui/button';
+import { StatusPill } from '@/components/ui/badge';
+import { SectionLabel } from '@/components/ui/card';
+import { EmptyState, ErrorState, Skeleton } from '@/components/ui/states';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { Plus, Search, Filter, ArrowUpRight } from 'lucide-react';
+import type { ContentItem } from '@/lib/domain/types';
 
 export default function DashboardPage() {
-  const [items, setItems] = useState<ContentItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const router = useRouter();
+  const [items, setItems] = React.useState<ContentItem[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = React.useState<string>('all');
+  const [searchQuery, setSearchQuery] = React.useState('');
 
-  useEffect(() => {
+  const loadData = React.useCallback(() => {
+    setLoading(true);
+    setError(null);
     fetch('/api/v1/content')
-      .then((res) => (res.ok ? res.json() : null))
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then((data) => {
         if (data?.items) {
           setItems(data.items);
         }
       })
-      .catch(() => {})
+      .catch((err) => {
+        setError(err.message || 'Failed to load content submissions.');
+      })
       .finally(() => setLoading(false));
   }, []);
+
+  React.useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // Compute stat metrics
+  const needActionCount = items.filter(
+    (i) => i.status === 'in_review' || i.status === 'changes_requested'
+  ).length;
+  const inReviewCount = items.filter((i) => i.status === 'in_review').length;
+  const openBlockersCount = items.reduce(
+    (acc, curr) => acc + (curr.blockersCount || 0),
+    0
+  );
+  const approvedCount = items.filter((i) => i.status === 'approved').length;
 
   const filteredItems = items.filter((item) => {
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
@@ -42,47 +60,55 @@ export default function DashboardPage() {
     return matchesStatus && matchesSearch;
   });
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-emerald-100 text-emerald-800">Approved</span>;
-      case 'in_review':
-        return <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-800">In Review</span>;
-      case 'changes_requested':
-        return <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-orange-100 text-orange-800">Changes Requested</span>;
-      case 'rejected':
-        return <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-red-100 text-red-800">Rejected</span>;
-      case 'checked':
-        return <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-indigo-100 text-indigo-800">Checked</span>;
-      default:
-        return <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-slate-100 text-slate-700">Draft</span>;
-    }
-  };
-
   return (
-    <div className="flex flex-col flex-1">
+    <div className="flex flex-col flex-1 bg-paper text-ink min-h-full pb-16">
       <PageHeader
-        title="Content Dashboard"
-        description="What needs your attention and the status of your content"
+        title="Dashboard"
+        description="Active brand governance content submissions and approval status."
         actions={
-          <Link
-            href="/content/new"
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all focus:outline-none focus:ring-2 focus:ring-indigo-600"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Create New Content</span>
+          <Link href="/content/new">
+            <Button variant="primary" size="md">
+              <Plus className="w-4 h-4 mr-2" />
+              <span>New content</span>
+            </Button>
           </Link>
         }
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+      <div className="max-w-[1280px] w-full mx-auto px-6 md:px-8 py-8 space-y-8 flex-1">
+        {/* Top 4 Stat Blocks */}
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: 'Need your action', count: needActionCount, highlight: needActionCount > 0 },
+            { label: 'In review', count: inReviewCount },
+            { label: 'Open blockers', count: openBlockersCount, alert: openBlockersCount > 0 },
+            { label: 'Approved', count: approvedCount },
+          ].map((stat, idx) => (
+            <div
+              key={idx}
+              className={`p-5 md:p-6 border-2 border-ink bg-surface shadow-hard flex flex-col justify-between gap-3 ${
+                stat.alert ? 'border-severity-blocker bg-severity-blocker/10' : ''
+              }`}
+            >
+              <span className="font-mono text-xs font-bold uppercase tracking-wider text-ink-2">
+                {stat.label}
+              </span>
+              <p
+                className={`font-mono text-4xl sm:text-5xl font-bold ${
+                  stat.alert ? 'text-severity-blocker' : stat.highlight ? 'text-accent' : 'text-ink'
+                }`}
+              >
+                {loading ? '—' : stat.count}
+              </p>
+            </div>
+          ))}
+        </section>
 
-        {/* Filters & Search Toolbar */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-6 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
-          {/* Status Tabs */}
-          <div className="flex flex-wrap gap-1 w-full md:w-auto">
+        {/* Filter and Search Bar */}
+        <div className="p-4 border-2 border-ink bg-surface shadow-hard flex flex-col sm:flex-row gap-4 justify-between items-center">
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             {[
-              { id: 'all', label: 'All Items' },
+              { id: 'all', label: 'All' },
               { id: 'in_review', label: 'In Review' },
               { id: 'draft', label: 'Draft' },
               { id: 'changes_requested', label: 'Changes Requested' },
@@ -90,11 +116,12 @@ export default function DashboardPage() {
             ].map((tab) => (
               <button
                 key={tab.id}
+                type="button"
                 onClick={() => setStatusFilter(tab.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                className={`px-3 py-1.5 font-mono text-xs font-bold uppercase border-2 transition-all ${
                   statusFilter === tab.id
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-100'
+                    ? 'border-ink bg-ink text-surface shadow-hard-sm'
+                    : 'border-transparent text-ink-2 hover:bg-surface-2 hover:text-ink'
                 }`}
               >
                 {tab.label}
@@ -102,100 +129,90 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          {/* Search Box */}
-          <div className="relative w-full md:w-72">
-            <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+          <div className="relative w-full sm:w-72">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search content by title…"
-              className="w-full pl-9 pr-4 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              className="w-full min-h-11 pl-9 pr-3.5 py-2 border-2 border-ink bg-surface text-ink text-xs font-sans focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-focus"
             />
           </div>
         </div>
 
-        {/* Content Table */}
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-          {loading ? (
-            <div className="py-20 text-center text-sm text-slate-400">Loading content items…</div>
-          ) : filteredItems.length === 0 ? (
-            <div className="py-20 text-center">
-              <FileText className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-              <p className="text-sm font-semibold text-slate-700">No content items found</p>
-              <p className="text-xs text-slate-400 mt-1">
-                {searchQuery || statusFilter !== 'all'
-                  ? 'Try adjusting your search or status filter.'
-                  : 'Start by submitting a marketing draft for brand checks.'}
-              </p>
-              <Link
-                href="/content/new"
-                className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Create Content</span>
-              </Link>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[11px]">
-                    <th className="py-3 px-4">Title & Type</th>
-                    <th className="py-3 px-4">Version</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4">Issues</th>
-                    <th className="py-3 px-4">Owner</th>
-                    <th className="py-3 px-4 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredItems.map((item) => (
-                    <tr key={item.id} className="hover:bg-slate-50/80 transition-colors group">
-                      <td className="py-4 px-4">
-                        <Link
-                          href={`/content/${item.id}`}
-                          className="font-bold text-sm text-slate-900 group-hover:text-indigo-600 transition-colors block"
-                        >
-                          {item.title}
-                        </Link>
-                        <span className="inline-block mt-0.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-100 text-slate-600">
-                          {item.contentType}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 font-mono font-semibold text-slate-600">
-                        v{item.currentVersionNo || 1}
-                      </td>
-                      <td className="py-4 px-4">{getStatusBadge(item.status)}</td>
-                      <td className="py-4 px-4">
-                        {item.blockersCount && item.blockersCount > 0 ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-full">
-                            <AlertTriangle className="w-3 h-3" />
-                            <span>{item.blockersCount} Blocker</span>
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 text-xs">—</span>
-                        )}
-                      </td>
-                      <td className="py-4 px-4 text-slate-600">
-                        <p className="font-semibold text-slate-800">{item.ownerName || 'Demo Creator'}</p>
-                      </td>
-                      <td className="py-4 px-4 text-right">
-                        <Link
-                          href={`/content/${item.id}`}
-                          className="inline-flex items-center gap-1 font-bold text-indigo-600 hover:text-indigo-900 text-xs px-2.5 py-1.5 rounded-lg hover:bg-indigo-50 transition-colors"
-                        >
-                          <span>Review</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+        {/* Main Content Table / States */}
+        {loading ? (
+          <div className="border-2 border-ink bg-surface p-6 space-y-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </div>
+        ) : error ? (
+          <ErrorState message={error} onRetry={loadData} />
+        ) : filteredItems.length === 0 ? (
+          <EmptyState
+            title="Nothing here yet"
+            description="Submit your first content draft to run policy and compliance checks."
+            actionLabel="New content"
+            onAction={() => router.push('/content/new')}
+          />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Title</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Version</TableHead>
+                <TableHead>Owner</TableHead>
+                <TableHead>Blockers</TableHead>
+                <TableHead>Updated</TableHead>
+                <TableHead className="text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredItems.map((item) => (
+                <TableRow
+                  key={item.id}
+                  onClick={() => router.push(`/content/${item.id}`)}
+                  className="cursor-pointer"
+                >
+                  <TableCell className="font-bold text-ink max-w-xs truncate">
+                    {item.title}
+                  </TableCell>
+                  <TableCell>
+                    <StatusPill status={item.status} />
+                  </TableCell>
+                  <TableCell className="font-mono text-xs">
+                    v{item.currentVersionNo || 1}
+                  </TableCell>
+                  <TableCell className="text-ink-2 text-xs">
+                    {item.ownerName || 'Asha'}
+                  </TableCell>
+                  <TableCell>
+                    {item.blockersCount && item.blockersCount > 0 ? (
+                      <span className="font-mono text-xs font-bold text-severity-blocker">
+                        {item.blockersCount} open
+                      </span>
+                    ) : (
+                      <span className="font-mono text-xs text-ink-3">0</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-ink-3">
+                    {item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : 'Today'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <span className="inline-flex items-center gap-1 font-mono text-xs font-bold text-accent hover:underline">
+                      <span>Open</span>
+                      <ArrowUpRight className="w-3.5 h-3.5" />
+                    </span>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </div>
     </div>
   );

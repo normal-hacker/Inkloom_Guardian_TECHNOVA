@@ -1,0 +1,66 @@
+/* DESIGN SYSTEM v2 — Paper Brutalist Design Tokens */
+/* docs/DESIGN_SYSTEM.md §2–§5 */
+
+:root {
+  color-scheme: light;
+
+  /* Surfaces & Ink */
+  --paper: #F4F3EE;
+  --surface: #FBFAF6;
+  --surface-2: #ECEAE3;
+  --ink: #0A0A0A;
+  --ink-2: #4A4A45;
+  --ink-3: #6B6B64;
+  --rule: #D9D7CF;
+
+  /* Accent & Focus */
+  --accent: #2D2AE8;
+  --accent-ink: #FFFFFF;
+  --focus: #2D2AE8;
+  --focus-on-dark: #F4F3EE;
+
+  /* Flat Severity & Status Fills (Text is always --ink, border 2px --ink) */
+  --severity-blocker: #FF6B5E;
+  --severity-major: #FFC93C;
+  --severity-minor: #9CC2FF;
+  --severity-info: #E4E2DA;
+  --severity-approved: #86E3A9;
+
+  /* Status Pill Fills */
+  --status-draft: #E4E2DA;
+  --status-checked: #9CC2FF;
+  --status-in-review: #C9C7FF;
+  --status-changes-requested: #FFC93C;
+  --status-approved: #86E3A9;
+  --status-rejected: #FF6B5E;
+
+  /* Hard Offset Shadows (no blur) */
+  --shadow-hard-sm: 2px 2px 0 var(--ink);
+  --shadow-hard: 4px 4px 0 var(--ink);
+  --shadow-hard-lg: 8px 8px 0 var(--ink);
+}
+
+/* Global focus-visible ring (never removed) */
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+/* Accent selection */
+::selection {
+  background-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* Paper Brutalist base layout setup */
+body {
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-geist, sans-serif);
+}
+
+/* Code & Mono Elements */
+code, kbd, samp, pre, .font-mono {
+  font-family: var(--font-geist-mono, monospace);
+}
+

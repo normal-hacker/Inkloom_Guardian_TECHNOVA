@@ -163,3 +163,4 @@ test.describe('Animated Collapsible Sidebar E2E Suite (§8 Acceptance)', () => {
     await expect(sidebarNav.getByRole('link', { name: /audit/i })).toBeVisible();
   });
 });
+

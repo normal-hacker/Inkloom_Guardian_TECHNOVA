@@ -45,36 +45,36 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        'border-b border-border/70 bg-white/80 backdrop-blur-xs py-3 px-4 sm:px-6 lg:px-8 transition-colors',
+        'border-b-2 border-ink bg-surface px-6 md:px-8 py-5 md:py-6 shrink-0',
         className
       )}
     >
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div className="max-w-[1280px] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <AnimatePresence mode="wait">
           <motion.div
             key={animationKey}
-            initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+            initial={shouldReduceMotion ? false : { opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={shouldReduceMotion ? undefined : { opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
+            exit={shouldReduceMotion ? undefined : { opacity: 0, y: -4 }}
+            transition={{ duration: 0.15 }}
             className="flex-1 min-w-0"
           >
-            {title && (
-              <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground truncate">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-ink font-sans">
                 {title}
               </h1>
-            )}
+              {chips && <div className="flex items-center gap-2">{chips}</div>}
+            </div>
             {description && (
-              <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground line-clamp-1 sm:line-clamp-none">
+              <p className="mt-1 text-sm text-ink-2 max-w-2xl font-sans">
                 {description}
               </p>
             )}
           </motion.div>
         </AnimatePresence>
 
-        {(chips || actions) && (
-          <div className="flex items-center gap-2 flex-wrap shrink-0">
-            {chips}
+        {actions && (
+          <div className="flex items-center gap-3 shrink-0">
             {actions}
           </div>
         )}
@@ -82,4 +82,3 @@ export function PageHeader({
     </div>
   );
 }
-

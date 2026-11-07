@@ -166,7 +166,6 @@ export async function runCheckPipeline(params: RunCheckParams) {
       // Grounding guarantee: rule_id must be present for schema constraint
       if (ruleId) {
         await db.insert(schema.findings).values({
-          id: crypto.randomUUID(),
           reviewRunId: runId,
           origin: f.origin,
           category: f.category,
@@ -177,7 +176,7 @@ export async function runCheckPipeline(params: RunCheckParams) {
           quote: f.quote,
           explanation: f.explanation,
           suggestion: f.suggestion,
-          confidence: f.confidence.toFixed(2),
+          confidence: typeof f.confidence === 'number' ? f.confidence.toFixed(2) : String(f.confidence),
           status: 'open',
         });
       }

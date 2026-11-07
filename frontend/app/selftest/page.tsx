@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { ShieldCheck, ArrowLeft, Play, CheckCircle2, XCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { runRules } from '@/lib/engine/rules';
 import { sha256 } from '@/lib/engine/sha256';
 import { diffWords } from '@/lib/engine/diff';
@@ -199,7 +201,7 @@ export default function SelfTestPage() {
       });
     }
 
-    // Test 12: Performance latency check (< 10ms for 2,000 words)
+    // Test 12: Performance latency check (< 25ms for 2,000 words in browser)
     {
       const tStart = performance.now();
       const longText = 'Brightway Solar panels provide renewable electricity. '.repeat(200);
@@ -208,9 +210,9 @@ export default function SelfTestPage() {
       const passed = dur < 25;
       testResults.push({
         id: 12,
-        name: 'Performance Benchmark: Evaluates 2,000+ words in under 10ms in the browser',
+        name: 'Performance Benchmark: Evaluates 2,000+ words in under 25ms in browser client',
         passed,
-        expected: '< 10ms',
+        expected: '< 25ms',
         actual: `${dur.toFixed(2)}ms`,
         durationMs: Number(dur.toFixed(2)),
       });
@@ -225,104 +227,114 @@ export default function SelfTestPage() {
   const allPassed = results.length > 0 && results.every((r) => r.passed);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-indigo-600">
+    <div className="min-h-screen bg-paper text-ink flex flex-col justify-between">
+      {/* Top Header */}
+      <header className="border-b-2 border-ink bg-surface">
+        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-ink hover:underline focus:outline-none focus:ring-2 focus:ring-accent"
+          >
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Home</span>
           </Link>
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center text-white">
-              <ShieldCheck className="w-4 h-4" />
+            <div className="w-8 h-8 bg-ink text-white flex items-center justify-center font-bold">
+              <ShieldCheck className="w-5 h-5" />
             </div>
-            <span className="font-extrabold text-sm text-slate-900">Inkloom Guardian</span>
+            <span className="font-mono font-bold text-sm tracking-tight">INKLOOM GUARDIAN</span>
           </div>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-12 flex-1 w-full space-y-6">
+      {/* Main Content */}
+      <main className="max-w-5xl mx-auto px-4 py-10 flex-1 w-full space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">
-              In-Browser Verification Suite
-            </span>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight font-serif mt-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Badge variant="neutral">In-Browser Test Harness</Badge>
+              <span className="text-xs font-mono text-ink-3">Zero Server Latency</span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-mono font-bold tracking-tight text-ink uppercase">
               Deterministic Engine Self-Test
             </h1>
-            <p className="mt-1 text-xs text-slate-500">
-              Run the pure TypeScript rule engine directly in your browser. No server calls needed.
+            <p className="mt-1 text-xs text-ink-2">
+              Execute all 13 pure TypeScript governance rules directly in your client browser.
             </p>
           </div>
 
-          <button
+          <Button
             onClick={runAllTests}
             disabled={running}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-indigo-600 disabled:opacity-50"
+            variant="primary"
+            size="lg"
+            className="flex items-center gap-2 font-mono"
           >
-            <Play className="w-4 h-4 fill-white" />
+            <Play className="w-4 h-4 fill-current" />
             <span>{running ? 'Running Tests…' : 'Run Self-Test'}</span>
-          </button>
+          </Button>
         </div>
 
         {/* Results Banner */}
         {results.length > 0 && (
           <div
-            className={`p-5 rounded-2xl border flex items-center justify-between gap-4 ${
-              allPassed
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
-                : 'bg-red-50 border-red-200 text-red-950'
+            className={`p-5 border-2 border-ink shadow-hard flex items-center justify-between gap-4 ${
+              allPassed ? 'bg-approved text-ink' : 'bg-blocker text-ink'
             }`}
           >
             <div className="flex items-center gap-3">
               {allPassed ? (
-                <CheckCircle2 className="w-6 h-6 text-emerald-600 flex-shrink-0" />
+                <CheckCircle2 className="w-6 h-6 flex-shrink-0" />
               ) : (
-                <XCircle className="w-6 h-6 text-red-600 flex-shrink-0" />
+                <XCircle className="w-6 h-6 flex-shrink-0" />
               )}
               <div>
-                <p className="font-extrabold text-sm">
+                <p className="font-mono font-bold text-sm uppercase">
                   {allPassed
                     ? `All ${results.length} Self-Test Cases Passed!`
                     : 'Some test cases failed.'}
                 </p>
-                <p className="text-xs text-slate-600 mt-0.5">
+                <p className="text-xs text-ink mt-0.5">
                   100% deterministic reproducibility · Zero network dependencies
                 </p>
               </div>
             </div>
             <div className="text-right">
-              <span className="text-[10px] uppercase font-bold text-slate-400">Total Run Time</span>
-              <p className="font-mono font-extrabold text-base text-slate-900">{totalTimeMs} ms</p>
+              <span className="text-[10px] uppercase font-mono font-bold text-ink-2 block">
+                Total Execution Time
+              </span>
+              <p className="font-mono font-bold text-lg">{totalTimeMs} ms</p>
             </div>
           </div>
         )}
 
-        {/* Test Cases Table */}
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        {/* Test Cases List */}
+        <div className="bg-surface border-2 border-ink shadow-hard overflow-hidden">
           {results.length === 0 ? (
-            <div className="py-20 text-center text-sm text-slate-400">
-              Click &ldquo;Run Self-Test&rdquo; above to execute the engine test suite.
+            <div className="py-20 text-center font-mono text-xs text-ink-3">
+              Click &ldquo;Run Self-Test&rdquo; above to execute the in-browser test suite.
             </div>
           ) : (
-            <div className="divide-y divide-slate-100 text-xs">
+            <div className="divide-y-2 divide-ink text-xs font-mono">
               {results.map((r) => (
-                <div key={r.id} className="p-4 flex items-start justify-between gap-4">
+                <div key={r.id} className="p-4 flex items-start justify-between gap-4 bg-surface hover:bg-surface-2 transition-colors">
                   <div className="flex items-start gap-3">
-                    {r.passed ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-                    ) : (
-                      <XCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
-                    )}
+                    <span
+                      className={`w-6 h-6 flex items-center justify-center font-bold text-xs border border-ink flex-shrink-0 mt-0.5 ${
+                        r.passed ? 'bg-approved text-ink' : 'bg-blocker text-ink'
+                      }`}
+                    >
+                      {r.passed ? '✓' : '✗'}
+                    </span>
                     <div>
-                      <p className="font-bold text-slate-900">{r.name}</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
-                        Expected: <span className="font-mono">{r.expected}</span> · Actual:{' '}
-                        <span className="font-mono text-slate-700">{r.actual}</span>
+                      <p className="font-bold text-ink">{r.name}</p>
+                      <p className="text-[11px] text-ink-2 mt-1">
+                        Expected: <span className="text-ink font-bold">{r.expected}</span> · Actual:{' '}
+                        <span className="text-ink font-bold">{r.actual}</span>
                       </p>
                     </div>
                   </div>
-                  <span className="font-mono text-slate-400 text-[11px] whitespace-nowrap">
+                  <span className="font-mono text-ink-3 text-[11px] whitespace-nowrap">
                     {r.durationMs} ms
                   </span>
                 </div>
@@ -332,8 +344,9 @@ export default function SelfTestPage() {
         </div>
       </main>
 
-      <footer className="border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-400">
-        Inkloom Guardian · Round 2 Browser Test Harness
+      {/* Footer */}
+      <footer className="border-t-2 border-ink bg-surface py-6 text-center text-xs font-mono text-ink-3">
+        INKLOOM GUARDIAN · IN-BROWSER DETERMINISTIC ENGINE HARNESS
       </footer>
     </div>
   );
