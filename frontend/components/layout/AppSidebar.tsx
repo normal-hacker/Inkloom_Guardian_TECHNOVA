@@ -10,7 +10,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { getVisibleNavForRole, UserRole } from '@/lib/nav/config';
-import { LogOut, Users, Check } from 'lucide-react';
+import { LogOut, Users, Check, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function AppSidebar() {
@@ -86,6 +86,27 @@ export function AppSidebar() {
     } catch {}
   };
 
+  const [isResetting, setIsResetting] = React.useState(false);
+
+  const handleResetDemo = async () => {
+    if (typeof window !== 'undefined' && !window.confirm('Reset demo dataset to initial clean state?')) {
+      return;
+    }
+    setIsResetting(true);
+    try {
+      const res = await fetch('/api/v1/auth/reset-demo', { method: 'POST' });
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        alert('Failed to reset demo dataset.');
+      }
+    } catch {
+      alert('Error connecting to server.');
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await fetch('/api/v1/auth/logout', { method: 'POST' });
@@ -140,6 +161,8 @@ export function AppSidebar() {
           setDemoMenuOpen={setDemoMenuOpen}
           onSwitchRole={handleSwitchRole}
           onLogout={handleLogout}
+          onResetDemo={handleResetDemo}
+          isResetting={isResetting}
         />
       </SidebarBody>
     </Sidebar>
@@ -160,6 +183,8 @@ function SidebarFooter({
   setDemoMenuOpen,
   onSwitchRole,
   onLogout,
+  onResetDemo,
+  isResetting,
 }: {
   user: { id: string; email: string; name: string; role: UserRole } | null;
   demoEnabled: boolean;
@@ -167,6 +192,8 @@ function SidebarFooter({
   setDemoMenuOpen: (open: boolean) => void;
   onSwitchRole: (role: string) => void;
   onLogout: () => void;
+  onResetDemo: () => void;
+  isResetting: boolean;
 }) {
   const { open } = useSidebar();
 
@@ -207,15 +234,25 @@ function SidebarFooter({
 
       {/* Switch Demo Persona Action */}
       {demoEnabled && (
-        <div className="relative">
+        <>
           <SidebarButton
             item={{
-              id: 'switch-persona',
-              label: 'Switch demo persona',
-              icon: <Users className="w-5 h-5" aria-hidden="true" />,
-              onClick: () => setDemoMenuOpen(!demoMenuOpen),
+              id: 'reset-demo',
+              label: isResetting ? 'Resetting dataset…' : 'Reset demo data',
+              icon: <RotateCcw className={cn('w-5 h-5', isResetting && 'animate-spin')} aria-hidden="true" />,
+              onClick: onResetDemo,
+              disabled: isResetting,
             }}
           />
+          <div className="relative">
+            <SidebarButton
+              item={{
+                id: 'switch-persona',
+                label: 'Switch demo persona',
+                icon: <Users className="w-5 h-5" aria-hidden="true" />,
+                onClick: () => setDemoMenuOpen(!demoMenuOpen),
+              }}
+            />
 
           {demoMenuOpen && (
             <div
@@ -249,6 +286,7 @@ function SidebarFooter({
             </div>
           )}
         </div>
+        </>
       )}
 
       {/* Logout Action */}

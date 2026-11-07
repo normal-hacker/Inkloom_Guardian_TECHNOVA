@@ -200,7 +200,7 @@ export const contentItems = pgTable(
     ),
     check(
       'chk_content_items_status',
-      sql`${table.status} IN ('draft', 'checked', 'in_review', 'changes_requested', 'approved', 'rejected')`
+      sql`${table.status} IN ('draft', 'checked', 'in_review', 'changes_requested', 'approved', 'rejected', 'needs_review')`
     ),
   ]
 );

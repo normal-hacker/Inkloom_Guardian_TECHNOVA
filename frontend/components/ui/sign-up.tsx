@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils';
 import {
   ArrowRight,
   Mail,
-  Lock,
   Eye,
   EyeOff,
   ArrowLeft,
@@ -49,28 +48,28 @@ export interface AuthComponentProps {
 
 const DEFAULT_DEMO_USERS: DemoUser[] = [
   {
-    id: 'demo-creator-asha',
-    name: 'Asha (Creator)',
+    id: '10000000-0000-0000-0000-000000000001',
+    name: 'Asha Patel (Author)',
     role: 'creator',
-    blurb: 'Creates drafts, runs checks, applies suggestions',
+    blurb: 'Author: submits drafts, runs checks, applies suggestions. Cannot approve own work.',
   },
   {
-    id: 'demo-creator-ben',
-    name: 'Ben (Creator)',
+    id: '10000000-0000-0000-0000-000000000002',
+    name: 'Ben Torres (Author)',
     role: 'creator',
-    blurb: 'Prepares social copy and blog drafts',
+    blurb: 'Author: prepares social copy and blog drafts. Peer collaborator.',
   },
   {
-    id: 'demo-reviewer-priya',
-    name: 'Priya (Reviewer)',
+    id: '10000000-0000-0000-0000-000000000003',
+    name: 'Priya Sharma (Reviewer)',
     role: 'reviewer',
-    blurb: 'Reviews findings, overrides/dismisses, approves content',
+    blurb: 'Reviewer: inspects citations, overrides with reason, approves content.',
   },
   {
-    id: 'demo-manager-marcus',
-    name: 'Marcus (Manager)',
+    id: '10000000-0000-0000-0000-000000000004',
+    name: 'Marcus Vance (Admin)',
     role: 'manager',
-    blurb: 'Edits guidelines, reviews audit trail and friction insights',
+    blurb: 'Admin: edits guidelines & facts, reviews audit trail and friction insights.',
   },
 ];
 
@@ -190,6 +189,75 @@ export const AuthComponent: React.FC<AuthComponentProps> = ({
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Persona Roles & Governance Table (R1.3) */}
+          <div className="w-full border-2 border-ink bg-surface p-4 shadow-hard-sm mt-2">
+            <div className="flex items-center justify-between pb-2 mb-2 border-b-2 border-rule">
+              <span className="font-mono text-xs font-bold uppercase tracking-wider text-ink">
+                Demo Personas & Governance Matrix
+              </span>
+              <span className="font-mono text-[10px] text-ink-3 uppercase">
+                RBAC & Blocker Gate Enforced
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left font-sans text-xs">
+                <thead>
+                  <tr className="border-b-2 border-ink font-mono text-[11px] uppercase text-ink-2">
+                    <th className="py-1.5 pr-2 font-bold">Persona</th>
+                    <th className="py-1.5 px-2 font-bold">Role</th>
+                    <th className="py-1.5 pl-2 font-bold">Capabilities & Boundary Rules</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-rule font-mono">
+                  <tr>
+                    <td className="py-2 pr-2 font-bold text-ink whitespace-nowrap">Asha Patel</td>
+                    <td className="py-2 px-2 whitespace-nowrap">
+                      <span className="px-1.5 py-0.5 bg-surface-2 border border-ink text-[10px] uppercase font-bold text-ink">
+                        Author
+                      </span>
+                    </td>
+                    <td className="py-2 pl-2 font-sans text-xs text-ink-2">
+                      Creates drafts, runs checks, applies suggestions. <strong className="text-ink">Blocked by gate:</strong> cannot self-approve own drafts.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 pr-2 font-bold text-ink whitespace-nowrap">Ben Torres</td>
+                    <td className="py-2 px-2 whitespace-nowrap">
+                      <span className="px-1.5 py-0.5 bg-surface-2 border border-ink text-[10px] uppercase font-bold text-ink">
+                        Author
+                      </span>
+                    </td>
+                    <td className="py-2 pl-2 font-sans text-xs text-ink-2">
+                      Prepares social & web copy. Acts as peer author for cross-approval tests.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 pr-2 font-bold text-ink whitespace-nowrap">Priya Sharma</td>
+                    <td className="py-2 px-2 whitespace-nowrap">
+                      <span className="px-1.5 py-0.5 bg-accent text-accent-ink border border-ink text-[10px] uppercase font-bold">
+                        Reviewer
+                      </span>
+                    </td>
+                    <td className="py-2 pl-2 font-sans text-xs text-ink-2">
+                      Reviews citations, overrides/dismisses with mandatory reason, <strong className="text-ink">can approve</strong> (when 0 blockers).
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 pr-2 font-bold text-ink whitespace-nowrap">Marcus Vance</td>
+                    <td className="py-2 px-2 whitespace-nowrap">
+                      <span className="px-1.5 py-0.5 bg-ink text-surface border border-ink text-[10px] uppercase font-bold">
+                        Admin
+                      </span>
+                    </td>
+                    <td className="py-2 pl-2 font-sans text-xs text-ink-2">
+                      Edits brand guidelines & facts, inspects friction insights, views immutable audit ledger.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
@@ -456,6 +524,181 @@ export const AuthComponent: React.FC<AuthComponentProps> = ({
             <Link href="/build-notes" className="hover:text-ink underline">
               Build Notes
             </Link>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+export const AuthShellFallback: React.FC = () => {
+  return (
+    <div className="bg-paper min-h-screen w-full flex flex-col justify-between text-ink">
+      {/* Brand Header */}
+      <header className="w-full border-b-2 border-ink bg-surface px-6 md:px-8 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 border-2 border-ink bg-ink text-surface flex items-center justify-center shadow-hard-sm">
+            <ShieldCheck className="w-5 h-5 text-surface" aria-hidden="true" />
+          </div>
+          <div>
+            <span className="font-mono text-sm font-bold uppercase tracking-tight block">
+              Inkloom Guardian
+            </span>
+            <span className="text-[10px] uppercase font-bold text-ink-3 font-mono tracking-wider block">
+              Brand Integrity Platform
+            </span>
+          </div>
+        </div>
+
+        <div className="hidden sm:flex items-center gap-6 font-mono text-xs font-bold uppercase">
+          <Link href="/demo-report" className="text-ink-2 hover:text-ink underline">
+            Sample Report
+          </Link>
+          <Link href="/about-ai" className="text-ink-2 hover:text-ink underline">
+            About AI
+          </Link>
+          <Link href="/build-notes" className="text-ink-2 hover:text-ink underline">
+            Build Notes
+          </Link>
+        </div>
+      </header>
+
+      {/* Main Two-Column Layout */}
+      <main className="max-w-[1280px] w-full mx-auto px-6 md:px-8 py-10 md:py-16 grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16 items-center flex-1">
+        {/* Left Column: Headline & Rules */}
+        <div className="md:col-span-7 flex flex-col items-start gap-6">
+          <div className="inline-flex items-center gap-2 px-2.5 py-1 bg-surface border-2 border-ink font-mono text-xs font-bold uppercase shadow-hard-sm">
+            <Sparkles className="w-3.5 h-3.5 text-accent" />
+            <span>Hackathon Demo Mode · No Sign-Up Needed</span>
+          </div>
+
+          <div>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-ink font-sans leading-[1.05]">
+              Check before you publish.
+            </h1>
+            <p className="mt-4 text-base sm:text-lg text-ink-2 font-sans max-w-xl leading-relaxed">
+              Brand compliance checks that cite the exact rule, explain the issue with source rationale, and leave the final approval to a human reviewer.
+            </p>
+          </div>
+
+          <div className="w-full space-y-3 pt-2">
+            {[
+              { num: '01', title: 'Real guidelines', desc: 'Checks against active brand guidelines, terminology, and verified facts.' },
+              { num: '02', title: 'Cited findings', desc: 'Every blocker or suggestion cites rule key, section number, and excerpt.' },
+              { num: '03', title: 'Human decisions', desc: 'The AI never approves. Human reviewers dismiss with reason or approve.' },
+            ].map((rule) => (
+              <div
+                key={rule.num}
+                className="p-3.5 border-2 border-ink bg-surface flex items-start gap-3.5 shadow-hard-sm"
+              >
+                <span className="px-2 py-0.5 bg-ink text-surface font-mono text-xs font-bold">
+                  {rule.num}
+                </span>
+                <div>
+                  <p className="font-bold text-sm text-ink">{rule.title}</p>
+                  <p className="text-xs text-ink-2 font-mono mt-0.5">{rule.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Persona Roles & Governance Table */}
+          <div className="w-full border-2 border-ink bg-surface p-4 shadow-hard-sm mt-2">
+            <div className="flex items-center justify-between pb-2 mb-2 border-b-2 border-rule">
+              <span className="font-mono text-xs font-bold uppercase tracking-wider text-ink">
+                Demo Personas & Governance Matrix
+              </span>
+              <span className="font-mono text-[10px] text-ink-3 uppercase">
+                RBAC & Blocker Gate Enforced
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left font-sans text-xs">
+                <thead>
+                  <tr className="border-b-2 border-ink font-mono text-[11px] uppercase text-ink-2">
+                    <th className="py-1.5 pr-2 font-bold">Persona</th>
+                    <th className="py-1.5 px-2 font-bold">Role</th>
+                    <th className="py-1.5 pl-2 font-bold">Capabilities & Boundary Rules</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-rule font-mono">
+                  <tr>
+                    <td className="py-2 pr-2 font-bold text-ink whitespace-nowrap">Asha Patel</td>
+                    <td className="py-2 px-2 whitespace-nowrap">
+                      <span className="px-1.5 py-0.5 bg-surface-2 border border-ink text-[10px] uppercase font-bold text-ink">Author</span>
+                    </td>
+                    <td className="py-2 pl-2 font-sans text-xs text-ink-2">Creates drafts, runs checks, applies suggestions. Blocked by gate from self-approving.</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 pr-2 font-bold text-ink whitespace-nowrap">Ben Torres</td>
+                    <td className="py-2 px-2 whitespace-nowrap">
+                      <span className="px-1.5 py-0.5 bg-surface-2 border border-ink text-[10px] uppercase font-bold text-ink">Author</span>
+                    </td>
+                    <td className="py-2 pl-2 font-sans text-xs text-ink-2">Prepares social & web copy. Peer author for cross-approval tests.</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 pr-2 font-bold text-ink whitespace-nowrap">Priya Sharma</td>
+                    <td className="py-2 px-2 whitespace-nowrap">
+                      <span className="px-1.5 py-0.5 bg-accent text-accent-ink border border-ink text-[10px] uppercase font-bold">Reviewer</span>
+                    </td>
+                    <td className="py-2 pl-2 font-sans text-xs text-ink-2">Reviews citations, overrides with reason, can approve (when 0 blockers).</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 pr-2 font-bold text-ink whitespace-nowrap">Marcus Vance</td>
+                    <td className="py-2 px-2 whitespace-nowrap">
+                      <span className="px-1.5 py-0.5 bg-ink text-surface border border-ink text-[10px] uppercase font-bold">Admin</span>
+                    </td>
+                    <td className="py-2 pl-2 font-sans text-xs text-ink-2">Edits brand guidelines & facts, inspects friction insights, views immutable audit ledger.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Pre-rendered Boxed Auth Panel */}
+        <div className="md:col-span-5 w-full">
+          <div className="w-full border-2 border-ink bg-surface p-6 sm:p-8 shadow-hard rounded-none">
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between font-mono text-xs font-bold uppercase text-ink">
+                  <span>One-Click Demo Access</span>
+                  <span className="text-ink-3">Instant Login</span>
+                </div>
+
+                <div className="space-y-2">
+                  {DEFAULT_DEMO_USERS.map((u) => (
+                    <div
+                      key={u.id}
+                      className="w-full p-3.5 border-2 border-ink bg-surface flex items-center justify-between gap-3 shadow-hard-sm"
+                    >
+                      <div>
+                        <p className="font-bold text-sm text-ink">{u.name}</p>
+                        <p className="text-xs font-mono text-ink-2 mt-0.5 line-clamp-1">{u.blurb}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="font-mono text-[10px] font-bold uppercase px-2 py-0.5 border border-ink bg-surface-2 text-ink">
+                          {u.role}
+                        </span>
+                        <ArrowRight className="w-4 h-4 text-ink" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="w-full border-t-2 border-ink bg-surface px-6 md:px-8 py-5">
+        <div className="max-w-[1280px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-xs text-ink-2">
+          <p>Demo mode uses fictional data. Decisions require human confirmation.</p>
+          <div className="flex items-center gap-6 font-bold uppercase">
+            <Link href="/demo-report" className="hover:text-ink underline">Sample Report</Link>
+            <Link href="/about-ai" className="hover:text-ink underline">About AI</Link>
+            <Link href="/build-notes" className="hover:text-ink underline">Build Notes</Link>
           </div>
         </div>
       </footer>

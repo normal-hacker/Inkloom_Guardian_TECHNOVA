@@ -6,10 +6,9 @@ import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { StatusPill } from '@/components/ui/badge';
-import { SectionLabel } from '@/components/ui/card';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/states';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
-import { Plus, Search, Filter, ArrowUpRight } from 'lucide-react';
+import { Plus, Search, ArrowUpRight } from 'lucide-react';
 import type { ContentItem } from '@/lib/domain/types';
 
 export default function DashboardPage() {
@@ -45,9 +44,9 @@ export default function DashboardPage() {
 
   // Compute stat metrics
   const needActionCount = items.filter(
-    (i) => i.status === 'in_review' || i.status === 'changes_requested'
+    (i) => i.status === 'in_review' || i.status === 'changes_requested' || i.status === 'needs_review'
   ).length;
-  const inReviewCount = items.filter((i) => i.status === 'in_review').length;
+  const inReviewCount = items.filter((i) => i.status === 'in_review' || i.status === 'needs_review').length;
   const openBlockersCount = items.reduce(
     (acc, curr) => acc + (curr.blockersCount || 0),
     0
@@ -109,6 +108,7 @@ export default function DashboardPage() {
           <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             {[
               { id: 'all', label: 'All' },
+              { id: 'needs_review', label: 'Needs Re-Review' },
               { id: 'in_review', label: 'In Review' },
               { id: 'draft', label: 'Draft' },
               { id: 'changes_requested', label: 'Changes Requested' },

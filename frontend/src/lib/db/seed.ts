@@ -487,7 +487,7 @@ export async function seedDatabase(customDb?: NodePgDatabase<typeof schema>) {
       });
   }
 
-  // 8. 5 Seed Content Items
+  // 8. 5 Seed Content Items covering canonical workflow states
   const contentItemsData = [
     {
       id: '70000000-0000-0000-0000-000000000001',
@@ -507,15 +507,15 @@ export async function seedDatabase(customDb?: NodePgDatabase<typeof schema>) {
       id: '70000000-0000-0000-0000-000000000003',
       title: 'Social post: SunLink launch',
       contentType: 'social',
-      status: 'changes_requested',
-      ownerId: SEED_USERS.ASHA,
+      status: 'in_review',
+      ownerId: SEED_USERS.BEN,
     },
     {
       id: '70000000-0000-0000-0000-000000000004',
       title: 'Homepage banner copy',
       contentType: 'web',
       status: 'checked',
-      ownerId: SEED_USERS.BEN,
+      ownerId: SEED_USERS.ASHA,
     },
     {
       id: '70000000-0000-0000-0000-000000000005',
@@ -659,6 +659,170 @@ export async function seedDatabase(customDb?: NodePgDatabase<typeof schema>) {
       suggestion: 'top-rated',
       confidence: '1.00',
       status: 'open',
+    })
+    .onConflictDoNothing();
+
+  // Item 3: Clean item awaiting review (ci-003)
+  const cv3Id = '80000000-0000-0000-0000-000000000003';
+  const rr3Id = '90000000-0000-0000-0000-000000000003';
+  const v3Text = 'Switch to clean energy with SunLink. Enjoy 18–24% bill savings and durable rooftop installation in 1–2 days.';
+  await db
+    .insert(schema.contentVersions)
+    .values({
+      id: cv3Id,
+      contentItemId: contentItemsData[2].id,
+      versionNo: 1,
+      textBody: v3Text,
+      contentHash: 'a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef0',
+      sourceKind: 'paste',
+      changeNote: 'Ready for reviewer approval',
+      createdBy: SEED_USERS.BEN,
+      createdAt: new Date('2026-02-02T10:00:00Z'),
+    })
+    .onConflictDoNothing();
+
+  await db
+    .update(schema.contentItems)
+    .set({ currentVersionId: cv3Id })
+    .where(eq(schema.contentItems.id, contentItemsData[2].id));
+
+  await db
+    .insert(schema.reviewRuns)
+    .values({
+      id: rr3Id,
+      contentVersionId: cv3Id,
+      ruleSetId: SEED_RULE_SETS.V3,
+      status: 'complete',
+      counts: { blocker: 0, major: 0, minor: 0, info: 0 },
+      startedAt: new Date('2026-02-02T10:05:00Z'),
+      finishedAt: new Date('2026-02-02T10:05:01Z'),
+    })
+    .onConflictDoNothing();
+
+  // Item 4: Draft with multiple blockers (ci-004)
+  const cv4Id = '80000000-0000-0000-0000-000000000004';
+  const rr4Id = '90000000-0000-0000-0000-000000000004';
+  const v4Text = 'Our SunLink panels are the best on the market and guarantee 40% savings on every energy bill.';
+  await db
+    .insert(schema.contentVersions)
+    .values({
+      id: cv4Id,
+      contentItemId: contentItemsData[3].id,
+      versionNo: 1,
+      textBody: v4Text,
+      contentHash: 'b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef01',
+      sourceKind: 'paste',
+      changeNote: 'Unchecked copy with superlatives',
+      createdBy: SEED_USERS.ASHA,
+      createdAt: new Date('2026-02-02T11:00:00Z'),
+    })
+    .onConflictDoNothing();
+
+  await db
+    .update(schema.contentItems)
+    .set({ currentVersionId: cv4Id })
+    .where(eq(schema.contentItems.id, contentItemsData[3].id));
+
+  await db
+    .insert(schema.reviewRuns)
+    .values({
+      id: rr4Id,
+      contentVersionId: cv4Id,
+      ruleSetId: SEED_RULE_SETS.V3,
+      status: 'complete',
+      counts: { blocker: 2, major: 1, minor: 0, info: 0 },
+      startedAt: new Date('2026-02-02T11:05:00Z'),
+      finishedAt: new Date('2026-02-02T11:05:01Z'),
+    })
+    .onConflictDoNothing();
+
+  const ruleClaim002Id = '40000000-0000-0000-0000-000000000008';
+  const ruleNum001Id = '40000000-0000-0000-0000-000000000009';
+  await db
+    .insert(schema.findings)
+    .values([
+      {
+        id: 'b0000000-0000-0000-0000-000000000002',
+        reviewRunId: rr4Id,
+        origin: 'rule',
+        category: 'claim',
+        severity: 'blocker',
+        ruleId: ruleClaim001Id,
+        spanStart: 27,
+        spanEnd: 31,
+        quote: 'best',
+        explanation: 'Superlatives must be backed by documented third-party verification.',
+        suggestion: 'top-rated',
+        confidence: '1.00',
+        status: 'open',
+      },
+      {
+        id: 'b0000000-0000-0000-0000-000000000003',
+        reviewRunId: rr4Id,
+        origin: 'rule',
+        category: 'claim',
+        severity: 'blocker',
+        ruleId: ruleClaim002Id,
+        spanStart: 50,
+        spanEnd: 59,
+        quote: 'guarantee',
+        explanation: 'Absolute guarantee statements create legal liability.',
+        suggestion: 'provide warranty-backed',
+        confidence: '1.00',
+        status: 'open',
+      },
+      {
+        id: 'b0000000-0000-0000-0000-000000000004',
+        reviewRunId: rr4Id,
+        origin: 'rule',
+        category: 'fact',
+        severity: 'major',
+        ruleId: ruleNum001Id,
+        spanStart: 60,
+        spanEnd: 71,
+        quote: '40% savings',
+        explanation: 'Approved savings claim is strictly 18–24% based on 2025 customer study.',
+        suggestion: '18–24% savings',
+        confidence: '1.00',
+        status: 'open',
+      },
+    ])
+    .onConflictDoNothing();
+
+  // Item 5: Clean draft (ci-005)
+  const cv5Id = '80000000-0000-0000-0000-000000000005';
+  const rr5Id = '90000000-0000-0000-0000-000000000005';
+  const v5Text = 'Brightway Solar provides reliable residential solar installation across 14 cities with standard 1–2 day setups and a 25-year performance warranty.';
+  await db
+    .insert(schema.contentVersions)
+    .values({
+      id: cv5Id,
+      contentItemId: contentItemsData[4].id,
+      versionNo: 1,
+      textBody: v5Text,
+      contentHash: 'c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef012',
+      sourceKind: 'paste',
+      changeNote: 'Initial clean draft',
+      createdBy: SEED_USERS.ASHA,
+      createdAt: new Date('2026-02-02T12:00:00Z'),
+    })
+    .onConflictDoNothing();
+
+  await db
+    .update(schema.contentItems)
+    .set({ currentVersionId: cv5Id })
+    .where(eq(schema.contentItems.id, contentItemsData[4].id));
+
+  await db
+    .insert(schema.reviewRuns)
+    .values({
+      id: rr5Id,
+      contentVersionId: cv5Id,
+      ruleSetId: SEED_RULE_SETS.V3,
+      status: 'complete',
+      counts: { blocker: 0, major: 0, minor: 0, info: 0 },
+      startedAt: new Date('2026-02-02T12:05:00Z'),
+      finishedAt: new Date('2026-02-02T12:05:01Z'),
     })
     .onConflictDoNothing();
 

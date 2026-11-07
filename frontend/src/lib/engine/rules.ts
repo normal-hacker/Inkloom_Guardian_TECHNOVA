@@ -69,7 +69,7 @@ const STATIC_PATTERN_RULES: PatternRule[] = [
     sourceDoc: 'Brand Voice Guide',
     sourceSection: '5.2',
     explanation: 'Superlatives must be backed by documented third-party verification.',
-    regex: /\b(best|#1|number one|fastest|leading|unbeatable|world-class|only)\b/gi,
+    regex: /(?:\b(best|number one|fastest|leading|unbeatable|world-class|only)\b|(?:\b|(?<=[\s]))#1\b)/gi,
   },
   // CLAIM-002 · claim · blocker · guarantee language
   {
@@ -80,7 +80,7 @@ const STATIC_PATTERN_RULES: PatternRule[] = [
     sourceDoc: 'Brand Voice Guide',
     sourceSection: '5.3',
     explanation: 'Absolute guarantee statements create legal liability. Reference standard warranty terms instead.',
-    regex: /\b(guarantee|guaranteed|risk-free|100%)\b/gi,
+    regex: /\b(guarantee|guaranteed|risk-free)\b|(?:100%|\b100\s*%(?!\w))/gi,
   },
   // CONF-001 · confidentiality · blocker · internal names & emails
   {
@@ -91,7 +91,7 @@ const STATIC_PATTERN_RULES: PatternRule[] = [
     sourceDoc: 'Brand Voice Guide',
     sourceSection: '7',
     explanation: 'Internal project codenames and email addresses must not appear in public materials.',
-    regex: /\b(Project Helios|unreleased|internal only|do not share)\b|\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/gi,
+    regex: /\b(Project Helios|Project Apollo|unreleased|internal only|do not share)\b|\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/gi,
   },
   // ACC-002 · accessibility · minor · link-style text alone
   {

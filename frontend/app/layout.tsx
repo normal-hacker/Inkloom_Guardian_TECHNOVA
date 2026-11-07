@@ -18,6 +18,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'Inkloom Guardian',
   description: 'Brand governance quality checks before publishing.',
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

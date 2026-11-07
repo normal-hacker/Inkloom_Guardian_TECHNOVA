@@ -133,6 +133,34 @@ function GuidelinesContent() {
     loadGuidelines();
   }, [loadGuidelines]);
 
+  const [reAuditLoading, setReAuditLoading] = useState(false);
+  const [reAuditResult, setReAuditResult] = useState<{
+    success: boolean;
+    targetFactKey?: string;
+    oldValue?: string;
+    newValue?: string;
+    flaggedCount?: number;
+    flaggedItems?: Array<{ id: string; title: string; reason: string }>;
+    message?: string;
+  } | null>(null);
+
+  const handleReAudit = async (action: 'update' | 'reset') => {
+    setReAuditLoading(true);
+    try {
+      const res = await fetch('/api/v1/guidelines/re-audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, factKey: 'F-001', newValue: 15 }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setReAuditResult(data);
+        await loadGuidelines();
+      }
+    } catch {}
+    setReAuditLoading(false);
+  };
+
   const tabParam = searchParams.get('tab') || 'sources';
 
   const tabList: TabItem[] = [
@@ -458,6 +486,85 @@ function GuidelinesContent() {
               transition={{ duration: 0.15 }}
               className="space-y-6"
             >
+              {/* Round 3 Feature A: Stale-Content Re-Audit Demo Box */}
+              <div className="border-2 border-ink bg-surface p-6 shadow-hard space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b-2 border-ink">
+                  <div>
+                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-ink-3">
+                      Round 3 Feature A
+                    </span>
+                    <h3 className="text-base font-bold text-ink uppercase tracking-tight mt-0.5">
+                      Stale-Content Re-Audit Pipeline
+                    </h3>
+                  </div>
+                  <span className="font-mono text-xs font-bold px-2.5 py-1 border border-ink bg-paper uppercase">
+                    Admin Simulation Gate
+                  </span>
+                </div>
+                <p className="text-xs text-ink-2 leading-relaxed">
+                  When a verified brand guideline or fact-sheet metric changes (e.g., F-001 savings ceiling updated from 20% to 15%), the system automatically re-evaluates all historical approved campaigns. Non-compliant copy is moved to <code className="bg-paper px-1 border border-ink font-mono font-bold text-ink">Needs re-review</code> with full diff and audit ledger events.
+                </p>
+
+                <div className="flex flex-wrap items-center gap-3 pt-2">
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    disabled={reAuditLoading}
+                    onClick={() => handleReAudit('update')}
+                    className="font-mono"
+                  >
+                    {reAuditLoading ? 'Re-Auditing…' : 'Simulate Fact Update (20% → 15%) & Re-Audit'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={reAuditLoading}
+                    onClick={() => handleReAudit('reset')}
+                    className="font-mono"
+                  >
+                    Reset F-001 (18–24%)
+                  </Button>
+                </div>
+
+                {reAuditResult && (
+                  <div
+                    className={`p-4 border-2 border-ink shadow-hard-sm space-y-2 ${
+                      reAuditResult.flaggedCount && reAuditResult.flaggedCount > 0
+                        ? 'bg-amber-50 text-ink'
+                        : 'bg-surface-2 text-ink'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-xs font-bold uppercase">
+                        {reAuditResult.message || `Fact ${reAuditResult.targetFactKey} Updated: ${reAuditResult.oldValue} → ${reAuditResult.newValue}`}
+                      </span>
+                      {reAuditResult.flaggedCount !== undefined && (
+                        <span className="font-mono text-xs font-bold px-2 py-0.5 border border-ink bg-blocker text-ink">
+                          {reAuditResult.flaggedCount} Campaign Flagged
+                        </span>
+                      )}
+                    </div>
+                    {reAuditResult.flaggedItems && reAuditResult.flaggedItems.length > 0 && (
+                      <div className="space-y-1 pt-1 border-t border-ink text-xs font-mono">
+                        {reAuditResult.flaggedItems.map((item) => (
+                          <div key={item.id} className="flex items-center justify-between">
+                            <span>{item.title}</span>
+                            <a
+                              href="/dashboard?status=needs_review"
+                              className="underline font-bold hover:text-ink-2"
+                            >
+                              View in Dashboard →
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <SectionLabel number="04" title="Approved Metrics Sheet 2025-Q3 (NUM-001 Grounding)" />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {activeData?.facts?.map((f) => (

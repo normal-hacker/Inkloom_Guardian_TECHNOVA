@@ -9,6 +9,24 @@ import { FindingCard } from '@/components/ui/finding-card';
 import { Finding } from '@/lib/domain/types';
 
 export default function LandingPage() {
+  const [signingIn, setSigningIn] = React.useState(false);
+
+  const handleQuickDemo = async (role = 'reviewer') => {
+    setSigningIn(true);
+    try {
+      const res = await fetch('/api/v1/auth/demo-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role }),
+      });
+      if (res.ok) {
+        window.location.href = '/dashboard';
+        return;
+      }
+    } catch {}
+    window.location.href = '/login';
+  };
+
   const sampleFinding1: Finding = {
     id: 'sample-f1',
     ruleKey: 'CLAIM-001',
@@ -76,12 +94,15 @@ export default function LandingPage() {
                 Build notes
               </Link>
             </div>
-            <Link href="/login">
-              <Button variant="primary" size="md">
-                <span>Try the demo</span>
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </Link>
+            <button
+              type="button"
+              onClick={() => handleQuickDemo('reviewer')}
+              disabled={signingIn}
+              className="min-h-11 px-4 py-2 bg-accent text-accent-ink border-2 border-ink font-mono text-xs font-bold uppercase flex items-center gap-2 shadow-hard hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-focus"
+            >
+              <span>{signingIn ? 'Opening…' : 'Try Demo (1-Click)'}</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
           </nav>
         </div>
       </header>
@@ -90,7 +111,10 @@ export default function LandingPage() {
       <main className="flex-1">
         <section className="max-w-[1280px] mx-auto px-6 md:px-8 pt-16 md:pt-28 pb-16 md:pb-24 border-b-2 border-ink">
           <div className="max-w-4xl space-y-6">
-            <SectionLabel number="00" title="Brand Governance Automation" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-surface border-2 border-ink font-mono text-xs font-bold uppercase shadow-hard-sm">
+              <span className="w-2 h-2 bg-accent rounded-none inline-block border border-ink" />
+              <span>Brand Governance Engine & Quality Verification</span>
+            </div>
             <h1 className="text-5xl sm:text-7xl lg:text-8xl font-bold tracking-tight text-ink font-sans leading-[0.95]">
               Check before you publish.
             </h1>
@@ -98,16 +122,50 @@ export default function LandingPage() {
               Brand checks that cite the rule, explain the issue, and leave the decision to a human.
             </p>
             <div className="flex flex-wrap items-center gap-4 pt-4">
-              <Link href="/login">
-                <Button variant="primary" size="lg">
-                  <span>Try the demo</span>
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
-              </Link>
+              <button
+                type="button"
+                onClick={() => handleQuickDemo('reviewer')}
+                disabled={signingIn}
+                className="min-h-11 px-6 py-3.5 bg-accent text-accent-ink border-2 border-ink font-mono text-sm font-bold uppercase flex items-center gap-2 shadow-hard hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-focus"
+              >
+                <span>{signingIn ? 'Signing you in…' : 'Try Demo as Reviewer (1-Click)'}</span>
+                <ArrowRight className="w-5 h-5 ml-1" />
+              </button>
               <Link href="/demo-report">
                 <Button variant="secondary" size="lg">
                   View sample report
                 </Button>
+              </Link>
+            </div>
+            {/* Quick persona switcher pills */}
+            <div className="flex flex-wrap items-center gap-2 pt-2 font-mono text-xs">
+              <span className="text-ink-3 uppercase font-bold text-[11px]">Instant Persona:</span>
+              <button
+                type="button"
+                onClick={() => handleQuickDemo('reviewer')}
+                className="px-2.5 py-1 border border-ink bg-surface hover:bg-surface-2 font-bold uppercase text-ink shadow-hard-sm"
+              >
+                Priya (Reviewer)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickDemo('creator')}
+                className="px-2.5 py-1 border border-ink bg-surface hover:bg-surface-2 font-bold uppercase text-ink shadow-hard-sm"
+              >
+                Asha (Author)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickDemo('manager')}
+                className="px-2.5 py-1 border border-ink bg-surface hover:bg-surface-2 font-bold uppercase text-ink shadow-hard-sm"
+              >
+                Marcus (Admin)
+              </button>
+              <Link
+                href="/login"
+                className="px-2.5 py-1 text-ink-2 underline hover:text-ink text-[11px] uppercase font-bold ml-1"
+              >
+                All personas & sign-in →
               </Link>
             </div>
           </div>
@@ -166,7 +224,7 @@ export default function LandingPage() {
               {
                 step: '02',
                 title: 'Check',
-                desc: 'The deterministic rule engine and Gemini AI inspect text against the active guideline rule set.',
+                desc: 'The 100% deterministic engine checks 13 rules and 6 facts locally in < 1 ms. An optional Gemini AI adapter provides advisory suggestions; it never approves.',
               },
               {
                 step: '03',

@@ -74,7 +74,7 @@ CREATE TABLE "content_items" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "chk_content_items_content_type" CHECK ("content_items"."content_type" IN ('blog', 'social', 'ad', 'web', 'press', 'other')),
-	CONSTRAINT "chk_content_items_status" CHECK ("content_items"."status" IN ('draft', 'checked', 'in_review', 'changes_requested', 'approved', 'rejected'))
+	CONSTRAINT "chk_content_items_status" CHECK ("content_items"."status" IN ('draft', 'checked', 'in_review', 'changes_requested', 'approved', 'rejected', 'needs_review'))
 );
 --> statement-breakpoint
 CREATE TABLE "content_versions" (

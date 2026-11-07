@@ -8,24 +8,24 @@
 ### Public (no sign-in; every one must open in an incognito window)
 | # | Route | Purpose | Key content | Data | Status |
 |---|---|---|---|---|---|
-| P1 | `/` | Landing: what it is, "Try the demo" | Hero, 3-step explainer, links | none | todo |
-| P2 | `/login` | Demo accounts first, optional Google, email sign-in | Role buttons, Google (optional), email/password | `GET /auth/providers`, `POST /auth/demo-login`, `/auth/login` | todo |
-| P3 | `/demo-report` | Read-only sample of a finished review | Seeded approved item, findings, dismissal reason, approval, audit rows | `GET /public/demo-report` | todo |
-| P4 | `/about-ai` | AI disclosure and privacy | What AI does/doesn't, data sent, providers, limits, build tools | `GET /public/ai-disclosure` | todo |
-| P5 | `/build-notes` | Our Round 2 submission content | Features done, tech, changes from plan, 3 Round 3 improvements, team, limits | static + features array | todo |
-| P6 | `/selftest` | In-browser engine self-tests | pass/fail list | none | todo |
-| P7 | `/404`, error boundary | Friendly not-found / error | Next action link | none | todo |
+| P1 | `/` | Landing: what it is, "Try the demo" | Hero, 3-step explainer, links | none | done |
+| P2 | `/login` | Demo accounts first, optional Google, email sign-in | Role buttons, Google (optional), email/password | `GET /auth/providers`, `POST /auth/demo-login`, `/auth/login` | done |
+| P3 | `/demo-report` | Read-only sample of a finished review | Seeded approved item, findings, dismissal reason, approval, audit rows | `GET /public/demo-report` | done |
+| P4 | `/about-ai` | AI disclosure and privacy | What AI does/doesn't, data sent, providers, limits, build tools | `GET /public/ai-disclosure` | done |
+| P5 | `/build-notes` | Our Round 2 submission content | Features done, tech, changes from plan, 3 Round 3 improvements, team, limits | static + features array | done |
+| P6 | `/selftest` | In-browser engine self-tests | pass/fail list | none | done |
+| P7 | `/404`, error boundary | Friendly not-found / error | Next action link | none | done |
 | P8 | `/styleguide` | Paper Brutalist component gallery | Tokens, type scale, components, states | none | done |
 
 ### App (signed in; shell = sidebar + page header + content panel)
 | # | Route | Roles | Purpose | Primary actions | Data (see DOMAIN.md) | Status |
 |---|---|---|---|---|---|---|
-| A1 | `/dashboard` | all | What needs my attention; content list | Open item, New content | `ContentItem[]`, counts | todo |
-| A2 | `/content/new` | all | Submit content | Paste / upload, Save & check | `ContentItem`, `ContentVersion` | todo |
-| A3 | `/content/[id]` | owner, reviewer, manager | **Review workspace (core of the product)** | Check, apply suggestion, dismiss/override, comment, submit, decide | `ContentItem`, `ContentVersion[]`, `ReviewRun`, `FindingView[]`, `Comment[]`, `Approval`, `AuditEntry[]` | todo |
-| A4 | `/guidelines?tab=sources\|rules\|glossary\|facts\|rulesets` | all view; manager edits | Approved material the checks use | Edit draft rule set, add term/fact, publish version | `GuidelineSource`, `RuleSet`, `Rule`, `GlossaryTerm`, `ApprovedFact` | todo |
-| A5 | `/insights` | reviewer, manager | Repeated mistakes, unclear guidelines | Filter period, table toggle | aggregates | todo |
-| A6 | `/audit` | reviewer, manager | Who decided what on which exact version | Filter, expand, export CSV (manager) | `AuditEntry[]` | todo |
+| A1 | `/dashboard` | all | What needs my attention; content list | Open item, New content | `ContentItem[]`, counts | done |
+| A2 | `/content/new` | all | Submit content | Paste / upload, Save & check | `ContentItem`, `ContentVersion` | done |
+| A3 | `/content/[id]` | owner, reviewer, manager | **Review workspace (core of the product)** | Check, apply suggestion, dismiss/override, comment, submit, decide | `ContentItem`, `ContentVersion[]`, `ReviewRun`, `FindingView[]`, `Comment[]`, `Approval`, `AuditEntry[]` | done |
+| A4 | `/guidelines` | all view; manager edits | Approved material (sources, rules, glossary, facts, rulesets) | Edit draft rule set, add term/fact, publish version | `GuidelineSource`, `RuleSet`, `Rule`, `GlossaryTerm`, `ApprovedFact` | done |
+| A5 | `/insights` | reviewer, manager | Repeated mistakes, unclear guidelines | Filter period, table toggle | aggregates | done |
+| A6 | `/audit` | reviewer, manager | Who decided what on which exact version | Filter, expand, export CSV (manager) | `AuditEntry[]` | done |
 
 ## 2. Navigation structure
 - **Sidebar (main nav, `components/ui/sidebar.tsx`):** Dashboard · New content · Guidelines · Insights* · Audit* · About AI. Footer: user card, Switch demo user (demo mode only), Log out. (*reviewer/manager only; UI hiding is convenience, the server enforces.)

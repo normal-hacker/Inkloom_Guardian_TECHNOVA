@@ -2,6 +2,7 @@ import { drizzle, NodePgDatabase } from 'drizzle-orm/node-postgres';
 import pg from 'pg';
 import * as schema from './schema';
 import { serverEnv } from '../env';
+import { initMemoryDatabase } from './memory-db';
 
 const { Pool } = pg;
 
@@ -18,7 +19,11 @@ export function getPool(): pg.Pool {
   if (!globalThis.__inkloomPgPool) {
     const url = serverEnv.databaseUrl;
     if (!url) {
-      console.warn('[DB Client] Warning: DATABASE_URL is not set in environment.');
+      console.warn('[DB Client] Warning: DATABASE_URL is not set in environment. Falling back to in-memory pg-mem database.');
+      const { pool, db: memDrizzle } = initMemoryDatabase();
+      globalThis.__inkloomPgPool = pool;
+      globalThis.__inkloomDrizzleDb = memDrizzle;
+      return pool;
     }
     const isRemote =
       Boolean(url) &&

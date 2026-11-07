@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { AuthComponent, DemoUser, Providers, Status } from '@/components/ui/sign-up';
+import { AuthComponent, AuthShellFallback, DemoUser, Providers, Status } from '@/components/ui/sign-up';
 import { sanitizeNextUrl } from '@/lib/auth/client';
 
 function LoginForm() {
@@ -151,13 +151,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-slate-900 flex items-center justify-center text-slate-400">
-          Loading sign in...
-        </div>
-      }
-    >
+    <Suspense fallback={<AuthShellFallback />}>
       <LoginForm />
     </Suspense>
   );

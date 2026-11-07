@@ -15,6 +15,9 @@ interface DismissedAlert {
   totalCount: number;
   dismissalRatePct: number;
   flagged: boolean;
+  exampleSnippet?: string | null;
+  suggestedAction?: string | null;
+  isSeeded?: boolean;
 }
 
 interface TopRule {
@@ -185,12 +188,40 @@ export default function InsightsPage() {
                     <span>
                       {r.dismissedCount} dismissed / {r.totalCount} total findings
                     </span>
-                    {r.flagged && (
-                      <span className="font-bold text-ink uppercase tracking-wider text-[10px] bg-blocker/30 px-1 border border-ink">
-                        Flagged for Review
-                      </span>
-                    )}
+                    <div className="flex items-center gap-1.5">
+                      {r.isSeeded && (
+                        <span className="font-bold text-ink-3 uppercase tracking-wider text-[10px] px-1 border border-ink bg-paper">
+                          Seeded Telemetry
+                        </span>
+                      )}
+                      {r.flagged && (
+                        <span className="font-bold text-ink uppercase tracking-wider text-[10px] bg-blocker/30 px-1 border border-ink">
+                          Guideline Gap
+                        </span>
+                      )}
+                    </div>
                   </div>
+
+                  {r.flagged && (
+                    <div className="mt-3 pt-3 border-t border-ink space-y-1.5 text-xs">
+                      {r.exampleSnippet && (
+                        <div className="flex items-start gap-1.5 font-mono">
+                          <span className="text-[10px] uppercase font-bold text-ink-3">Snippet:</span>
+                          <code className="bg-paper px-1 border border-ink text-ink font-bold">
+                            &ldquo;{r.exampleSnippet}&rdquo;
+                          </code>
+                        </div>
+                      )}
+                      {r.suggestedAction && (
+                        <div className="flex items-start gap-1.5">
+                          <span className="text-[10px] font-mono uppercase font-bold text-ink-3 whitespace-nowrap">Action:</span>
+                          <p className="text-ink text-[11px] leading-snug">
+                            {r.suggestedAction}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

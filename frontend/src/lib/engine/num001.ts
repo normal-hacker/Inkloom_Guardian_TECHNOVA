@@ -163,7 +163,7 @@ export function checkNumberClaims(
         const factVal = fact.values[0];
         let isSupported = false;
         if (factVal) {
-          const factMin = factVal.min ?? factVal.value ?? 0;
+          const factMin = factVal.min ?? 0;
           const factMax = factVal.max ?? factVal.value ?? 0;
           if (claim.min >= factMin && claim.max <= factMax) {
             isSupported = true;

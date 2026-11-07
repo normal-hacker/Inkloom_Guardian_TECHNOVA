@@ -49,8 +49,8 @@ export default function BuildNotesPage() {
             <h2 className="text-base font-bold text-ink uppercase tracking-tight">
               Delivered Features Checklist
             </h2>
-            <span className="font-mono text-xs font-bold px-2 py-0.5 border border-ink bg-approved text-ink uppercase">
-              100% Complete
+            <span className="font-mono text-xs font-bold px-2 py-0.5 border border-ink bg-surface-2 text-ink uppercase">
+              Complete, with known limits
             </span>
           </div>
 
@@ -65,7 +65,7 @@ export default function BuildNotesPage() {
             <TableBody>
               <TableRow>
                 <TableCell className="font-mono font-bold text-xs">Deterministic Rule Engine</TableCell>
-                <TableCell className="text-xs">13 pure TypeScript rules evaluating in &lt;2ms</TableCell>
+                <TableCell className="text-xs">13 pure TypeScript rules evaluating in &lt;1ms (measured 0.009 ms / 9 µs avg)</TableCell>
                 <TableCell className="font-mono text-xs">/selftest & vitest suite</TableCell>
               </TableRow>
               <TableRow>
@@ -129,47 +129,152 @@ export default function BuildNotesPage() {
           </div>
         </div>
 
-        {/* Section 3: Upcoming Roadmap Improvements */}
+        {/* Section 3: Unified AI Architecture & Precise Boundary Statement */}
         <div className="bg-surface border-2 border-ink p-6 shadow-hard space-y-4">
           <div className="pb-3 border-b-2 border-ink">
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-ink-3">
-              Forward Roadmap
+              Core Definition
             </span>
             <h2 className="text-base font-bold text-ink uppercase tracking-tight mt-1">
-              Upcoming Roadmap Improvements
+              Unified AI & Deterministic Engine Boundary
+            </h2>
+          </div>
+          <div className="p-4 border-2 border-ink bg-surface-2 space-y-3">
+            <p className="text-xs text-ink leading-relaxed font-mono">
+              Inkloom Guardian&apos;s core governance engine is 100% deterministic, running 13 brand rules and 6 verified facts locally in pure TypeScript with zero external network calls (&lt; 1 ms latency). When an AI API key is configured, an optional, pluggable Gemini AI adapter provides advisory suggestions and phrasing alternatives on unstructured copy. The AI adapter never approves content, never bypasses blocker gates, and all text undergoes automated PII redaction before leaving the boundary.
+            </p>
+          </div>
+        </div>
+
+        {/* Section 4: AI & Tools Disclosure */}
+        <div className="bg-surface border-2 border-ink p-6 shadow-hard space-y-4">
+          <div className="pb-3 border-b-2 border-ink">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-ink-3">
+              Transparency
+            </span>
+            <h2 className="text-base font-bold text-ink uppercase tracking-tight mt-1">
+              AI & Tools Disclosure
             </h2>
           </div>
           <p className="text-xs text-ink-2">
-            The following three architectural enhancements are planned for upcoming releases:
+            In compliance with hackathon transparency guidelines, below is the exhaustive disclosure of tools, AI assistance, and open-source foundations utilized in constructing Inkloom Guardian:
           </p>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Tool / Provider</TableHead>
+                <TableHead>Scope of Utilization</TableHead>
+                <TableHead>Governance & Verification Gate</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell className="font-mono font-bold text-xs">Anthropic Claude</TableCell>
+                <TableCell className="text-xs">Architectural planning, interface contracts, and unit test generation</TableCell>
+                <TableCell className="font-mono text-xs">Human engineer validated; 182+ automated vitest checks</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-mono font-bold text-xs">Google Antigravity & Gemini API</TableCell>
+                <TableCell className="text-xs">Context synthesis, coding assistance, and pluggable runtime LLM advisory adapter</TableCell>
+                <TableCell className="font-mono text-xs">Deterministic PII redaction + strict grounding validation</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-mono font-bold text-xs">Next.js 15 & Drizzle ORM</TableCell>
+                <TableCell className="text-xs">Application framework, API route handlers, and SQL schema management (MIT)</TableCell>
+                <TableCell className="font-mono text-xs">Compiled with strict TypeScript and ESLint</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-mono font-bold text-xs">Paper Brutalist UI System</TableCell>
+                <TableCell className="text-xs">Custom CSS tokens, Geist font, Lucide icons (ISC/MIT)</TableCell>
+                <TableCell className="font-mono text-xs">npm run check:tokens (0 raw hex, 0 arbitrary px)</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-            <div className="p-4 border-2 border-ink bg-surface-2 space-y-2 shadow-hard">
-              <span className="font-mono text-xs font-bold uppercase tracking-wider text-ink block">
-                01. Stale-Content Re-Audit Pipeline
+        {/* Section 5: Known Limitations */}
+        <div className="bg-surface border-2 border-ink p-6 shadow-hard space-y-4">
+          <div className="pb-3 border-b-2 border-ink">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-ink-3">
+              Engineering Honesty
+            </span>
+            <h2 className="text-base font-bold text-ink uppercase tracking-tight mt-1">
+              Known System Limitations
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-4 border-2 border-ink bg-surface-2 space-y-1">
+              <span className="font-mono text-xs font-bold uppercase text-ink block">
+                1. Simulated Brand Corpus
               </span>
-              <p className="text-xs text-ink-2 leading-relaxed">
-                Automatically re-scans historical approved campaigns whenever a new brand guideline or fact sheet is activated, flagging copy that has become non-compliant over time.
+              <p className="text-xs text-ink-2">
+                Brand guidelines, facts, and campaign items are grounded in the fictional company &ldquo;Brightway Solar&rdquo; for realistic hackathon evaluation.
               </p>
             </div>
-
-            <div className="p-4 border-2 border-ink bg-surface-2 space-y-2 shadow-hard">
-              <span className="font-mono text-xs font-bold uppercase tracking-wider text-ink block">
-                02. Guideline-Gap Detector
+            <div className="p-4 border-2 border-ink bg-surface-2 space-y-1">
+              <span className="font-mono text-xs font-bold uppercase text-ink block">
+                2. Golden Benchmark Scope
               </span>
-              <p className="text-xs text-ink-2 leading-relaxed">
-                Aggregates reviewer override and dismissal telemetry to detect ambiguities and friction in guidelines where human reviewers consistently diverge from policy.
+              <p className="text-xs text-ink-2">
+                The golden evaluation benchmark contains 50 curated copy examples covering edge cases, adversarial phrasing, and numeric units.
               </p>
             </div>
-
-            <div className="p-4 border-2 border-ink bg-surface-2 space-y-2 shadow-hard">
-              <span className="font-mono text-xs font-bold uppercase tracking-wider text-ink block">
-                03. Multimodal Banner Inspection
+            <div className="p-4 border-2 border-ink bg-surface-2 space-y-1">
+              <span className="font-mono text-xs font-bold uppercase text-ink block">
+                3. Hand-Authored Rule Logic
               </span>
-              <p className="text-xs text-ink-2 leading-relaxed">
-                Analyzes creative banner assets beyond alt-text to verify logo clearspace, WCAG color contrast ratios, and visual balance.
+              <p className="text-xs text-ink-2">
+                The 13 seed rules are hand-written in pure TypeScript regex and token window matchers rather than auto-extracted from arbitrary PDFs.
               </p>
             </div>
+            <div className="p-4 border-2 border-ink bg-surface-2 space-y-1">
+              <span className="font-mono text-xs font-bold uppercase text-ink block">
+                4. NUM-001 Proximity False Positive
+              </span>
+              <p className="text-xs text-ink-2">
+                When two percentage metrics appear within a 40-character sliding window (e.g. comparing 40% vs 20%), NUM-001 flags the higher number even if framed as a disclaimer.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 6: Verified Route Inventory (13 Routes) */}
+        <div className="bg-surface border-2 border-ink p-6 shadow-hard space-y-4">
+          <div className="pb-3 border-b-2 border-ink flex items-center justify-between">
+            <h2 className="text-base font-bold text-ink uppercase tracking-tight">
+              Verified Route Inventory
+            </h2>
+            <span className="font-mono text-xs font-bold px-2 py-0.5 border border-ink bg-approved text-ink uppercase">
+              13 Mapped Routes Verified
+            </span>
+          </div>
+          <p className="text-xs text-ink-2">
+            The application route tree is strictly verified against <code className="bg-surface-2 px-1 border border-ink font-mono text-[11px]">docs/SITEMAP.md</code> via <code className="bg-surface-2 px-1 border border-ink font-mono text-[11px]">npm run check:routes</code>:
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 font-mono text-xs">
+            {[
+              { path: '/', type: 'Public', desc: 'Landing & Demo Switcher' },
+              { path: '/login', type: 'Public', desc: 'Persona Roles & Auth' },
+              { path: '/demo-report', type: 'Public', desc: 'Sample Signed Report' },
+              { path: '/about-ai', type: 'Public', desc: 'AI Safety & Privacy' },
+              { path: '/build-notes', type: 'Public', desc: 'Architecture & Disclosures' },
+              { path: '/selftest', type: 'Public', desc: 'In-Browser Test Runner' },
+              { path: '/styleguide', type: 'Public', desc: 'Design System Gallery' },
+              { path: '/dashboard', type: 'App', desc: 'Content Repository' },
+              { path: '/content/new', type: 'App', desc: 'Multi-Format Intake' },
+              { path: '/content/[id]', type: 'App', desc: 'Review Workspace' },
+              { path: '/guidelines', type: 'App', desc: 'Brand Rule Base' },
+              { path: '/insights', type: 'App', desc: 'Governance Metrics' },
+              { path: '/audit', type: 'App', desc: 'Immutable Audit Log' },
+            ].map((r) => (
+              <div key={r.path} className="p-2 border border-ink bg-surface-2 flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-ink">{r.path}</span>
+                  <span className="text-[10px] uppercase font-bold text-ink-3">{r.type}</span>
+                </div>
+                <span className="text-[11px] text-ink-2 mt-1">{r.desc}</span>
+              </div>
+            ))}
           </div>
         </div>
       </main>

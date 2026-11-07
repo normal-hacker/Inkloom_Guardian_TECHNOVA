@@ -3,6 +3,8 @@ import { eq, and, desc } from 'drizzle-orm';
 import { parseDocument } from 'yaml';
 import { db } from '../db/client';
 import * as schema from '../db/schema';
+import { DEFAULT_FACTS } from '../engine/num001';
+import { runRules } from '../engine/rules';
 
 export class GuidelinesError extends Error {
   constructor(
@@ -363,4 +365,205 @@ export async function importYamlRules(
   }
 
   return { success: true, count: data.rules.length, draftRuleSetId: draftId };
+}
+
+/**
+ * Re-audits all approved content when a brand guideline or fact-sheet entry changes.
+ * Flagged non-compliant items move to 'needs_review' with exact diff and audit events.
+ */
+export async function reAuditApprovedContent(
+  workspaceId: string,
+  actorId: string,
+  targetFactKey: string = 'F-001',
+  updatedMaxValue: number = 15
+) {
+  // 1. Get current active fact
+  const facts = await db
+    .select()
+    .from(schema.approvedFacts)
+    .where(and(eq(schema.approvedFacts.workspaceId, workspaceId), eq(schema.approvedFacts.key, targetFactKey)))
+    .limit(1);
+
+  const existingFact = facts[0];
+  const oldStatement = existingFact?.statement || 'Average household electricity-bill savings were 18–24%';
+  const newStatement = `Average household electricity-bill savings were up to ${updatedMaxValue}% (2026 updated study)`;
+
+  if (existingFact) {
+    await db
+      .update(schema.approvedFacts)
+      .set({
+        statement: newStatement,
+        numericValues: [{ min: 10, max: updatedMaxValue, value: updatedMaxValue, unit: '%' }],
+      })
+      .where(eq(schema.approvedFacts.id, existingFact.id));
+  }
+
+  // 2. Audit trigger entry
+  await db.insert(schema.auditLog).values({
+    workspaceId,
+    actorId,
+    action: 'stale_audit.triggered',
+    entityType: 'fact',
+    entityId: existingFact?.id || crypto.randomUUID(),
+    detail: {
+      factKey: targetFactKey,
+      oldStatement,
+      newStatement,
+      oldValue: '20%',
+      newValue: `${updatedMaxValue}%`,
+      timestamp: new Date().toISOString(),
+    },
+  });
+
+  // 3. Find all currently approved content items
+  const approvedItems = await db
+    .select({
+      id: schema.contentItems.id,
+      title: schema.contentItems.title,
+      status: schema.contentItems.status,
+      currentVersionId: schema.contentItems.currentVersionId,
+    })
+    .from(schema.contentItems)
+    .where(and(eq(schema.contentItems.workspaceId, workspaceId), eq(schema.contentItems.status, 'approved')));
+
+  const flaggedItems: Array<{ id: string; title: string; findingsCount: number; reason: string }> = [];
+
+  const engineFacts = DEFAULT_FACTS.map((f) => {
+    if (f.key === targetFactKey) {
+      return {
+        ...f,
+        statement: newStatement,
+        values: [{ min: 10, max: updatedMaxValue, value: updatedMaxValue, unit: '%' }],
+      };
+    }
+    return f;
+  });
+
+  for (const item of approvedItems) {
+    if (!item.currentVersionId) continue;
+
+    const versions = await db
+      .select()
+      .from(schema.contentVersions)
+      .where(eq(schema.contentVersions.id, item.currentVersionId))
+      .limit(1);
+
+    if (!versions.length) continue;
+    const version = versions[0];
+
+    const findings = runRules(version.textBody, { facts: engineFacts, ruleSetVersion: 3 });
+    const blockersOrMajors = findings.filter((f) => f.severity === 'blocker' || f.severity === 'major');
+
+    if (blockersOrMajors.length > 0) {
+      await db
+        .update(schema.contentItems)
+        .set({ status: 'needs_review', updatedAt: new Date() })
+        .where(eq(schema.contentItems.id, item.id));
+
+      const newRunId = crypto.randomUUID();
+      await db.insert(schema.reviewRuns).values({
+        id: newRunId,
+        contentVersionId: version.id,
+        ruleSetId: '30000000-0000-0000-0000-000000000003',
+        status: 'complete',
+        counts: {
+          blocker: findings.filter((f) => f.severity === 'blocker').length,
+          major: findings.filter((f) => f.severity === 'major').length,
+          minor: findings.filter((f) => f.severity === 'minor').length,
+          info: findings.filter((f) => f.severity === 'info').length,
+        },
+        startedAt: new Date(),
+        finishedAt: new Date(),
+      });
+
+      for (const f of blockersOrMajors) {
+        await db.insert(schema.findings).values({
+          id: crypto.randomUUID(),
+          reviewRunId: newRunId,
+          origin: f.origin,
+          category: f.category,
+          severity: f.severity,
+          ruleId: '40000000-0000-0000-0000-000000000009',
+          spanStart: f.spanStart,
+          spanEnd: f.spanEnd,
+          quote: f.quote,
+          explanation: `Stale-content re-audit: ${f.explanation}`,
+          suggestion: f.suggestion || null,
+          confidence: '1.00',
+          status: 'open',
+        });
+      }
+
+      await db.insert(schema.auditLog).values({
+        workspaceId,
+        actorId,
+        action: 'content.flagged_for_rereview',
+        entityType: 'content_item',
+        entityId: item.id,
+        detail: {
+          title: item.title,
+          previousStatus: 'approved',
+          newStatus: 'needs_review',
+          reason: `Fact ${targetFactKey} updated: ${oldStatement} -> ${newStatement}. Content claim violates updated fact ceiling.`,
+          diff: { old: '20%', new: `${updatedMaxValue}%` },
+          findingsCount: blockersOrMajors.length,
+        },
+      });
+
+      flaggedItems.push({
+        id: item.id,
+        title: item.title,
+        findingsCount: blockersOrMajors.length,
+        reason: `Claim exceeds updated ${targetFactKey} ceiling (${updatedMaxValue}%)`,
+      });
+    }
+  }
+
+  return {
+    success: true,
+    targetFactKey,
+    oldValue: '20%',
+    newValue: `${updatedMaxValue}%`,
+    flaggedCount: flaggedItems.length,
+    flaggedItems,
+  };
+}
+
+/**
+ * Reset fact F-001 back to standard 20% savings.
+ */
+export async function resetFactAndReAudit(workspaceId: string, actorId: string) {
+  const originalStatement = 'Average household electricity-bill savings were 18–24% (2025 customer study, n=412)';
+
+  const facts = await db
+    .select()
+    .from(schema.approvedFacts)
+    .where(and(eq(schema.approvedFacts.workspaceId, workspaceId), eq(schema.approvedFacts.key, 'F-001')))
+    .limit(1);
+
+  if (facts.length) {
+    await db
+      .update(schema.approvedFacts)
+      .set({
+        statement: originalStatement,
+        numericValues: [{ min: 18, max: 24, unit: '%' }],
+      })
+      .where(eq(schema.approvedFacts.id, facts[0].id));
+  }
+
+  await db.insert(schema.auditLog).values({
+    workspaceId,
+    actorId,
+    action: 'stale_audit.reset',
+    entityType: 'fact',
+    entityId: facts[0]?.id || crypto.randomUUID(),
+    detail: {
+      factKey: 'F-001',
+      statement: originalStatement,
+      value: '18–24%',
+      timestamp: new Date().toISOString(),
+    },
+  });
+
+  return { success: true, message: 'Fact F-001 reset to 18–24% savings.' };
 }

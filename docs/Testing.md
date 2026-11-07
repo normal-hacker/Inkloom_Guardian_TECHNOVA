@@ -17,7 +17,7 @@
 | **Environment Configuration** | Vitest | `tests/env.test.ts` | 3 | **PASSED** (6ms) |
 | **API Health & Connectivity** | Vitest | `tests/health.test.ts` | 2 | **PASSED** (57ms) |
 | **Deterministic Rule Engine** | Vitest | `tests/engine.test.ts` | 16 | **PASSED** (21ms) |
-| **Golden Set Evaluation** | Vitest + YAML | `tests/golden/eval.test.ts` | 21 | **PASSED** (12ms) |
+| **Golden Set Evaluation** | Vitest + YAML | `tests/golden/eval.test.ts` | 53 | **PASSED** (28ms) |
 | **Data Layer & Triggers** | Vitest + `pg-mem` | `tests/s1-data.test.ts` | 10 | **PASSED** (2.06s) |
 | **Intake & Check Pipeline** | Vitest | `tests/s3-intake.test.ts` | 6 | **PASSED** (2.61s) |
 | **Decisions & Guidelines** | Vitest + `pg-mem` | `tests/s4-decisions.test.ts` | 8 | **PASSED** (3.50s) |
@@ -25,7 +25,13 @@
 | **Security & Hardening** | Vitest | `tests/s7-security.test.ts` | 5 | **PASSED** (265ms) |
 | **Optimistic Hook Core** | Vitest + jsdom | `tests/optimistic-hook.test.ts` | 10 | **PASSED** (36ms) |
 | **Optimistic API & Idempotency** | Vitest + `pg-mem` | `tests/optimistic-api.test.ts` | 7 | **PASSED** (184ms) |
-| **Total Unit/Integration** | - | - | **164** | **100% PASS** |
+| **Reset Demo Endpoint** | Vitest + `pg-mem` | `tests/reset-demo.test.ts` | 3 | **PASSED** (2.15s) |
+| **Stale-Content Re-Audit** | Vitest + `pg-mem` | `tests/stale-audit.test.ts` | 2 | **PASSED** (2.90s) |
+| **Guideline-Gap Detector** | Vitest + `pg-mem` | `tests/guideline-gap.test.ts` | 2 | **PASSED** (2.92s) |
+| **Quick Check Engine** | Vitest | `tests/quick-check.test.ts` | 3 | **PASSED** (12ms) |
+| **Upload Extraction Pipeline** | Vitest | `tests/upload-extraction-pipeline.test.ts` | 9 | **PASSED** (412ms) |
+| **Apply Suggestion Integration** | Vitest + `pg-mem` | `tests/apply-suggestion.test.ts` | 6 | **PASSED** (5.03s) |
+| **Total Test Suites & Tests** | - | - | **23 Suites / 221 Tests** | **100% PASS** |
 
 ---
 
@@ -65,21 +71,32 @@ Executed via `frontend/e2e/optimistic-ui.spec.ts` against headless Chromium (14 
 
 ---
 
-## 3. Golden Set Benchmark Evaluation (Stage S7)
+## 3. Golden Set Benchmark Evaluation (Stage S7 & Round 3 Expansion)
 
-Evaluated across 20 labelled test documents (`frontend/tests/golden/labels.yaml`) encompassing superlatives, guarantees, banned terms, casing errors, excessive punctuation, high pressure, competitor comparisons, confidential codename leaks, accessibility violations, compound multi-issue copy, prompt injections, XSS injections, and clean compliant copy:
+Evaluated across 52 labelled test documents (`frontend/tests/golden/labels.yaml`) encompassing superlatives, guarantees, banned terms, casing errors, excessive punctuation, high pressure, competitor comparisons, confidential codename leaks, accessibility violations, adversarial formatting (spaced percent symbols, number formats like "40 percent"), near-miss descriptive adjectives, compound multi-issue copy, prompt injections, XSS injections, and clean compliant copy:
 
 ```
 ================ GOLDEN SET BENCHMARK RESULTS ================
-Total Cases:     20
-True Positives:  20
+Total Cases:     52
+True Positives:  45
 False Positives: 1
 False Negatives: 0
-Precision:       95.24% (Target >= 90%)
+Precision:       97.83% (Target >= 90%)
 Recall:          100.00% (Target >= 90%)
-F1-Score:        97.56%
+F1-Score:        98.90%
 ==============================================================
 ```
+
+### Breakdown of Benchmark Findings & Analysis:
+- **True Positives (45):** Accurately caught every violation across Tone, Terminology, Claim, Fact Proximity, Confidentiality, and Accessibility.
+- **False Negatives (0):** Zero missed violations across the 52 cases (100.00% Recall).
+- **False Positives (1):** One documented false positive in compound Case 19 (`best and guarantee 45% savings`). The sliding 40-character context window for `NUM-001` overlapped with the guarantee phrase token, creating an adjacent flag.
+- **Adversarial Formatting Resilience:** Cases 21 and 22 verify that spaced percentages (`35 %`) and worded percentages (`40 percent`) are normalized and evaluated without bypassing numeric bounds.
+- **Negative Control Invariance:** All clean control copies (Cases 14, 15, 16, 20, 23, 27, 28, 31, 33, 35, 37, 41, 44, 52) produced exactly 0 findings.
+
+### Note on Golden Set Construction & Overfitting Safeguards:
+The 52-case golden set was constructed by combining standard marketing copy permutations with adversarial stress tests: number format variations (e.g. '40 percent' vs '40 %'), spaced percentages, paraphrased superlatives ('#1', 'world-class', 'only'), unverified guarantees ('risk-free', '100%'), multi-issue compound sentences, and clean negative controls.
+*Risk of Overfitting:* Because the golden cases are authored against Brightway Solar's specific domain rules, static test sets carry a risk of overfitting to anticipated phrasing patterns. To counteract this, Inkloom Guardian integrates a live "Paste Any Copy" dual-engine analyzer and an optional Gemini AI advisory adapter to surface unmodeled risks in arbitrary unseen text.
 
 ### Breakdown by Category:
 - **Tone Violations (`TONE-001`, `TONE-002`, `TONE-003`):** 100% precision and recall. Single `!` punctuation does not trigger false positives.

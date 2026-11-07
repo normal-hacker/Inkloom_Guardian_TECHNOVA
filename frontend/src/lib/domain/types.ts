@@ -20,7 +20,8 @@ export type ContentStatus =
   | 'in_review'
   | 'changes_requested'
   | 'approved'
-  | 'rejected';
+  | 'rejected'
+  | 'needs_review';
 export type RunStatus = 'running' | 'complete' | 'rules_only_ai_failed' | 'error';
 export type FindingOrigin = 'rule' | 'ai';
 export type FindingStatus = 'open' | 'fixed' | 'dismissed' | 'overridden';

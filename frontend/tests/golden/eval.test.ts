@@ -15,7 +15,7 @@ interface GoldenFile {
   cases: GoldenCase[];
 }
 
-describe('Stage S7 — Golden Set Evaluation (20 Labelled Texts)', () => {
+describe('Stage S7 — Golden Set Evaluation (52 Labelled Texts)', () => {
   const filePath = path.resolve(__dirname, 'labels.yaml');
   const fileContent = fs.readFileSync(filePath, 'utf-8');
   const parsed = YAML.parse(fileContent) as GoldenFile;

@@ -152,6 +152,11 @@ export function StatusPill({
       bg: 'bg-status-rejected',
       icon: OctagonX,
     },
+    needs_review: {
+      label: 'Needs re-review',
+      bg: 'bg-status-changes-requested',
+      icon: TriangleAlert,
+    },
   };
 
   const { label, bg, icon: Icon } = configs[status] || configs.draft;

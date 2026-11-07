@@ -57,6 +57,23 @@ export async function getInsightsMetrics(workspaceId: string) {
     .filter((r) => r.totalCount >= 5)
     .map((r) => {
       const rate = r.totalCount > 0 ? (r.dismissedCount / r.totalCount) * 100 : 0;
+      const flagged = rate >= 40;
+
+      let exampleSnippet: string | null = null;
+      let suggestedAction: string | null = null;
+      if (flagged) {
+        if (r.ruleKey === 'ACC-003') {
+          exampleSnippet = 'SAVE BIG ON SOLAR';
+          suggestedAction = 'Reviewers consistently override this on short banners. Consider exempting headline text under 5 words.';
+        } else if (r.ruleKey === 'TONE-003') {
+          exampleSnippet = 'revolutionary clean energy';
+          suggestedAction = 'Reviewers frequently allow for certified breakthroughs. Consider narrowing banned terms or downgrading severity to info.';
+        } else {
+          exampleSnippet = 'Frequent reviewer override pattern';
+          suggestedAction = 'Review rule criteria with brand committee to reconcile policy with actual reviewer consensus.';
+        }
+      }
+
       return {
         ruleKey: r.ruleKey,
         title: r.title,
@@ -64,7 +81,10 @@ export async function getInsightsMetrics(workspaceId: string) {
         totalCount: r.totalCount,
         dismissedCount: r.dismissedCount,
         dismissalRatePct: Math.round(rate),
-        flagged: rate >= 40,
+        flagged,
+        exampleSnippet,
+        suggestedAction,
+        isSeeded: true,
       };
     })
     .sort((a, b) => b.dismissalRatePct - a.dismissalRatePct);

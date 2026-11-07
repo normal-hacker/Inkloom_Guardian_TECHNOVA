@@ -1,5 +1,5 @@
-# Inkloom Guardian Golden Set Evaluation (20 Labelled Texts)
-# Categories: Tone, Terminology, Claim, Fact (NUM-001), Confidentiality, Accessibility, Clean Controls, Injection Attacks
+# Inkloom Guardian Golden Set Evaluation (52 Labelled Texts)
+# Categories: Tone, Terminology, Claim, Fact (NUM-001), Confidentiality, Accessibility, Clean Controls, Adversarial & Paraphrased Cases
 
 cases:
   - id: 1
@@ -100,4 +100,164 @@ cases:
   - id: 20
     description: "Clean technical specifications"
     text: "The inverter carries a 12-year warranty and panel efficiency is up to 22.5%."
+    expected_rules: []
+
+  - id: 21
+    description: "Spaced percent notation (Adversarial formatting)"
+    text: "Save up to 35 % on monthly electric bills."
+    expected_rules: ["NUM-001"]
+
+  - id: 22
+    description: "Worded percentage unit format"
+    text: "Save 40 percent on electricity costs."
+    expected_rules: ["NUM-001"]
+
+  - id: 23
+    description: "Clean percentage within approved range"
+    text: "Save 19% on your monthly electric bill."
+    expected_rules: []
+
+  - id: 24
+    description: "Superlative: world-class"
+    text: "We provide world-class solar technology."
+    expected_rules: ["CLAIM-001"]
+
+  - id: 25
+    description: "Superlative: #1 ranking"
+    text: "Recognized as the #1 residential solar installer."
+    expected_rules: ["CLAIM-001"]
+
+  - id: 26
+    description: "Exclusive claim: only provider"
+    text: "Brightway Solar is the only provider with local technicians."
+    expected_rules: ["CLAIM-001"]
+
+  - id: 27
+    description: "Near-miss non-superlative adjective (Clean)"
+    text: "Our popular rooftop solar package fits most homes."
+    expected_rules: []
+
+  - id: 28
+    description: "Descriptive quality adjective (Clean)"
+    text: "Reliable clean electricity for your home."
+    expected_rules: []
+
+  - id: 29
+    description: "Guarantee variant: risk-free"
+    text: "Enjoy a risk-free trial of our solar energy system."
+    expected_rules: ["CLAIM-002"]
+
+  - id: 30
+    description: "100% satisfaction guarantee"
+    text: "We offer 100% satisfaction on all residential panel installations."
+    expected_rules: ["CLAIM-002"]
+
+  - id: 31
+    description: "Standard warranty mention without guarantee (Clean)"
+    text: "Panels are protected by the standard manufacturer warranty."
+    expected_rules: []
+
+  - id: 32
+    description: "Exaggerated efficiency claim (32% > 22.5%)"
+    text: "SunLink solar panels achieve 32% efficiency."
+    expected_rules: ["NUM-001"]
+
+  - id: 33
+    description: "Approved efficiency claim within ceiling (Clean)"
+    text: "SunLink panels achieve up to 21% efficiency."
+    expected_rules: []
+
+  - id: 34
+    description: "Exaggerated warranty claim (40yr > 25yr)"
+    text: "Enjoy a 40-year warranty on all rooftop modules."
+    expected_rules: ["NUM-001"]
+
+  - id: 35
+    description: "Approved inverter warranty within ceiling (Clean)"
+    text: "Inverter hardware carries a 10-year warranty."
+    expected_rules: []
+
+  - id: 36
+    description: "Exaggerated coverage claim (50 cities > 14 cities)"
+    text: "Brightway Solar proudly serves customers across 50 cities."
+    expected_rules: ["NUM-001"]
+
+  - id: 37
+    description: "Approved coverage claim (Clean)"
+    text: "Brightway Solar serves homeowners across 14 cities."
+    expected_rules: []
+
+  - id: 38
+    description: "Urgency: hurry"
+    text: "Hurry and secure your solar installation before slots fill up."
+    expected_rules: ["TONE-002"]
+
+  - id: 39
+    description: "Urgency: last chance"
+    text: "This is your last chance to take advantage of seasonal utility rebates."
+    expected_rules: ["TONE-002"]
+
+  - id: 40
+    description: "Pressure: don't miss out"
+    text: "Don't miss out on modern solar battery options."
+    expected_rules: ["TONE-002"]
+
+  - id: 41
+    description: "Calm consultative call to action (Clean)"
+    text: "Schedule a consultation with our local design team."
+    expected_rules: []
+
+  - id: 42
+    description: "Hype: amazing"
+    text: "Discover the amazing power of rooftop solar."
+    expected_rules: ["TONE-003"]
+
+  - id: 43
+    description: "Hype: mind-blowing"
+    text: "Experience mind-blowing energy independence with solar."
+    expected_rules: ["TONE-003"]
+
+  - id: 44
+    description: "Grounded technical adjective (Clean)"
+    text: "Experience dependable energy independence with solar."
+    expected_rules: []
+
+  - id: 45
+    description: "Comparative: cheaper than"
+    text: "Our clean solar electricity is cheaper than grid power."
+    expected_rules: ["MSG-001"]
+
+  - id: 46
+    description: "Comparative: unlike other"
+    text: "Unlike other utility providers, we provide dedicated support."
+    expected_rules: ["MSG-001"]
+
+  - id: 47
+    description: "Comparative: beats"
+    text: "Our SunLink system beats traditional rooftop generators."
+    expected_rules: ["MSG-001"]
+
+  - id: 48
+    description: "Confidential codename: Project Apollo"
+    text: "Reviewing confidential firmware for Project Apollo."
+    expected_rules: ["CONF-001"]
+
+  - id: 49
+    description: "Hyphenated brand casing: sun-link"
+    text: "Connect your solar system with the sun-link gateway."
+    expected_rules: ["TERM-002"]
+
+  - id: 50
+    description: "Non-descriptive link anchor: read more"
+    text: "For full program eligibility details, read more."
+    expected_rules: ["ACC-002"]
+
+  - id: 51
+    description: "Multi-violation compound sentence"
+    text: "Act now to get the cheapest Sun Link modules with a 100% guarantee!"
+    expected_rules: ["TONE-002", "TERM-001", "TERM-002", "CLAIM-002"]
+
+  - id: 52
+    description: "Compliant multi-sentence press release (Clean)"
+    text: "Brightway Solar provides rooftop solar installations across 14 cities. Typical installation takes 1 to 2 days, and panels carry a 25-year panel warranty."
     expected_rules: []
