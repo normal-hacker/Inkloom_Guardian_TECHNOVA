@@ -1,3 +1,4 @@
+
 name: CI
 
 on:
@@ -10,12 +11,8 @@ jobs:
   frontend:
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: frontend
-
     env:
-      DATABASE_URL: postgresql://postgres.dfjzcolgonwcsiqkpajq:UGESh@20071016%23@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?sslmode=require
+      DATABASE_URL: postgresql://postgres.dfjzcolgonwcsiqkpajq:UGESh@20071016%23@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?sslmode=require 
       SESSION_SECRET: 24d48cd3854a54d71604ba6ab968ef0e9a1d7e6c8fde1f147916bba79bfe806f
       DEMO_MODE: "true"
       AUTH_BASE_URL: http://localhost:3000
@@ -33,21 +30,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Debug repository files
-        run: |
-          echo "Current directory:"
-          pwd
-          echo "Frontend files:"
-          ls -la
-          echo "Lockfile status:"
-          if [ -f package-lock.json ]; then
-            echo "package-lock.json EXISTS"
-            head -n 10 package-lock.json
-          else
-            echo "package-lock.json IS MISSING"
-          fi
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
