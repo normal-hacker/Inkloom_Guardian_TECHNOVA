@@ -5,16 +5,22 @@ import { Input } from './input';
 
 export interface FileDropProps {
   onFileSelect: (file: File, altText?: string) => void;
+  onFileClear?: () => void;
+  onError?: (error: string) => void;
   acceptedTypes?: string[];
   maxSizeBytes?: number;
   className?: string;
+  disabled?: boolean;
 }
 
 export function FileDrop({
   onFileSelect,
+  onFileClear,
+  onError,
   acceptedTypes = ['.txt', '.md', '.docx', '.pdf', 'image/*'],
   maxSizeBytes = 10 * 1024 * 1024, // 10MB
   className,
+  disabled = false,
 }: FileDropProps) {
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
   const [altText, setAltText] = React.useState('');
@@ -26,10 +32,40 @@ export function FileDrop({
 
   const validateAndHandle = (file: File) => {
     setError(null);
+
+    // 1. Check size limit
     if (file.size > maxSizeBytes) {
-      setError(`File size exceeds ${(maxSizeBytes / (1024 * 1024)).toFixed(0)}MB limit.`);
+      const msg = 'File size exceeds the limit.';
+      setError(msg);
+      onError?.(msg);
       return;
     }
+
+    // 2. Check empty document
+    if (file.size === 0) {
+      const msg = 'No readable text found. The uploaded document is empty.';
+      setError(msg);
+      onError?.(msg);
+      return;
+    }
+
+    // 3. Check allowed format extension
+    const parts = file.name.split('.');
+    const ext = parts.length > 1 ? `.${parts.pop()!.toLowerCase()}` : '';
+    const fileIsImage = file.type.startsWith('image/');
+
+    const isAllowed = acceptedTypes.some((t) => {
+      if (t === 'image/*' && fileIsImage) return true;
+      return t.toLowerCase() === ext;
+    });
+
+    if (!isAllowed) {
+      const msg = `Unsupported file format. Please upload a .pdf, .docx, .txt, or .md file.`;
+      setError(msg);
+      onError?.(msg);
+      return;
+    }
+
     setSelectedFile(file);
     onFileSelect(file, altText);
   };
@@ -37,12 +73,14 @@ export function FileDrop({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
+    if (disabled) return;
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       validateAndHandle(e.dataTransfer.files[0]);
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (disabled) return;
     if (e.target.files && e.target.files[0]) {
       validateAndHandle(e.target.files[0]);
     }
@@ -61,6 +99,7 @@ export function FileDrop({
     setAltText('');
     setError(null);
     if (inputRef.current) inputRef.current.value = '';
+    onFileClear?.();
   };
 
   return (

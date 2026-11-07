@@ -25,12 +25,12 @@ export function validateMagicBytes(buffer: Buffer, extension: string): void {
   if (extension === 'pdf') {
     const isPdf = buffer.length >= 4 && buffer.slice(0, 4).toString('ascii') === '%PDF';
     if (!isPdf) {
-      throw new ExtractionError(415, 'unsupported_media_type', 'Invalid PDF file header.');
+      throw new ExtractionError(415, 'unsupported_media_type', 'Unsupported file format or invalid PDF file header.');
     }
   } else if (extension === 'docx') {
     const isZip = buffer.length >= 4 && buffer[0] === 0x50 && buffer[1] === 0x4b && buffer[2] === 0x03 && buffer[3] === 0x04;
     if (!isZip) {
-      throw new ExtractionError(415, 'unsupported_media_type', 'Invalid DOCX file header.');
+      throw new ExtractionError(415, 'unsupported_media_type', 'Unsupported file format or invalid DOCX file header.');
     }
   } else if (['png', 'jpg', 'jpeg', 'webp'].includes(extension)) {
     const isPng = buffer.length >= 4 && buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47;
@@ -38,7 +38,7 @@ export function validateMagicBytes(buffer: Buffer, extension: string): void {
     const isWebp = buffer.length >= 12 && buffer.slice(0, 4).toString('ascii') === 'RIFF' && buffer.slice(8, 12).toString('ascii') === 'WEBP';
 
     if (!isPng && !isJpg && !isWebp) {
-      throw new ExtractionError(415, 'unsupported_media_type', 'Invalid image file header.');
+      throw new ExtractionError(415, 'unsupported_media_type', 'Unsupported file format or invalid image file header.');
     }
   }
 }
@@ -53,38 +53,72 @@ export async function extractTextFromFile(
     throw new ExtractionError(
       413,
       'payload_too_large',
-      `File exceeds maximum allowed upload size of ${maxMb} MB.`
+      `File exceeds maximum allowed upload size of ${maxMb} MB. File size exceeds the limit.`
+    );
+  }
+
+  // 2. Empty file check
+  if (!buffer || buffer.length === 0) {
+    throw new ExtractionError(
+      422,
+      'no_text_found',
+      'No readable text found. The uploaded document is empty.'
     );
   }
 
   const parts = filename.toLowerCase().split('.');
   const ext = parts.length > 1 ? parts.pop()! : '';
 
-  // 2. Validate magic bytes
+  // 3. Supported extension check
+  const allowedExtensions = ['txt', 'md', 'docx', 'pdf', 'png', 'jpg', 'jpeg', 'webp'];
+  if (!ext || !allowedExtensions.includes(ext)) {
+    throw new ExtractionError(
+      415,
+      'unsupported_media_type',
+      `Unsupported file format ".${ext}". Allowed formats are: .txt, .md, .docx, .pdf, and images (.png, .jpg, .webp).`
+    );
+  }
+
+  // 4. Validate magic bytes for binary files
   validateMagicBytes(buffer, ext);
 
-  // 3. Extract based on format
+  // 5. Extract based on format
   if (ext === 'txt' || ext === 'md') {
-    const raw = buffer.toString('utf8');
-    return {
-      textBody: normaliseNewlines(raw),
-      sourceKind: ext,
-    };
+    try {
+      const raw = buffer.toString('utf8');
+      const textBody = normaliseNewlines(raw);
+      if (!textBody.trim()) {
+        throw new ExtractionError(422, 'no_text_found', 'No readable text found in document.');
+      }
+      return {
+        textBody,
+        sourceKind: ext,
+      };
+    } catch (err) {
+      if (err instanceof ExtractionError) throw err;
+      throw new ExtractionError(422, 'failed_to_read', 'Failed to read document.');
+    }
   }
 
   if (ext === 'docx') {
     try {
       const result = await mammoth.extractRawText({ buffer });
+      const textBody = normaliseNewlines(result.value || '');
+      if (!textBody.trim()) {
+        throw new ExtractionError(422, 'no_text_found', 'No readable text found in Word document.');
+      }
       return {
-        textBody: normaliseNewlines(result.value),
+        textBody,
         sourceKind: 'docx',
       };
-    } catch {
-      throw new ExtractionError(422, 'docx_parse_error', 'Could not read DOCX file contents.');
+    } catch (err) {
+      if (err instanceof ExtractionError) throw err;
+      throw new ExtractionError(422, 'docx_parse_error', 'Failed to read document. The Word document appears to be corrupted or invalid.');
     }
   }
 
   if (ext === 'pdf') {
+    let instance: any = null;
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const pdfModule = require('pdf-parse');
@@ -93,27 +127,27 @@ export async function extractTextFromFile(
       let extractedText = '';
       if (typeof PDFParser === 'function') {
         try {
+          instance = new PDFParser({ data: buffer });
+          const res = await instance.getText();
+          if (Array.isArray(res?.pages) && res.pages.length > 0) {
+            extractedText = res.pages.map((p: any) => p.text || '').filter(Boolean).join('\n\n');
+          } else if (res && typeof res.text === 'string') {
+            extractedText = res.text.replace(/--\s*\d+\s*of\s*\d+\s*--/gi, '').trim();
+          } else if (typeof res === 'string') {
+            extractedText = res;
+          }
+        } catch {
           const direct = await PDFParser(buffer);
           extractedText = direct?.text || '';
-        } catch {
-          const instance = new PDFParser({ data: buffer });
-          const res = await instance.getText();
-          if (typeof res === 'string') {
-            extractedText = res;
-          } else if (res && typeof res.text === 'string') {
-            extractedText = res.text;
-          } else if (res && Array.isArray(res.pages)) {
-            extractedText = res.pages.map((p: { text?: string }) => p.text || '').join('\n');
-          }
         }
       }
 
       const cleaned = (extractedText || '').trim();
-      if (cleaned.length < 10) {
+      if (cleaned.length === 0) {
         throw new ExtractionError(
           422,
           'scanned_pdf_not_supported',
-          'Scanned image-only PDF without embedded text layer is not supported. Please upload a text-based PDF or paste text.'
+          'No readable text found. Scanned image-only PDF without embedded text layer is not supported. Please upload a text-based PDF or paste text.'
         );
       }
       return {
@@ -124,9 +158,13 @@ export async function extractTextFromFile(
       if (err instanceof ExtractionError) throw err;
       throw new ExtractionError(
         422,
-        'scanned_pdf_not_supported',
-        'Scanned image-only PDF without embedded text layer is not supported. Please upload a text-based PDF or paste text.'
+        'failed_to_read',
+        'Failed to read document. The PDF file appears to be corrupted or unreadable.'
       );
+    } finally {
+      if (instance && typeof instance.destroy === 'function') {
+        await instance.destroy().catch(() => {});
+      }
     }
   }
 
@@ -140,6 +178,6 @@ export async function extractTextFromFile(
   throw new ExtractionError(
     415,
     'unsupported_media_type',
-    `Unsupported file type ".${ext}". Allowed formats are: .txt, .md, .docx, .pdf, and images (.png, .jpg, .webp).`
+    'Unsupported file format.'
   );
 }

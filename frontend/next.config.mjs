@@ -14,6 +14,7 @@ dotenv.config({ path: path.resolve(__dirname, '.env.local') });
 const nextConfig = {
   typedRoutes: false,
   devIndicators: false,
+  serverExternalPackages: ['pdf-parse', 'mammoth'],
 };
 
 export default nextConfig;

@@ -43,6 +43,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(
       {
+        itemId: result.itemId,
         item: {
           id: result.itemId,
           title: title.trim(),

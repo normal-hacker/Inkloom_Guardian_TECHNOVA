@@ -1,6 +1,10 @@
 CREATE OR REPLACE FUNCTION prevent_update_or_delete()
 RETURNS trigger AS $$
 BEGIN
+  -- Allow review_runs to finalize from running to complete/error, then freeze forever
+  IF TG_OP = 'UPDATE' AND TG_TABLE_NAME = 'review_runs' AND OLD.status = 'running' THEN
+    RETURN NEW;
+  END IF;
   RAISE EXCEPTION 'Table % is append-only: UPDATE and DELETE operations are forbidden.', TG_TABLE_NAME;
 END;
 $$ LANGUAGE plpgsql;

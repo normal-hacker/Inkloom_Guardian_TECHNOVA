@@ -3,12 +3,17 @@ import path from 'node:path';
 
 // If running in a Node.js process (scripts, server-side), ensure root and local envs are loaded
 if (typeof window === 'undefined') {
-  dotenv.config({ path: path.resolve(process.cwd(), '../.env') });
-  dotenv.config({ path: path.resolve(process.cwd(), '../.env.local') });
-  dotenv.config({ path: path.resolve(process.cwd(), '.env') });
-  dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
-  dotenv.config({ path: path.resolve(process.cwd(), '.env.test') });
-  dotenv.config({ path: path.resolve(process.cwd(), '../.env.test') });
+  if (process.env.NODE_ENV === 'test') {
+    dotenv.config({ path: path.resolve(process.cwd(), '.env.test'), override: true });
+    dotenv.config({ path: path.resolve(process.cwd(), '../.env.test'), override: true });
+  } else {
+    dotenv.config({ path: path.resolve(process.cwd(), '../.env') });
+    dotenv.config({ path: path.resolve(process.cwd(), '../.env.local') });
+    dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+    dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+    dotenv.config({ path: path.resolve(process.cwd(), '.env.test') });
+    dotenv.config({ path: path.resolve(process.cwd(), '../.env.test') });
+  }
 }
 
 function assertServer(variableName: string): void {

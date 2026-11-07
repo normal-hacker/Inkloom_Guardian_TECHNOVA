@@ -23,7 +23,31 @@ beforeEach(() => {
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
   }));
-  localStorage.clear();
+
+  const mockStorage: Record<string, string> = {};
+  const storageMock = {
+    getItem: vi.fn((key: string) => mockStorage[key] || null),
+    setItem: vi.fn((key: string, val: string) => { mockStorage[key] = String(val); }),
+    removeItem: vi.fn((key: string) => { delete mockStorage[key]; }),
+    clear: vi.fn(() => { for (const k in mockStorage) delete mockStorage[k]; }),
+    length: 0,
+    key: vi.fn(),
+  };
+
+  Object.defineProperty(window, 'localStorage', {
+    value: storageMock,
+    writable: true,
+    configurable: true,
+  });
+  try {
+    Object.defineProperty(globalThis, 'localStorage', {
+      value: storageMock,
+      writable: true,
+      configurable: true,
+    });
+  } catch {
+    // ignore if read-only
+  }
 });
 
 afterEach(() => {

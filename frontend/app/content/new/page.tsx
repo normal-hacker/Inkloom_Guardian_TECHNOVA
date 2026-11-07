@@ -23,66 +23,140 @@ export default function NewContentPage() {
   );
   const [isMono, setIsMono] = React.useState(false);
 
-  // File upload state
+  // File upload and extraction state
   const [file, setFile] = React.useState<File | null>(null);
   const [imageAltText, setImageAltText] = React.useState('');
+  const [isExtracting, setIsExtracting] = React.useState(false);
+  const [extractingFileName, setExtractingFileName] = React.useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+  const [extractedMeta, setExtractedMeta] = React.useState<{
+    filename: string;
+    fileSize: number;
+    sourceKind: string;
+    characterCount: number;
+  } | null>(null);
+
   const [loading, setLoading] = React.useState(false);
   const [loadingStep, setLoadingStep] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
 
+  const handleFileSelect = async (selectedFile: File, alt?: string) => {
+    setFile(selectedFile);
+    if (alt) setImageAltText(alt);
+    setError(null);
+    setSuccessMessage(null);
+
+    // If it's an image, no text extraction is needed
+    if (selectedFile.type.startsWith('image/')) {
+      return;
+    }
+
+    // Client-side quick checks
+    if (selectedFile.size > 10 * 1024 * 1024) {
+      setError('File size exceeds the limit.');
+      return;
+    }
+    if (selectedFile.size === 0) {
+      setError('No readable text found. The uploaded document is empty.');
+      return;
+    }
+
+    // Trigger upload and extraction immediately
+    setIsExtracting(true);
+    setExtractingFileName(selectedFile.name);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const res = await fetch('/api/v1/content/upload?extractOnly=true', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const msg = data.error?.message || data.message || 'Document extraction failed.';
+        setError(msg);
+        setIsExtracting(false);
+        setExtractingFileName(null);
+        return;
+      }
+
+      const extracted = data.extractedText || '';
+      if (!extracted.trim()) {
+        setError('No readable text found in document.');
+        setIsExtracting(false);
+        setExtractingFileName(null);
+        return;
+      }
+
+      setTextBody(extracted);
+      setExtractedMeta({
+        filename: selectedFile.name,
+        fileSize: selectedFile.size,
+        sourceKind: data.sourceKind || selectedFile.name.split('.').pop() || 'doc',
+        characterCount: data.characterCount || extracted.length,
+      });
+
+      if (!title.trim() && data.suggestedTitle) {
+        setTitle(data.suggestedTitle);
+      }
+
+      setSuccessMessage(
+        `Document "${selectedFile.name}" extracted successfully (${data.characterCount || extracted.length} characters). You can review and edit the text below before submitting.`
+      );
+    } catch {
+      setError('Backend server unavailable.');
+    } finally {
+      setIsExtracting(false);
+      setExtractingFileName(null);
+    }
+  };
+
+  const handleFileClear = () => {
+    setFile(null);
+    setImageAltText('');
+    setExtractedMeta(null);
+    setSuccessMessage(null);
+    setError(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (isExtracting) {
+      setError('Please wait for document extraction to complete.');
+      return;
+    }
+
+    const isImage = file?.type.startsWith('image/');
+
+    if (!textBody.trim() && (!file || !isImage)) {
+      setError('Content text is required. Please paste text or upload a document with readable content.');
+      return;
+    }
+
+    if (isImage && (!imageAltText || imageAltText.trim().length < 5)) {
+      setError('Images require descriptive alt text (at least 5 characters) for accessibility.');
+      return;
+    }
+
     setLoading(true);
 
     try {
+      setLoadingStep('Saving draft…');
       let contentItemId = '';
 
-      if (activeTab === 'paste') {
-        if (!textBody.trim()) {
-          setError('Content text is required.');
-          setLoading(false);
-          return;
-        }
-
-        setLoadingStep('Saving draft…');
-        const res = await fetch('/api/v1/content', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: title.trim() || 'Untitled Content',
-            contentType,
-            textBody,
-            sourceKind: 'paste',
-          }),
-        });
-
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          throw new Error(data.message || 'Failed to create content.');
-        }
-        contentItemId = data.itemId;
-      } else {
-        // Upload flow
-        if (!file) {
-          setError('Please select a file to upload.');
-          setLoading(false);
-          return;
-        }
-
-        const isImage = file.type.startsWith('image/');
-        if (isImage && (!imageAltText || imageAltText.trim().length < 5)) {
-          setError('Images require descriptive alt text (at least 5 characters) for accessibility.');
-          setLoading(false);
-          return;
-        }
-
-        setLoadingStep('Extracting document content…');
+      if (activeTab === 'upload' && file && isImage) {
+        // Image upload with alt text
         const formData = new FormData();
         formData.append('file', file);
         formData.append('title', title.trim() || file.name);
         formData.append('contentType', contentType);
-        if (isImage) {
+        if (imageAltText) {
           formData.append('imageAltText', imageAltText.trim());
         }
 
@@ -93,9 +167,32 @@ export default function NewContentPage() {
 
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          throw new Error(data.message || 'Failed to upload and extract file.');
+          throw new Error(data.error?.message || data.message || 'Failed to upload image.');
         }
-        contentItemId = data.itemId;
+        contentItemId = data.itemId || data.item?.id;
+      } else {
+        // Standard JSON draft creation with the reviewed/edited textBody
+        const res = await fetch('/api/v1/content', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: title.trim() || (file ? file.name.replace(/\.[^/.]+$/, '') : 'Untitled Content'),
+            contentType,
+            textBody,
+            sourceKind: file ? (file.name.split('.').pop() || 'upload') : (activeTab === 'paste' ? 'paste' : 'upload'),
+            originalFilename: file?.name,
+          }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error?.message || data.message || 'Failed to create content.');
+        }
+        contentItemId = data.itemId || data.item?.id;
+      }
+
+      if (!contentItemId) {
+        throw new Error('Failed to obtain content item identifier from server.');
       }
 
       // Automatically run checks on intake
@@ -205,16 +302,23 @@ export default function NewContentPage() {
         {/* Content Body / Upload Zone */}
         <Card className="space-y-4">
           <div className="flex items-center justify-between">
-            <SectionLabel number="04" title={activeTab === 'paste' ? 'Text Body' : 'File Upload'} />
-            {activeTab === 'paste' && (
-              <button
-                type="button"
-                onClick={() => setIsMono(!isMono)}
-                className="text-xs font-mono font-bold uppercase text-ink-2 hover:text-ink underline"
-              >
-                {isMono ? 'Standard Font' : 'Monospace Editor'}
-              </button>
-            )}
+            <SectionLabel
+              number="04"
+              title={
+                activeTab === 'paste'
+                  ? 'Text Body'
+                  : extractedMeta
+                  ? 'Review & Edit Extracted Content'
+                  : 'File Upload & Extraction'
+              }
+            />
+            <button
+              type="button"
+              onClick={() => setIsMono(!isMono)}
+              className="text-xs font-mono font-bold uppercase text-ink-2 hover:text-ink underline"
+            >
+              {isMono ? 'Standard Font' : 'Monospace Editor'}
+            </button>
           </div>
 
           {activeTab === 'paste' ? (
@@ -227,12 +331,64 @@ export default function NewContentPage() {
               required
             />
           ) : (
-            <FileDrop
-              onFileSelect={(selectedFile, alt) => {
-                setFile(selectedFile);
-                if (alt) setImageAltText(alt);
-              }}
-            />
+            <div className="space-y-4">
+              <FileDrop
+                onFileSelect={handleFileSelect}
+                onFileClear={handleFileClear}
+                onError={(msg) => setError(msg)}
+                disabled={isExtracting}
+              />
+
+              {/* Extraction in progress */}
+              {isExtracting && (
+                <div
+                  role="status"
+                  className="p-4 border-2 border-ink bg-surface-2 text-ink text-xs font-mono font-bold flex items-center gap-3 shadow-hard"
+                >
+                  <Loader2 className="w-4 h-4 animate-spin text-accent-ink shrink-0" aria-hidden="true" />
+                  <span>Uploading and extracting readable text from &ldquo;{extractingFileName}&rdquo;…</span>
+                </div>
+              )}
+
+              {/* Extraction success alert */}
+              {successMessage && (
+                <div
+                  role="status"
+                  className="p-4 border-2 border-ink bg-severity-approved text-ink text-xs font-mono font-bold flex items-center gap-3 shadow-hard"
+                >
+                  <Check className="w-4 h-4 shrink-0" aria-hidden="true" />
+                  <span>{successMessage}</span>
+                </div>
+              )}
+
+              {/* Editable extracted text area for review before audit */}
+              {textBody && !isExtracting && file && !file.type.startsWith('image/') && (
+                <div className="space-y-2 pt-2 border-t-2 border-ink">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+                    <span className="font-bold uppercase text-ink flex items-center gap-2">
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>Review & Edit Extracted Text</span>
+                    </span>
+                    <span className="text-ink-2">
+                      {extractedMeta ? `${extractedMeta.filename} · ${textBody.length} chars` : `${textBody.length} chars`}
+                    </span>
+                  </div>
+
+                  <Textarea
+                    rows={8}
+                    value={textBody}
+                    onChange={(e) => setTextBody(e.target.value)}
+                    placeholder="Extracted text will appear here. You can review and edit before auditing…"
+                    className={isMono ? 'font-mono' : ''}
+                    required
+                  />
+
+                  <p className="text-xs font-mono text-ink-2">
+                    Review or modify any phrasing above before submitting for brand guideline auditing.
+                  </p>
+                </div>
+              )}
+            </div>
           )}
         </Card>
 
@@ -240,7 +396,7 @@ export default function NewContentPage() {
         <div className="fixed bottom-0 left-0 right-0 z-30 bg-surface border-t-2 border-ink px-6 md:px-8 py-4 shadow-hard-lg">
           <div className="max-w-[1280px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-xs font-mono text-ink-2 text-center sm:text-left">
-              Text is stored in the demo database. AI checks receive a redacted copy.
+              Text is audited against active brand rules. AI checks receive a redacted copy.
             </p>
 
             <div className="flex items-center gap-3">
@@ -248,7 +404,7 @@ export default function NewContentPage() {
                 type="button"
                 variant="secondary"
                 onClick={() => router.push('/dashboard')}
-                disabled={loading}
+                disabled={loading || isExtracting}
               >
                 Cancel
               </Button>
@@ -257,7 +413,7 @@ export default function NewContentPage() {
                 type="submit"
                 variant="primary"
                 size="md"
-                disabled={loading}
+                disabled={loading || isExtracting}
               >
                 {loading ? (
                   <span className="flex items-center gap-2">
@@ -266,7 +422,7 @@ export default function NewContentPage() {
                   </span>
                 ) : (
                   <span className="flex items-center gap-2">
-                    <span>Save & check</span>
+                    <span>Save & Next </span>
                     <ArrowRight className="w-4 h-4 ml-1" />
                   </span>
                 )}

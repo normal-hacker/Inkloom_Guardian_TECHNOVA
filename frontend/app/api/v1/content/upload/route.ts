@@ -21,8 +21,16 @@ export async function POST(req: Request) {
     const title = (formData.get('title') as string) || file?.name || 'Uploaded content';
     const contentType = (formData.get('contentType') as string) || 'blog';
     const imageAltText = (formData.get('imageAltText') as string) || undefined;
+    const customTextBody = formData.get('textBody') as string | null;
 
-    if (!file) {
+    // Check if client requested extract-only mode
+    const url = new URL(req.url);
+    const extractOnly =
+      url.searchParams.get('extractOnly') === 'true' ||
+      formData.get('extractOnly') === 'true' ||
+      req.headers.get('x-extract-only') === 'true';
+
+    if (!file || typeof file.arrayBuffer !== 'function') {
       return apiError(400, 'bad_request', 'No file was provided.', requestId);
     }
 
@@ -32,6 +40,27 @@ export async function POST(req: Request) {
     // Extract text and validate magic bytes
     const extraction = await extractTextFromFile(file.name, buffer, serverEnv.maxUploadMb);
 
+    // If extract-only mode, return the extracted text immediately without writing to database
+    if (extractOnly) {
+      return NextResponse.json(
+        {
+          success: true,
+          extractedText: extraction.textBody,
+          filename: file.name,
+          fileSize: file.size,
+          sourceKind: extraction.sourceKind,
+          suggestedTitle: file.name.replace(/\.[^/.]+$/, '').trim() || 'Uploaded Document',
+          characterCount: extraction.textBody.length,
+        },
+        { status: 200, headers: { 'X-Request-ID': requestId } }
+      );
+    }
+
+    // Use edited text if the user reviewed and modified the extracted copy
+    const finalContentText = (customTextBody !== null && customTextBody !== undefined && customTextBody.trim().length > 0)
+      ? customTextBody
+      : extraction.textBody;
+
     // If an image is uploaded, store base64 string
     const originalBytes = extraction.sourceKind === 'image' ? buffer.toString('base64') : undefined;
 
@@ -40,7 +69,7 @@ export async function POST(req: Request) {
       ownerId: session.sub,
       title: title.trim(),
       contentType,
-      textBody: extraction.textBody,
+      textBody: finalContentText,
       sourceKind: extraction.sourceKind,
       originalFilename: file.name,
       originalBytes,
@@ -49,6 +78,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(
       {
+        itemId: result.itemId, // Top-level itemId for compatibility
         item: {
           id: result.itemId,
           title: title.trim(),
@@ -58,7 +88,9 @@ export async function POST(req: Request) {
           versionNo: 1,
           contentHash: result.contentHash,
           sourceKind: extraction.sourceKind,
+          textBody: finalContentText,
         },
+        extractedText: finalContentText,
       },
       { status: 201, headers: { 'X-Request-ID': requestId } }
     );
@@ -74,6 +106,6 @@ export async function POST(req: Request) {
           : 'internal_error';
       return apiError(err.status, code, err.message, requestId);
     }
-    return apiError(500, 'internal_error', err.message || 'File upload failed.', requestId);
+    return apiError(500, 'internal_error', err.message || 'Document extraction failed.', requestId);
   }
 }
