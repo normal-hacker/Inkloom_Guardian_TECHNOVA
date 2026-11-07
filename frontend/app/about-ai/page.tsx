@@ -21,7 +21,7 @@ export default function AboutAiPage() {
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-ink-3">
               Public Architecture Disclosure
             </span>
-            <Badge variant="neutral">Round 2 Build</Badge>
+            <Badge variant="neutral">Production Prototype</Badge>
           </div>
           <h1 className="text-2xl font-mono font-bold text-ink uppercase tracking-tight">
             Honest Labeling & Deterministic Priority

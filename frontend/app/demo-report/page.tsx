@@ -192,7 +192,7 @@ export default function DemoReportPage() {
 
       {/* Footer */}
       <footer className="border-t-2 border-ink bg-surface py-6 text-center text-xs font-mono text-ink-3">
-        INKLOOM GUARDIAN · PUBLIC PROOF OF EXECUTION · HACKATHON ROUND 2
+        INKLOOM GUARDIAN · PUBLIC PROOF OF EXECUTION · GOVERNANCE REPORT
       </footer>
     </div>
   );

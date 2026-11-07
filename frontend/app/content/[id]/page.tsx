@@ -614,7 +614,7 @@ export default function ReviewWorkspacePage({
             </div>
 
             {/* Reading measure text with styled highlights */}
-            <div className="p-4 bg-surface-2 border-2 border-ink min-h-64 overflow-y-auto max-w-prose">
+            <div className="p-4 bg-surface-2 border-2 border-ink min-h-64 max-h-[60vh] lg:max-h-[70vh] overflow-y-auto max-w-prose">
               {renderHighlightedText()}
             </div>
 

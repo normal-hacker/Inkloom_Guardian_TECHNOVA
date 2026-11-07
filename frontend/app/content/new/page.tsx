@@ -114,7 +114,7 @@ export default function NewContentPage() {
   };
 
   return (
-    <div className="flex flex-col flex-1 bg-paper text-ink min-h-full pb-28">
+    <div className="flex flex-col flex-1 bg-paper text-ink min-h-full pb-36">
       <PageHeader
         title="Submit Content"
         description="Paste marketing copy or upload documents to audit against approved brand guidelines."
@@ -223,7 +223,7 @@ export default function NewContentPage() {
               value={textBody}
               onChange={(e) => setTextBody(e.target.value)}
               placeholder="Paste content to check against guidelines…"
-              className={isMono ? 'font-mono' : ''}
+              className={cn(isMono ? 'font-mono' : '', 'max-h-[50vh] overflow-y-auto')}
               required
             />
           ) : (

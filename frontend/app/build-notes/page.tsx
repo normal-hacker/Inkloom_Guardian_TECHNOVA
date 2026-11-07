@@ -32,14 +32,14 @@ export default function BuildNotesPage() {
       <main className="max-w-5xl mx-auto px-4 py-10 flex-1 w-full space-y-8">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <Badge variant="neutral">Round 2 Build Submission</Badge>
+            <Badge variant="neutral">System Build Specification</Badge>
             <span className="text-xs font-mono text-ink-3">Delivered 2026-11</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-mono font-bold tracking-tight text-ink uppercase">
             Build Notes & Architectural Decisions
           </h1>
           <p className="mt-2 text-sm text-ink-2 leading-relaxed">
-            Detailed breakdown of what was delivered in Round 2 &ldquo;The Build&rdquo;, architectural consolidation decisions, and our intentional Round 3 roadmap.
+            Detailed breakdown of delivered capabilities, architectural consolidation decisions, and our intentional forward roadmap.
           </p>
         </div>
 
@@ -47,7 +47,7 @@ export default function BuildNotesPage() {
         <div className="bg-surface border-2 border-ink p-6 shadow-hard space-y-4">
           <div className="pb-3 border-b-2 border-ink flex items-center justify-between">
             <h2 className="text-base font-bold text-ink uppercase tracking-tight">
-              Delivered Features Checklist (Round 2)
+              Delivered Features Checklist
             </h2>
             <span className="font-mono text-xs font-bold px-2 py-0.5 border border-ink bg-approved text-ink uppercase">
               100% Complete
@@ -104,7 +104,7 @@ export default function BuildNotesPage() {
               Deviations Ledger
             </span>
             <h2 className="text-base font-bold text-ink uppercase tracking-tight mt-1">
-              Deliberate Consolidations from Round 1 Plan
+              Deliberate Architectural Consolidations
             </h2>
           </div>
 
@@ -129,18 +129,18 @@ export default function BuildNotesPage() {
           </div>
         </div>
 
-        {/* Section 3: The Three Round 3 Improvements */}
+        {/* Section 3: Upcoming Roadmap Improvements */}
         <div className="bg-surface border-2 border-ink p-6 shadow-hard space-y-4">
           <div className="pb-3 border-b-2 border-ink">
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-ink-3">
               Forward Roadmap
             </span>
             <h2 className="text-base font-bold text-ink uppercase tracking-tight mt-1">
-              The Three Round 3 Improvements
+              Upcoming Roadmap Improvements
             </h2>
           </div>
           <p className="text-xs text-ink-2">
-            In accordance with hackathon instructions, the following three architectural enhancements are scheduled for Round 3 and deliberately excluded from today&apos;s build:
+            The following three architectural enhancements are planned for upcoming releases:
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
@@ -176,7 +176,7 @@ export default function BuildNotesPage() {
 
       {/* Footer */}
       <footer className="border-t-2 border-ink bg-surface py-6 text-center text-xs font-mono text-ink-3">
-        INKLOOM GUARDIAN · ROUND 2 ARCHITECTURAL REPORT
+        INKLOOM GUARDIAN · ARCHITECTURAL REPORT
       </footer>
     </div>
   );
