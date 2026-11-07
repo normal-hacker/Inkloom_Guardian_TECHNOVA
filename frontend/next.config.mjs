@@ -12,6 +12,7 @@ dotenv.config({ path: path.resolve(__dirname, '.env.local') });
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  outputFileTracingRoot: path.resolve(__dirname, '..'),
   typedRoutes: false,
   devIndicators: false,
   serverExternalPackages: ['pdf-parse', 'mammoth'],
