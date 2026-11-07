@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import { eq, desc } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
 import * as schema from '@/lib/db/schema';
+import { ensureDatabaseInitialized } from '@/lib/db/init';
 import { requireAuth } from '@/lib/auth/guards';
 import { apiError } from '@/lib/api/errors';
 import { createContent } from '@/lib/services/content';
@@ -17,6 +18,7 @@ export async function POST(req: Request) {
   }
 
   try {
+    await ensureDatabaseInitialized();
     const body = await req.json();
     const { title, contentType, textBody, sourceKind, originalFilename, imageAltText } = body;
 
@@ -57,7 +59,11 @@ export async function POST(req: Request) {
       { status: 201, headers: { 'X-Request-ID': requestId } }
     );
   } catch (err: any) {
-    return apiError(500, 'internal_error', err.message || 'Failed to create content item.', requestId);
+    return apiError(500, 'internal_error', err.message || 'Failed to create content item.', requestId, {
+      cause: err?.cause?.message,
+      code: err?.cause?.code || err?.code,
+      detail: err?.cause?.detail || err?.detail,
+    });
   }
 }
 
@@ -71,6 +77,7 @@ export async function GET(req: Request) {
   }
 
   try {
+    await ensureDatabaseInitialized();
     // If creator, select only own items. Reviewer/manager select all workspace items.
     let items;
     if (session.role === 'creator') {
@@ -89,6 +96,10 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ items }, { status: 200, headers: { 'X-Request-ID': requestId } });
   } catch (err: any) {
-    return apiError(500, 'internal_error', err.message || 'Failed to list content items.', requestId);
+    return apiError(500, 'internal_error', err.message || 'Failed to list content items.', requestId, {
+      cause: err?.cause?.message,
+      code: err?.cause?.code || err?.code,
+      detail: err?.cause?.detail || err?.detail,
+    });
   }
 }

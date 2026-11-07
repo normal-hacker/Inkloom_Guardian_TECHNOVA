@@ -10,6 +10,8 @@ declare global {
   var __inkloomPgPool: pg.Pool | undefined;
   // eslint-disable-next-line no-var
   var __inkloomDrizzleDb: NodePgDatabase<typeof schema> | undefined;
+  // eslint-disable-next-line no-var
+  var __inkloomDbInitialized: boolean | undefined;
 }
 
 export function getPool(): pg.Pool {

@@ -20,6 +20,7 @@ export async function POST(
   }
 
   const { id } = await params;
+  let requestBody: any = null;
 
   try {
     const items = await db.select().from(schema.contentItems).where(eq(schema.contentItems.id, id)).limit(1);
@@ -28,7 +29,8 @@ export async function POST(
     }
     assertContentAccess(session, items[0]);
 
-    const body = await req.json().catch(() => ({}));
+    requestBody = await req.json().catch(() => ({}));
+    const body = requestBody;
     const { findingId, suggestion, versionNo, spanStart, spanEnd, quote, ruleKey } = body;
 
     let targetSpanStart = spanStart;
@@ -108,7 +110,7 @@ export async function POST(
       operation: 'apply_suggestion',
       requestId,
       contentId: id,
-      findingId: body?.findingId,
+      findingId: requestBody?.findingId,
       status,
       errorName: err.name,
       errorMessage: err.message,
@@ -122,7 +124,7 @@ export async function POST(
       requestId,
       {
         operation: 'apply_suggestion',
-        findingId: body?.findingId,
+        findingId: requestBody?.findingId,
         contentId: id,
       }
     );
