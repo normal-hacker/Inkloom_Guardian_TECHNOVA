@@ -6,7 +6,7 @@ import {
   MUTATION_ALLOWLIST,
   assertActionOptimistic,
 } from '../src/lib/optimistic/allowlist';
-import { parseHttpError } from '../src/lib/optimistic/errors';
+import { parseHttpError, OptimisticError } from '../src/lib/optimistic/errors';
 
 interface TestItem {
   id: string;
@@ -88,7 +88,7 @@ describe('Optimistic UI Hook Unit Tests (FRAMEWORK §6)', () => {
       errorJson: { message: 'Database failure' },
     });
 
-    let capturedError: unknown = null;
+    let capturedError: OptimisticError | null = null;
     let restoredInputVal: string = '';
 
     const { result } = renderHook(() =>
@@ -126,7 +126,7 @@ describe('Optimistic UI Hook Unit Tests (FRAMEWORK §6)', () => {
     expect(result.current.status).toBe('error');
     expect(result.current.error?.kind).toBe('server_error');
     expect(result.current.error?.message).toBe('Something went wrong on our side. Nothing was changed.');
-    expect(capturedError?.kind).toBe('server_error');
+    expect((capturedError as OptimisticError | null)?.kind).toBe('server_error');
     expect(restoredInputVal).toBe('This will fail');
     expect(result.current.lastInput).toBe('This will fail');
   });
