@@ -80,6 +80,7 @@ export default function ReviewWorkspacePage({
   const [commentText, setCommentText] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [applyingFindingId, setApplyingFindingId] = useState<string | null>(null);
 
   // Optimistic UI for comments
   const commentMutation = useOptimisticMutation<CommentItem[], string, CommentItem>({
@@ -259,7 +260,9 @@ export default function ReviewWorkspacePage({
     }
   };
 
-  const handleApplySuggestion = async (findingId: string, suggestion: string) => {
+  const handleApplySuggestion = async (findingId: string, suggestion?: string) => {
+    if (applyingFindingId) return;
+    setApplyingFindingId(findingId);
     setActionError(null);
     try {
       const res = await fetch(`/api/v1/content/${id}/apply-suggestion`, {
@@ -269,16 +272,20 @@ export default function ReviewWorkspacePage({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(data.message || 'Failed to apply suggestion.');
+        const errorMsg = data.error?.message || data.message || 'Failed to apply suggestion.';
+        throw new Error(errorMsg);
       }
-      setActionSuccess(`Suggestion applied. Created version ${data.newVersionNo}.`);
+      const newVersion = data.newVersionNo || data.versionNo;
+      setActionSuccess(`Suggestion applied successfully.${newVersion ? ` Created version ${newVersion}.` : ''}`);
       await loadData();
-      if (data.newVersionNo) {
-        setSelectedVersionNo(data.newVersionNo);
+      if (newVersion) {
+        setSelectedVersionNo(newVersion);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setActionError(msg);
+    } finally {
+      setApplyingFindingId(null);
     }
   };
 
@@ -371,12 +378,24 @@ export default function ReviewWorkspacePage({
     if (!text) return null;
 
     const activeSpans = findings
-      .filter((f) => {
-        const s = f.spanStart ?? f.span_start;
-        const e = f.spanEnd ?? f.span_end;
-        return f.status === 'open' && s !== undefined && e !== undefined && s >= 0 && e <= text.length;
+      .filter((f) => f.status === 'open')
+      .map((f) => {
+        let s = f.spanStart ?? f.span_start ?? 0;
+        let e = f.spanEnd ?? f.span_end ?? 0;
+
+        // If offsets no longer match the quote due to prior shifts, adjust offset dynamically
+        if (f.quote && (s < 0 || e > text.length || text.slice(s, e) !== f.quote)) {
+          const actualIdx = text.indexOf(f.quote);
+          if (actualIdx !== -1) {
+            s = actualIdx;
+            e = actualIdx + f.quote.length;
+          }
+        }
+
+        return { ...f, spanStart: s, spanEnd: e };
       })
-      .sort((a, b) => (a.spanStart ?? a.span_start ?? 0) - (b.spanStart ?? b.span_start ?? 0));
+      .filter((f) => f.spanStart >= 0 && f.spanEnd <= text.length && f.spanStart < f.spanEnd)
+      .sort((a, b) => a.spanStart - b.spanStart);
 
     if (activeSpans.length === 0) {
       return <div className="whitespace-pre-wrap font-sans text-base leading-7 text-ink">{text}</div>;
@@ -807,6 +826,7 @@ export default function ReviewWorkspacePage({
                       key={f.id}
                       finding={f}
                       selected={selectedFindingId === f.id}
+                      isApplying={applyingFindingId === f.id}
                       onSelect={() => setSelectedFindingId(f.id)}
                       onApply={(sug) => handleApplySuggestion(f.id, sug)}
                       onDismiss={() => setDecisionModal({ type: 'dismiss', findingId: f.id })}

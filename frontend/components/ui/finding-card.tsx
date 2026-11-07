@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { SeverityBadge, RuleChip, OriginChip } from './badge';
 import { Button } from './button';
 import { FindingView, Finding } from '@/lib/domain/types';
-import { BookOpen, Check } from 'lucide-react';
+import { BookOpen, Check, Loader2 } from 'lucide-react';
 
 export interface FindingCardProps {
   finding: Finding | FindingView;
@@ -14,6 +14,7 @@ export interface FindingCardProps {
   onOverride?: () => void;
   className?: string;
   readOnly?: boolean;
+  isApplying?: boolean;
 }
 
 export function FindingCard({
@@ -25,6 +26,7 @@ export function FindingCard({
   onOverride,
   className,
   readOnly = false,
+  isApplying = false,
 }: FindingCardProps) {
   const anyFinding = finding as any;
   const ruleKey = finding.rule?.key || anyFinding.ruleKey || anyFinding.rule_key || 'RULE';
@@ -47,6 +49,18 @@ export function FindingCard({
         <div className="flex items-center gap-2">
           <SeverityBadge severity={finding.severity} />
           <RuleChip ruleKey={ruleKey} />
+          {finding.status && finding.status !== 'open' && (
+            <span
+              className={cn(
+                'px-2 py-0.5 border-2 border-ink font-mono text-[10px] font-bold uppercase select-none',
+                finding.status === 'fixed'
+                  ? 'bg-status-approved text-ink'
+                  : 'bg-surface-2 text-ink-2'
+              )}
+            >
+              {finding.status === 'fixed' ? 'Applied' : finding.status}
+            </span>
+          )}
         </div>
         <OriginChip
           origin={finding.origin}
@@ -86,26 +100,45 @@ export function FindingCard({
             <p className="text-xs font-mono text-ink font-semibold">
               &ldquo;{suggestion}&rdquo;
             </p>
-            {!readOnly && onApply && (
+            {finding.status === 'fixed' ? (
               <div className="pt-1">
-                <Button
-                  size="sm"
-                  variant="primary"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onApply(suggestion);
-                  }}
-                >
-                  <Check className="w-3.5 h-3.5 mr-1" />
-                  Apply Suggestion
-                </Button>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-status-approved border-2 border-ink font-mono text-xs font-bold uppercase text-ink select-none">
+                  <Check className="w-3.5 h-3.5 shrink-0" />
+                  Suggestion Applied
+                </span>
               </div>
+            ) : (
+              !readOnly && onApply && (
+                <div className="pt-1">
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    disabled={isApplying}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onApply(suggestion);
+                    }}
+                  >
+                    {isApplying ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                        Applying...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-3.5 h-3.5 mr-1" />
+                        Apply Suggestion
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )
             )}
           </div>
         )}
 
         {/* Actions for human review */}
-        {!readOnly && (onDismiss || onOverride) && (
+        {!readOnly && finding.status === 'open' && (onDismiss || onOverride) && (
           <div className="pt-2 border-t border-rule flex items-center gap-2 justify-end">
             {onDismiss && (
               <Button

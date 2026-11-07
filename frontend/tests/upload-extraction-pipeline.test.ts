@@ -193,7 +193,7 @@ describe('File Upload & Text Extraction Verification Pipeline', () => {
       },
     ];
 
-    const validatedAiFindings = validateAiFindings(mockAiOutput, extractedCopy);
+    const validatedAiFindings = validateAiFindings(mockAiOutput as any, extractedCopy);
     expect(validatedAiFindings.length).toBe(1);
     expect(validatedAiFindings[0].quote).toBe('best');
   });

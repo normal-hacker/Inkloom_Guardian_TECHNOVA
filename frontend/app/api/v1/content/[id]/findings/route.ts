@@ -32,12 +32,28 @@ export async function GET(
     }
 
     // Get latest review run for the current version
-    const runs = await db
+    let runs = await db
       .select()
       .from(schema.reviewRuns)
       .where(eq(schema.reviewRuns.contentVersionId, items[0].currentVersionId))
       .orderBy(desc(schema.reviewRuns.startedAt))
       .limit(1);
+
+    if (!runs.length) {
+      const itemRuns = await db
+        .select({
+          run: schema.reviewRuns,
+        })
+        .from(schema.reviewRuns)
+        .innerJoin(schema.contentVersions, eq(schema.reviewRuns.contentVersionId, schema.contentVersions.id))
+        .where(eq(schema.contentVersions.contentItemId, id))
+        .orderBy(desc(schema.reviewRuns.startedAt))
+        .limit(1);
+
+      if (itemRuns.length) {
+        runs = [itemRuns[0].run];
+      }
+    }
 
     if (!runs.length) {
       return NextResponse.json({ findings: [] }, { status: 200, headers: { 'X-Request-ID': requestId } });
