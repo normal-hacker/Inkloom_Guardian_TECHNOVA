@@ -62,7 +62,13 @@ export const serverEnv = {
   },
   get authBaseUrl(): string {
     assertServer('AUTH_BASE_URL');
-    return process.env.AUTH_BASE_URL || 'http://localhost:3000';
+    if (process.env.AUTH_BASE_URL) {
+      return process.env.AUTH_BASE_URL;
+    }
+    if (process.env.VERCEL_URL) {
+      return `https://${process.env.VERCEL_URL}`;
+    }
+    return 'http://localhost:3000';
   },
   get aiProvider(): string {
     assertServer('AI_PROVIDER');

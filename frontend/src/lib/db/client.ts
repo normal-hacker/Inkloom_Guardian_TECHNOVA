@@ -5,34 +5,39 @@ import { serverEnv } from '../env';
 
 const { Pool } = pg;
 
-let globalPool: pg.Pool | null = null;
-let globalDb: NodePgDatabase<typeof schema> | null = null;
+declare global {
+  // eslint-disable-next-line no-var
+  var __inkloomPgPool: pg.Pool | undefined;
+  // eslint-disable-next-line no-var
+  var __inkloomDrizzleDb: NodePgDatabase<typeof schema> | undefined;
+}
 
 export function getPool(): pg.Pool {
-  if (!globalPool) {
+  if (!globalThis.__inkloomPgPool) {
     const url = serverEnv.databaseUrl;
-    globalPool = new Pool({
+    globalThis.__inkloomPgPool = new Pool({
       connectionString: url,
       ssl: url.includes('supabase.com') || url.includes('sslmode=require')
         ? { rejectUnauthorized: false }
         : false,
-      max: 10,
+      max: 5,
       idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000,
     });
   }
-  return globalPool;
+  return globalThis.__inkloomPgPool;
 }
 
 export function setCustomPool(pool: pg.Pool): void {
-  globalPool = pool;
-  globalDb = drizzle(pool, { schema });
+  globalThis.__inkloomPgPool = pool;
+  globalThis.__inkloomDrizzleDb = drizzle(pool, { schema });
 }
 
 export function getDb(): NodePgDatabase<typeof schema> {
-  if (!globalDb) {
-    globalDb = drizzle(getPool(), { schema });
+  if (!globalThis.__inkloomDrizzleDb) {
+    globalThis.__inkloomDrizzleDb = drizzle(getPool(), { schema });
   }
-  return globalDb;
+  return globalThis.__inkloomDrizzleDb;
 }
 
 // Proxy export for convenient `db.select()...` usage while preserving lazy initialization

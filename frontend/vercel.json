@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/v1/cron/cleanup-idempotency",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}
+

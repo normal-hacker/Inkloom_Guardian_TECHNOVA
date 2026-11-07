@@ -13,6 +13,7 @@ dotenv.config({ path: path.resolve(__dirname, '.env.local') });
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typedRoutes: false,
+  devIndicators: false,
 };
 
 export default nextConfig;
