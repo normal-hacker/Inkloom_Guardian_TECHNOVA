@@ -1,11 +1,22 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Animated Collapsible Sidebar E2E Suite (§8 Acceptance)', () => {
-  test.beforeEach(async ({ page }) => {
-    // Clear localStorage and cookies
-    await page.addInitScript(() => {
-      localStorage.clear();
-    });
+  test.beforeEach(async ({ page, context }) => {
+    // Authenticate with demo session to access protected /dashboard
+    await context.addCookies([
+      {
+        name: 'inkloom_has_session',
+        value: '1',
+        domain: '127.0.0.1',
+        path: '/',
+      },
+      {
+        name: 'inkloom_session',
+        value: 'eyJzdWIiOiIxMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDEiLCJ3aWQiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDEiLCJyb2xlIjoiY3JlYXRvciIsImlzRGVtbyI6dHJ1ZSwiZGlzcGxheU5hbWUiOiJBc2hhIChDcmVhdG9yKSIsImVtYWlsIjoiYXNoYUBicmlnaHR3YXkuZXhhbXBsZSIsImlhdCI6MTc5NDU4NzQyNCwiZXhwIjoxNzk0NTk0NjI0fQ.LzpmfnSwGJ3s-Yoqrw-qj6ouXfj5lOHkzUn3aFoYm6o',
+        domain: '127.0.0.1',
+        path: '/',
+      },
+    ]);
   });
 
   test('1. Hover desktop rail expands sidebar as overlay without shifting main content (zero CLS)', async ({ page }) => {
@@ -94,7 +105,7 @@ test.describe('Animated Collapsible Sidebar E2E Suite (§8 Acceptance)', () => {
 
     // Tab once to focus the skip link
     await page.keyboard.press('Tab');
-    const skipLink = page.getByRole('link', { name: /skip to content/i });
+    const skipLink = page.getByRole('link', { name: /skip to (main )?content/i });
     await expect(skipLink).toBeFocused();
 
     // Press Enter to skip
@@ -133,16 +144,8 @@ test.describe('Animated Collapsible Sidebar E2E Suite (§8 Acceptance)', () => {
 
   test('6. Switch demo persona updates visible navigation links', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto('/login');
-
-    // Log in as Creator
-    const ashaBtn = page.getByTestId('demo-creator-asha');
-    if (await ashaBtn.isVisible()) {
-      await ashaBtn.click();
-      await page.waitForURL('**/dashboard');
-    } else {
-      await page.goto('/dashboard');
-    }
+    await page.goto('/dashboard');
+    await page.waitForLoadState('networkidle');
 
     const sidebarNav = page.locator('nav[aria-label="Main"]');
 

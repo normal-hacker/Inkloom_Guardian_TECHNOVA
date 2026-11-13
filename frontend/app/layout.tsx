@@ -31,13 +31,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className="bg-paper text-ink antialiased">
-        {/* Skip to Main Content Landmark */}
-        <a
-          href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:bg-accent focus:text-accent-ink focus:border-2 focus:border-ink font-mono text-xs font-bold uppercase"
-        >
-          Skip to main content
-        </a>
         <AppShell>{children}</AppShell>
       </body>
     </html>

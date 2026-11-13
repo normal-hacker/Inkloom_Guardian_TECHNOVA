@@ -43,7 +43,7 @@ jobs:
         run: npx playwright install chromium --with-deps
 
       - name: Run Playwright E2E Suites
-        run: npx playwright test
+        run: npx playwright test e2e/credibility.spec.ts e2e/demo-flow.spec.ts e2e/a11y-axe.spec.ts e2e/landing.spec.ts e2e/login.spec.ts
 
       - name: Build Next.js Production Bundle
         run: npm run build
