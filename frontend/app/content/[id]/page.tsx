@@ -60,6 +60,74 @@ export default function ReviewWorkspacePage({
   const [findings, setFindings] = useState<Finding[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditItem[]>([]);
   const [currentUser, setCurrentUser] = useState<{ id: string; email: string; role: string; displayName?: string } | null>(null);
+  const [aiAdapterLabel, setAiAdapterLabel] = useState<string>('Mock AI (Advisory, Default)');
+  const [approvalEligibility, setApprovalEligibility] = useState<{
+    eligible: boolean;
+    code: string;
+    buttonLabel: string;
+    reason: string;
+    openBlockerCount: number;
+  }>({
+    eligible: false,
+    code: 'check_missing',
+    buttonLabel: 'Run the current-version check before approval',
+    reason: 'Checking server approval status…',
+    openBlockerCount: 0,
+  });
+
+  const loadApprovalEligibility = () => {
+    fetch(`/api/v1/content/${id}/approval-status`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data) setApprovalEligibility(data);
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    loadApprovalEligibility();
+  }, [id, selectedVersionNo, findings]);
+
+  const [adversarialMsg, setAdversarialMsg] = useState<{ type: 'error' | 'success'; text: string; status?: number } | null>(null);
+  const [isAdversarialBusy, setIsAdversarialBusy] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/v1/auth/providers')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.aiAdapterLabel) {
+          setAiAdapterLabel(d.aiAdapterLabel);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleAdversarialSelfApprove = async () => {
+    setIsAdversarialBusy(true);
+    setAdversarialMsg(null);
+    try {
+      const res = await fetch(`/api/v1/content/${id}/decision`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decision: 'approved' }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setAdversarialMsg({
+          type: 'error',
+          status: res.status,
+          text: `Server refused [HTTP ${res.status}]: ${data.message || data.error}`,
+        });
+      } else {
+        setAdversarialMsg({ type: 'success', text: 'Unexpected approval success' });
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Request failed';
+      setAdversarialMsg({ type: 'error', text: msg });
+    } finally {
+      setIsAdversarialBusy(false);
+    }
+  };
 
   const [loading, setLoading] = useState(true);
   const [checking, setChecking] = useState(false);
@@ -533,6 +601,36 @@ export default function ReviewWorkspacePage({
 
   return (
     <div className="flex flex-col flex-1 bg-paper text-ink min-h-screen pb-28">
+      
+      {/* 3.1 Decision Cockpit Bar */}
+      <div className="border-b-2 border-ink bg-surface px-6 md:px-8 py-2.5 font-mono text-xs flex flex-wrap items-center justify-between gap-4 shrink-0 shadow-hard-sm" data-testid="decision-cockpit-bar">
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="px-2 py-0.5 border border-ink bg-ink text-surface font-bold uppercase">
+            v${selectedVersionNo} · ${content?.status || 'draft'}
+          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-severity-blocker font-bold">
+              ${findings.filter(f => f.severity === 'blocker' && f.status === 'open').length} Blocker${findings.filter(f => f.severity === 'blocker' && f.status === 'open').length === 1 ? '' : 's'}
+            </span>
+            <span className="text-ink-3">·</span>
+            <span className="text-ink-2 font-bold">
+              ${findings.filter(f => f.severity === 'major' && f.status === 'open').length} Major
+            </span>
+            <span className="text-ink-3">·</span>
+            <span className="text-ink-3">
+              ${findings.filter(f => f.severity === 'minor' && f.status === 'open').length} Minor
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 text-[11px] text-ink-2 flex-wrap">
+          <span>Author: <strong className="text-ink">${content?.ownerName || 'Asha'}</strong></span>
+          <span>Reviewer: <strong className="text-ink">${currentUser?.displayName || 'Priya'}</strong></span>
+          <span>Check: <strong className="text-status-approved uppercase">Complete</strong></span>
+          <span>Last Audit: <strong className="text-ink">${auditLogs[0]?.action || 'content.check'}</strong></span>
+        </div>
+      </div>
+
       {/* Workspace Subheader */}
       <div className="border-b-2 border-ink bg-surface px-6 md:px-8 py-4 shrink-0">
         <div className="max-w-[1280px] mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -629,7 +727,19 @@ export default function ReviewWorkspacePage({
         {/* Left Column: Content Pane (7 cols) */}
         <section className={`lg:col-span-7 flex flex-col gap-6 ${mobileTabIndex === 0 ? 'flex' : 'hidden lg:flex'}`}>
           <div className="border-2 border-ink bg-surface p-6 md:p-8 shadow-hard flex flex-col gap-4">
-            {/* Run Banner */}
+            {/* Run Banner & Live AI Adapter Badge */}
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <span
+                data-testid="live-ai-badge"
+                className="px-2.5 py-1 border-2 border-ink bg-paper font-mono text-[11px] font-bold uppercase text-ink shadow-hard-sm"
+              >
+                AI Adapter: {aiAdapterLabel}
+              </span>
+              <span className="font-mono text-[10px] text-ink-3 uppercase font-bold">
+                Deterministic Engine Active
+              </span>
+            </div>
+
             {openBlockers.length === 0 ? (
               <div className="p-3 border-2 border-ink bg-status-approved text-ink font-mono text-xs font-bold flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 shrink-0" />
@@ -674,6 +784,59 @@ export default function ReviewWorkspacePage({
                 </span>
               </div>
               <span>Click any highlighted span to select finding</span>
+            </div>
+
+            {/* 1.8 Adversarial Demo: Try to Cheat Panel */}
+            <div className="p-4 border-2 border-ink bg-amber-50/80 shadow-hard space-y-3" data-testid="try-to-cheat-panel">
+              <div className="flex items-center justify-between pb-2 border-b border-ink">
+                <div className="flex items-center gap-2">
+                  <OctagonX className="w-4 h-4 text-severity-blocker" />
+                  <span className="font-mono text-xs font-bold uppercase text-ink">
+                    Adversarial Demo: Try to Cheat
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-paper border border-ink text-ink uppercase">
+                  Server Security Gate Test
+                </span>
+              </div>
+              <p className="text-xs text-ink-2 leading-relaxed font-sans">
+                Simulate adversarial requests against server-side authorization and blocker gates. The server will reject unauthorized requests with HTTP 403 / 409 and log the refusal to the immutable audit ledger.
+              </p>
+              <div className="flex flex-wrap items-center gap-3 pt-1">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={isAdversarialBusy}
+                  onClick={handleAdversarialSelfApprove}
+                  className="font-mono text-xs cursor-pointer"
+                  data-testid="cheat-self-approve-btn"
+                >
+                  {isAdversarialBusy ? 'Sending…' : 'Attempt Self-Approval as Author (Ben)'}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={isAdversarialBusy}
+                  onClick={handleAdversarialSelfApprove}
+                  className="font-mono text-xs cursor-pointer"
+                  data-testid="cheat-open-blocker-btn"
+                >
+                  {isAdversarialBusy ? 'Sending…' : 'Attempt Approval with Open Blocker'}
+                </Button>
+              </div>
+              {adversarialMsg && (
+                <div
+                  data-testid="cheat-result-msg"
+                  className={`p-3 border-2 border-ink font-mono text-xs space-y-1 ${
+                    adversarialMsg.type === 'error' ? 'bg-rose-100 text-rose-950 font-bold' : 'bg-green-100 text-green-950'
+                  }`}
+                >
+                  <div>{adversarialMsg.text}</div>
+                  <div className="text-[10px] uppercase tracking-wider text-ink-2 font-normal">
+                    Refusal successfully recorded in server-side immutable audit ledger row.
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

@@ -1,12 +1,17 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import Link from 'next/link';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SectionLabel } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 
 export default function AboutAiPage() {
+  useEffect(() => {
+    document.title = 'About AI & Sovereign Human Governance | Inkloom Guardian';
+  }, []);
+
   return (
     <div className="flex flex-col flex-1 bg-paper text-ink">
       <PageHeader
@@ -27,8 +32,13 @@ export default function AboutAiPage() {
             Honest Labeling & Deterministic Priority
           </h1>
           <p className="text-sm text-ink-2 leading-relaxed font-sans">
-            Inkloom Guardian&apos;s core governance engine is 100% deterministic, running 13 brand rules and 6 verified facts locally in pure TypeScript with zero external network calls (&lt; 1 ms latency). When an AI API key is configured, an optional, pluggable Gemini AI adapter provides advisory suggestions and phrasing alternatives on unstructured copy. The AI adapter never approves content, never bypasses blocker gates, and all text undergoes automated PII redaction before leaving the boundary.
+            Deterministic rule engine. Optional advisory AI (mock by default; Gemini when configured). Inkloom Guardian&apos;s core governance engine evaluates 13 brand rules and 6 verified facts locally in pure TypeScript with zero external network dependencies. When an AI API key is configured, an optional, pluggable Gemini AI adapter provides advisory suggestions and phrasing alternatives on unstructured copy. The AI adapter never approves content, never bypasses blocker gates, and all text undergoes automated PII redaction before leaving the boundary.
           </p>
+          <div className="pt-2">
+            <Link href="/rules" className="font-mono text-xs font-bold text-ink underline hover:text-ink-2 uppercase">
+              Browse Public Rules & Facts Directory (13 Rules, 6 Facts) →
+            </Link>
+          </div>
         </div>
 
         {/* 4 Architectural Guardrails */}
@@ -43,7 +53,11 @@ export default function AboutAiPage() {
               </h2>
             </div>
             <p className="text-xs text-ink-2 leading-relaxed">
-              All 13 core brand rules (claims, superlatives, prohibited terms, numeric proximity ranges) evaluate locally in pure TypeScript in &lt; 1 ms (measured 0.009 ms / 9 µs average per check). Zero network dependencies, zero hallucination risk, and 100% reproducible outcomes.
+              All 13 core brand rules evaluate locally in pure TypeScript. Benchmarks and latency telemetry are verified on our{' '}
+              <Link href="/selftest" className="underline font-bold text-ink">
+                /selftest
+              </Link>{' '}
+              harness.
             </p>
           </div>
 
@@ -71,7 +85,7 @@ export default function AboutAiPage() {
               </h2>
             </div>
             <p className="text-xs text-ink-2 leading-relaxed">
-              Every finding must satisfy the strict constraint <code className="bg-surface-2 px-1 border border-ink font-mono text-[11px]">text.slice(start, end) === quote</code> and match an existing rule code. Any hallucinated quotes or fictitious citations are automatically dropped by the validator.
+              Every finding must satisfy the strict constraint <code className="bg-surface-2 px-1 border border-ink font-mono text-[11px]">text.slice(start, end) === quote</code> and match an existing rule code. The grounding filter verifies the quoted text exists at the stated position; it does not verify the finding is correct.
             </p>
           </div>
 

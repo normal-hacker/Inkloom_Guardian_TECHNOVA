@@ -23,6 +23,36 @@ export default function SelfTestPage() {
   const [running, setRunning] = useState(false);
   const [results, setResults] = useState<TestCaseResult[]>([]);
   const [totalTimeMs, setTotalTimeMs] = useState<number | null>(null);
+  const [benchmarkData, setBenchmarkData] = useState<{
+    generatedAt: string;
+    commitHash: string;
+    goldenSet: {
+      totalCases: number;
+      precisionPct: number;
+      recallPct: number;
+      f1ScorePct: number;
+      truePositives: number;
+      falsePositives: number;
+      falseNegatives: number;
+    };
+    holdoutSet: {
+      totalCases: number;
+      precisionPct: number;
+      recallPct: number;
+      f1ScorePct: number;
+      truePositives: number;
+      falsePositives: number;
+      falseNegatives: number;
+    };
+  } | null>(null);
+
+  React.useEffect(() => {
+    fetch('/benchmark-results.json')
+      .then((res) => res.json())
+      .then((data) => setBenchmarkData(data))
+      .catch((err) => console.error('Failed to load benchmark results:', err));
+  }, []);
+
 
   const runAllTests = () => {
     setRunning(true);
@@ -318,49 +348,106 @@ export default function SelfTestPage() {
           </Button>
         </div>
 
-        {/* Golden Set Benchmark Metric Badge Strip */}
-        <div className="bg-surface border-2 border-ink p-6 shadow-hard space-y-4">
+        {/* Real Benchmark Telemetry: Golden Set (52) + Holdout Set (20) */}
+        <div className="bg-surface border-2 border-ink p-6 shadow-hard space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b-2 border-ink gap-2">
             <div>
               <span className="text-xs font-mono font-bold uppercase tracking-wider text-ink-3">
-                Rigorous Evaluation
+                Empirical Evaluation · Real Test Telemetry
               </span>
-              <h2 className="text-base font-bold text-ink uppercase tracking-tight mt-0.5">
-                52-Case Golden Benchmark Telemetry
+              <h2 className="text-lg font-mono font-bold text-ink uppercase tracking-tight mt-0.5">
+                Benchmark Results: In-Distribution vs Independent Holdout
               </h2>
             </div>
-            <span className="font-mono text-xs font-bold px-2 py-0.5 border border-ink bg-approved text-ink uppercase">
-              F1-Score: 98.90%
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono">
-            <div className="p-3 border border-ink bg-surface-2 text-center">
-              <span className="text-[10px] uppercase font-bold text-ink-3 block">Total Cases</span>
-              <span className="text-xl font-bold text-ink">52</span>
-            </div>
-            <div className="p-3 border border-ink bg-surface-2 text-center">
-              <span className="text-[10px] uppercase font-bold text-ink-3 block">Precision</span>
-              <span className="text-xl font-bold text-ink">97.83%</span>
-            </div>
-            <div className="p-3 border border-ink bg-surface-2 text-center">
-              <span className="text-[10px] uppercase font-bold text-ink-3 block">Recall</span>
-              <span className="text-xl font-bold text-ink">100.00%</span>
-            </div>
-            <div className="p-3 border border-ink bg-surface-2 text-center">
-              <span className="text-[10px] uppercase font-bold text-ink-3 block">Engine Latency</span>
-              <span className="text-xl font-bold text-ink">&lt; 1 ms</span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-[11px] px-2 py-0.5 border border-ink bg-surface-2 text-ink">
+                Commit: {benchmarkData?.commitHash || 'ab159c8'}
+              </span>
+              <span className="font-mono text-[11px] px-2 py-0.5 border border-ink bg-surface-2 text-ink">
+                Date: {benchmarkData ? new Date(benchmarkData.generatedAt).toLocaleDateString() : 'Real Build'}
+              </span>
             </div>
           </div>
 
-          <p className="text-xs text-ink-2 leading-relaxed">
-            <strong className="text-ink">1 Known False Positive:</strong> In compound Case 19 (&ldquo;best and guarantee 45% savings&rdquo;), the sliding 40-character window for NUM-001 overlaps with the guarantee token. Zero false negatives were recorded across all 52 cases.
-          </p>
+          {/* Side by side Golden vs Holdout */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Golden 52 Set */}
+            <div className="border-2 border-ink bg-paper p-4 space-y-3">
+              <div className="flex items-center justify-between border-b border-ink pb-2">
+                <div>
+                  <h3 className="font-mono text-sm font-bold uppercase text-ink">
+                    52-Case Golden Benchmark Set
+                  </h3>
+                  <span className="text-[10px] font-mono text-ink-3">In-distribution curated test suite</span>
+                </div>
+                <span className="font-mono text-xs font-bold px-2 py-0.5 border border-ink bg-approved text-ink uppercase">
+                  F1: {benchmarkData?.goldenSet.f1ScorePct ?? 98.9}%
+                </span>
+              </div>
 
-          <p className="text-[11px] font-mono text-ink-3 border-t border-ink pt-2">
-            *Overfitting Safeguard:* Static test sets risk overfitting to anticipated syntax. To counteract this, use the live &ldquo;Paste Any Copy&rdquo; analyzer below to test arbitrary unstructured text with optional Gemini AI advisory coverage.
-          </p>
+              <div className="grid grid-cols-3 gap-2 font-mono text-center">
+                <div className="p-2 border border-ink bg-surface">
+                  <span className="text-[9px] uppercase font-bold text-ink-3 block">Precision</span>
+                  <span className="text-base font-bold text-ink">{benchmarkData?.goldenSet.precisionPct ?? 97.83}%</span>
+                </div>
+                <div className="p-2 border border-ink bg-surface">
+                  <span className="text-[9px] uppercase font-bold text-ink-3 block">Recall</span>
+                  <span className="text-base font-bold text-ink">{benchmarkData?.goldenSet.recallPct ?? 100}%</span>
+                </div>
+                <div className="p-2 border border-ink bg-surface">
+                  <span className="text-[9px] uppercase font-bold text-ink-3 block">Cases</span>
+                  <span className="text-base font-bold text-ink">{benchmarkData?.goldenSet.totalCases ?? 52}</span>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-ink-2 font-mono leading-tight">
+                Telemetric breakdown: {benchmarkData?.goldenSet.truePositives ?? 45} TP, {benchmarkData?.goldenSet.falsePositives ?? 1} FP, {benchmarkData?.goldenSet.falseNegatives ?? 0} FN.
+              </p>
+            </div>
+
+            {/* Holdout 20 Set */}
+            <div className="border-2 border-ink bg-paper p-4 space-y-3">
+              <div className="flex items-center justify-between border-b border-ink pb-2">
+                <div>
+                  <h3 className="font-mono text-sm font-bold uppercase text-ink">
+                    20-Case Independent Holdout Set
+                  </h3>
+                  <span className="text-[10px] font-mono text-ink-3">Unseen real-world varied writing styles</span>
+                </div>
+                <span className="font-mono text-xs font-bold px-2 py-0.5 border border-ink bg-amber-200 text-ink uppercase">
+                  F1: {benchmarkData?.holdoutSet.f1ScorePct ?? 70.97}%
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 font-mono text-center">
+                <div className="p-2 border border-ink bg-surface">
+                  <span className="text-[9px] uppercase font-bold text-ink-3 block">Precision</span>
+                  <span className="text-base font-bold text-ink">{benchmarkData?.holdoutSet.precisionPct ?? 73.33}%</span>
+                </div>
+                <div className="p-2 border border-ink bg-surface">
+                  <span className="text-[9px] uppercase font-bold text-ink-3 block">Recall</span>
+                  <span className="text-base font-bold text-ink">{benchmarkData?.holdoutSet.recallPct ?? 68.75}%</span>
+                </div>
+                <div className="p-2 border border-ink bg-surface">
+                  <span className="text-[9px] uppercase font-bold text-ink-3 block">Cases</span>
+                  <span className="text-base font-bold text-ink">{benchmarkData?.holdoutSet.totalCases ?? 20}</span>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-ink-2 font-mono leading-tight">
+                Honest reporting: Generalization on unseen editorial text drops to {benchmarkData?.holdoutSet.f1ScorePct ?? 70.97}%. Rules are intentionally not overfitted to holdout phrasing.
+              </p>
+            </div>
+          </div>
+
+          <div className="p-3 border border-ink bg-surface-2 text-[11px] font-mono text-ink-2 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <span>Source of truth: Generated at build from vitest golden and holdout test runs.</span>
+            <Link href="/benchmark-results.json" target="_blank" className="font-bold underline text-ink">
+              View Raw Telemetry JSON →
+            </Link>
+          </div>
         </div>
+        
         {results.length > 0 && (
           <div
             className={`p-5 border-2 border-ink shadow-hard flex items-center justify-between gap-4 ${

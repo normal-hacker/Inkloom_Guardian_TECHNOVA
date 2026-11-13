@@ -9,7 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import { Card, SectionLabel } from '@/components/ui/card';
 import { FileDrop } from '@/components/ui/file-drop';
-import { FileText, UploadCloud, ArrowRight, Loader2, OctagonX, Check } from 'lucide-react';
+import { inspectBanner } from '@/lib/engine/banner';
+import { FileText, UploadCloud, ArrowRight, Loader2, OctagonX, Check, AlertTriangle, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function NewContentPage() {
@@ -26,6 +27,19 @@ export default function NewContentPage() {
   // File upload and extraction state
   const [file, setFile] = React.useState<File | null>(null);
   const [imageAltText, setImageAltText] = React.useState('');
+  const [imageDisclaimerText, setImageDisclaimerText] = React.useState('');
+  const [bannerInspection, setBannerInspection] = React.useState<{
+    overallPassed: boolean;
+    findings: Array<{
+      check: string;
+      title: string;
+      severity: string;
+      passed: boolean;
+      value?: string | number;
+      message: string;
+      recommendation: string;
+    }>;
+  } | null>(null);
   const [isExtracting, setIsExtracting] = React.useState(false);
   const [extractingFileName, setExtractingFileName] = React.useState<string | null>(null);
   const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
@@ -39,6 +53,19 @@ export default function NewContentPage() {
   const [loading, setLoading] = React.useState(false);
   const [loadingStep, setLoadingStep] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (file && file.type.startsWith('image/')) {
+      const res = inspectBanner({
+        filename: file.name,
+        altText: imageAltText,
+        disclaimerText: imageDisclaimerText,
+      });
+      setBannerInspection(res);
+    } else {
+      setBannerInspection(null);
+    }
+  }, [file, imageAltText, imageDisclaimerText]);
 
   const handleFileSelect = async (selectedFile: File, alt?: string) => {
     setFile(selectedFile);
@@ -361,6 +388,74 @@ export default function NewContentPage() {
                 </div>
               )}
 
+              {/* Image Banner Inspection Controls & Live Advisory Telemetry */}
+              {file && file.type.startsWith('image/') && (
+                <div className="space-y-4 pt-2 border-t-2 border-ink" data-testid="banner-inspection-panel">
+                  <div className="p-3 border-2 border-ink bg-amber-50 space-y-1">
+                    <span className="font-mono text-xs font-bold uppercase text-ink flex items-center gap-1.5">
+                      <Info className="w-4 h-4 text-ink" />
+                      <span>Advisory Banner Inspection (Visual Quality Check)</span>
+                    </span>
+                    <p className="text-xs text-ink-2">
+                      Limitation: OCR is not available on this server; the disclaimer text field is required for banner compliance verification. Findings are labelled ADVISORY and never block or approve.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Input
+                      label="Image Descriptive Alt Text (Required for A11y)"
+                      placeholder="Describe the banner image content and visible headlines..."
+                      value={imageAltText}
+                      onChange={(e) => setImageAltText(e.target.value)}
+                      hint="Descriptive alt text for screen readers (at least 5 characters)."
+                      required
+                    />
+
+                    <Input
+                      label="Promotional Legal Disclaimer Text"
+                      placeholder="e.g. Terms apply. Average savings based on 2025 customer study."
+                      value={imageDisclaimerText}
+                      onChange={(e) => setImageDisclaimerText(e.target.value)}
+                      hint="Required terms, warranty qualifications, or study citations displayed on banner."
+                    />
+                  </div>
+
+                  {bannerInspection && (
+                    <div className="space-y-2 pt-2 border-t border-rule" data-testid="banner-advisory-findings">
+                      <div className="flex items-center justify-between text-xs font-mono">
+                        <span className="font-bold uppercase text-ink">Advisory Checks (Non-Blocking):</span>
+                        <span className="px-2 py-0.5 border border-ink bg-paper uppercase font-bold text-[10px]">
+                          {bannerInspection.findings.filter((f) => f.passed).length} / 3 Checks Passed
+                        </span>
+                      </div>
+
+                      <div className="space-y-2">
+                        {bannerInspection.findings.map((f) => (
+                          <div
+                            key={f.check}
+                            className={`p-3 border border-ink text-xs font-mono flex items-start justify-between gap-3 ${
+                              f.passed ? 'bg-surface-2' : 'bg-amber-50'
+                            }`}
+                          >
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-ink">{f.title}:</span>
+                                <span className={f.passed ? 'text-status-approved font-bold' : 'text-amber-800 font-bold'}>
+                                  {f.value}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-ink-2 font-sans">{f.message}</p>
+                            </div>
+                            <span className="px-1.5 py-0.5 border border-ink bg-paper text-[10px] uppercase font-bold text-ink shrink-0">
+                              ADVISORY
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
               {/* Editable extracted text area for review before audit */}
               {textBody && !isExtracting && file && !file.type.startsWith('image/') && (
                 <div className="space-y-2 pt-2 border-t-2 border-ink">

@@ -1,55 +1,14 @@
 import { Finding, ApprovedFactItem } from './types';
+import { CANONICAL_FACTS } from './constants';
 
-export const DEFAULT_FACTS: ApprovedFactItem[] = [
-  {
-    id: '60000000-0000-0000-0000-000000000001',
-    key: 'F-001',
-    statement: 'Average household electricity-bill savings were 18–24% (2025 customer study, n=412)',
-    values: [{ min: 18, max: 24, unit: '%' }],
-    unit: '%',
-    keywords: ['savings', 'save', 'saving', 'bill', 'bills', 'electricity'],
-  },
-  {
-    id: '60000000-0000-0000-0000-000000000002',
-    key: 'F-002',
-    statement: 'Panels carry a 25-year performance warranty',
-    values: [{ value: 25, unit: 'years' }],
-    unit: 'years',
-    keywords: ['warranty', 'panels', 'performance'],
-  },
-  {
-    id: '60000000-0000-0000-0000-000000000003',
-    key: 'F-003',
-    statement: 'Typical home installation takes 1–2 days',
-    values: [{ min: 1, max: 2, unit: 'days' }],
-    unit: 'days',
-    keywords: ['install', 'installation', 'installed'],
-  },
-  {
-    id: '60000000-0000-0000-0000-000000000004',
-    key: 'F-004',
-    statement: 'The inverter carries a 12-year warranty',
-    values: [{ value: 12, unit: 'years' }],
-    unit: 'years',
-    keywords: ['inverter'],
-  },
-  {
-    id: '60000000-0000-0000-0000-000000000005',
-    key: 'F-005',
-    statement: 'Panel efficiency is up to 22.5%',
-    values: [{ value: 22.5, unit: '%' }],
-    unit: '%',
-    keywords: ['efficiency', 'efficient'],
-  },
-  {
-    id: '60000000-0000-0000-0000-000000000006',
-    key: 'F-006',
-    statement: 'Brightway Solar serves customers in 14 cities',
-    values: [{ value: 14, unit: 'cities' }],
-    unit: 'cities',
-    keywords: ['cities', 'serve', 'serves'],
-  },
-];
+export const DEFAULT_FACTS: ApprovedFactItem[] = CANONICAL_FACTS.map((cf, idx) => ({
+  id: `60000000-0000-0000-0000-00000000000${idx + 1}`,
+  key: cf.key,
+  statement: cf.statement,
+  values: cf.values,
+  unit: cf.unit,
+  keywords: cf.keywords,
+}));
 
 export function normaliseUnit(rawUnit: string): string | null {
   const u = rawUnit.toLowerCase().trim();

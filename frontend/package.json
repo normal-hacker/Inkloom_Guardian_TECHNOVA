@@ -12,10 +12,11 @@
     "check:routes": "node scripts/check-routes.mjs",
     "test": "vitest run",
     "e2e": "playwright test",
-    "build": "next build",
+    "build": "npm run benchmark && next build",
     "start": "next start",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "tsx src/lib/db/seed.ts"
+    "db:seed": "tsx src/lib/db/seed.ts",
+    "benchmark": "tsx generate-benchmark-results.mjs && tsx generate-test-matrix.ts"
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",
@@ -48,6 +49,7 @@
     "@types/react": "19.0.2",
     "@types/react-dom": "19.0.2",
     "autoprefixer": "^10.6.2",
+    "axe-core": "^4.14.0",
     "drizzle-kit": "^0.31.11",
     "eslint": "^9.39.5",
     "eslint-config-next": "15.5.29",

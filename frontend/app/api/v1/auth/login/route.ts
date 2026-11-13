@@ -150,6 +150,16 @@ export async function POST(req: NextRequest) {
       maxAge: 8 * 3600,
     });
 
+    response.cookies.set({
+      name: 'inkloom_has_session',
+      value: '1',
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 8 * 3600,
+    });
+
     return response;
   } catch (err: unknown) {
     const isDbError =

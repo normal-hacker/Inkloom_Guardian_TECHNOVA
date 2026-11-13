@@ -195,6 +195,21 @@ export async function recordContentDecision(params: {
 
   // Role guard: reviewer or manager only
   if (!['reviewer', 'manager'].includes(userRole)) {
+    try {
+      await db.insert(schema.auditLog).values({
+        workspaceId,
+        actorId: userId,
+        action: 'content.approval_refused',
+        entityType: 'content_item',
+        entityId: contentItemId,
+        detail: {
+          reason: 'role_forbidden',
+          userRole,
+          attemptedDecision: decision,
+          message: `Role "${userRole}" cannot approve or reject content. Reviewer or Manager role required.`,
+        },
+      });
+    } catch {}
     throw new WorkflowError(
       403,
       'forbidden',
@@ -216,6 +231,21 @@ export async function recordContentDecision(params: {
 
   // Self-approval forbidden: Author cannot approve their own content!
   if (item.ownerId === userId) {
+    try {
+      await db.insert(schema.auditLog).values({
+        workspaceId,
+        actorId: userId,
+        action: 'content.approval_refused',
+        entityType: 'content_item',
+        entityId: contentItemId,
+        detail: {
+          reason: 'self_approval_forbidden',
+          ownerId: item.ownerId,
+          attemptedDecision: decision,
+          message: 'Self-approval is strictly forbidden. A different reviewer must approve or request changes.',
+        },
+      });
+    } catch {}
     throw new WorkflowError(
       403,
       'self_approval_forbidden',
@@ -271,6 +301,21 @@ export async function recordContentDecision(params: {
       );
 
     if (openBlockers.length > 0) {
+      try {
+        await db.insert(schema.auditLog).values({
+          workspaceId,
+          actorId: userId,
+          action: 'content.approval_refused',
+          entityType: 'content_item',
+          entityId: contentItemId,
+          detail: {
+            reason: 'approval_blocked',
+            openBlockersCount: openBlockers.length,
+            attemptedDecision: decision,
+            message: `Approval blocked: ${openBlockers.length} open blocker finding(s) must be resolved, dismissed, or overridden first.`,
+          },
+        });
+      } catch {}
       throw new WorkflowError(
         409,
         'approval_blocked',

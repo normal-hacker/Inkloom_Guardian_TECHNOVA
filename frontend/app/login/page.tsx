@@ -36,17 +36,19 @@ function LoginForm() {
     }
   }, [errorParam]);
 
-  // Check if session already exists on mount
+  // Check if session already exists on mount (only when session indicator cookie is set)
   useEffect(() => {
-    fetch('/api/v1/auth/me')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.user) {
-          router.replace(nextUrl);
-        }
-      })
-      .catch(() => {});
-  }, [router, nextUrl]);
+    if (typeof document !== 'undefined' && document.cookie.includes('inkloom_has_session=1')) {
+      fetch('/api/v1/auth/me')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.user) {
+            window.location.href = nextUrl;
+          }
+        })
+        .catch(() => {});
+    }
+  }, [nextUrl]);
 
   // Load configured providers
   useEffect(() => {
@@ -93,8 +95,8 @@ function LoginForm() {
       setStatus({ state: 'success', message: `Welcome back, ${user.name}!` });
 
       setTimeout(() => {
-        router.push(nextUrl);
-      }, 600);
+        window.location.href = nextUrl;
+      }, 300);
     } catch {
       setStatus({ state: 'error', message: 'Network offline or server unreachable. Please try again.' });
     }
@@ -123,8 +125,8 @@ function LoginForm() {
 
       setStatus({ state: 'success', message: 'Signed in successfully!' });
       setTimeout(() => {
-        router.push(nextUrl);
-      }, 600);
+        window.location.href = nextUrl;
+      }, 300);
     } catch {
       setStatus({ state: 'error', message: 'Network offline or server unreachable. Please try again.' });
     }

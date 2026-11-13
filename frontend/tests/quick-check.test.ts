@@ -38,3 +38,4 @@ describe('Round 3 Feature C: Generalization & Quick-Check Engine', () => {
     expect(blockers.length).toBe(0);
   });
 });
+

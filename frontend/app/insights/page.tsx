@@ -52,7 +52,7 @@ export default function InsightsPage() {
     fetch('/api/v1/insights')
       .then((res) => (res.ok ? res.json() : null))
       .then((payload) => setData(payload))
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, []);
 
@@ -155,9 +155,8 @@ export default function InsightsPage() {
               {dismissedAlerts.map((r) => (
                 <div
                   key={r.ruleKey}
-                  className={`p-4 border-2 border-ink ${
-                    r.flagged ? 'bg-amber-50/60 shadow-hard' : 'bg-surface-2'
-                  }`}
+                  className={`p-4 border-2 border-ink ${r.flagged ? 'bg-amber-50/60 shadow-hard' : 'bg-surface-2'
+                    }`}
                 >
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="flex items-center gap-2">

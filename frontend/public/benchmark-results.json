@@ -1,0 +1,22 @@
+{
+  "generatedAt": "2026-11-13T13:15:18.536Z",
+  "commitHash": "ab159c8",
+  "goldenSet": {
+    "totalCases": 52,
+    "truePositives": 45,
+    "falsePositives": 1,
+    "falseNegatives": 0,
+    "precisionPct": 97.83,
+    "recallPct": 100,
+    "f1ScorePct": 98.9
+  },
+  "holdoutSet": {
+    "totalCases": 20,
+    "truePositives": 11,
+    "falsePositives": 4,
+    "falseNegatives": 5,
+    "precisionPct": 73.33,
+    "recallPct": 68.75,
+    "f1ScorePct": 70.97
+  }
+}

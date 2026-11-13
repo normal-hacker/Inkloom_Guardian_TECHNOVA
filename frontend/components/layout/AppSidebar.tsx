@@ -31,34 +31,37 @@ export function AppSidebar() {
   // Fetch session & providers
   React.useEffect(() => {
     let mounted = true;
+    const hasSession = typeof document !== 'undefined' && document.cookie.includes('inkloom_has_session=1');
 
-    fetch('/api/v1/auth/me')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (mounted && data?.user) {
-          setUser(data.user);
-        }
-      })
-      .catch(() => {});
+    if (hasSession) {
+      fetch('/api/v1/auth/me')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (mounted && data?.user) {
+            setUser(data.user);
+          }
+        })
+        .catch(() => {});
+
+      fetch('/api/v1/content')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (mounted && Array.isArray(data?.items)) {
+            const count = data.items.filter(
+              (item: { status: string }) =>
+                item.status === 'in_review' || item.status === 'changes_requested'
+            ).length;
+            setPendingReviews(count > 0 ? count : undefined);
+          }
+        })
+        .catch(() => {});
+    }
 
     fetch('/api/v1/auth/providers')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (mounted && data) {
           setDemoEnabled(Boolean(data.demo));
-        }
-      })
-      .catch(() => {});
-
-    fetch('/api/v1/content')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (mounted && Array.isArray(data?.items)) {
-          const count = data.items.filter(
-            (item: { status: string }) =>
-              item.status === 'in_review' || item.status === 'changes_requested'
-          ).length;
-          setPendingReviews(count > 0 ? count : undefined);
         }
       })
       .catch(() => {});
@@ -197,11 +200,13 @@ function SidebarFooter({
 }) {
   const { open } = useSidebar();
 
-  const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'U';
+  if (!user) {
+    return null;
+  }
 
-  const accessibleUserLabel = user
-    ? `Signed in as ${user.name}, ${user.role}`
-    : 'Signed in as guest';
+  const userInitial = user.name ? user.name.charAt(0).toUpperCase() : 'U';
+
+  const accessibleUserLabel = `Signed in as ${user.name}, ${user.role}`;
 
   return (
     <div className="pt-3 border-t-2 border-ink space-y-2 mt-auto shrink-0">

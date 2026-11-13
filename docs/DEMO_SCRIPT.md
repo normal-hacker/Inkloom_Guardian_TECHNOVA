@@ -57,3 +57,4 @@
 - **Visual:** Show `/insights` page with the Guideline-Gap detector and `/selftest` with the 52-case benchmark (98.9% F1).
 - **Voiceover:**
   > *"Deterministic rule precision, bounded AI advice, human-sovereign gates, and immutable audit transparency. That is Inkloom Guardian."*
+

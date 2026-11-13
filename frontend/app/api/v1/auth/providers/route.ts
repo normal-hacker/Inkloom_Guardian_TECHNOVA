@@ -34,10 +34,16 @@ export async function GET() {
     ]
     : [];
 
+  const activeAiAdapter = (serverEnv.aiApiKey && serverEnv.aiApiKey.length > 5)
+    ? 'gemini'
+    : (serverEnv.aiProvider || 'mock');
+
   return NextResponse.json({
     demo: isDemo,
     password: true,
     google: hasGoogle,
     demoUsers,
+    aiAdapter: activeAiAdapter,
+    aiAdapterLabel: activeAiAdapter === 'gemini' ? 'Gemini AI (Advisory)' : 'Mock AI (Advisory, Default)',
   });
 }

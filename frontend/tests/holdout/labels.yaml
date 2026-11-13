@@ -1,0 +1,105 @@
+# Inkloom Guardian Independent Holdout Set (20 Unseen Labelled Cases)
+# Written in diverse real-world editorial, customer testimonial, technical memo, and social ad styles.
+# DO NOT TUNE RULES TO THIS SET.
+
+cases:
+  - id: 101
+    description: "Customer review style with superlative claim"
+    text: "Honestly this is the #1 premier solar company in California and unmatched anywhere."
+    expected_rules: ["CLAIM-001"]
+
+  - id: 102
+    description: "Social media ad copy with absolute zero guarantee"
+    text: "Tired of utility bills? Switch today and we promise 100% elimination of all future energy costs forever."
+    expected_rules: ["CLAIM-002"]
+
+  - id: 103
+    description: "Financial breakdown claiming excessive percentage savings"
+    text: "Our financial model proves typical households slash up to 45% off monthly electricity costs right away."
+    expected_rules: ["NUM-001"]
+
+  - id: 104
+    description: "Informal blog post using banned terminology"
+    text: "Looking for the cheapest power in your state? Look no further than our catalog."
+    expected_rules: ["TERM-001"]
+
+  - id: 105
+    description: "Product announcement with incorrect brand casing"
+    text: "We are thrilled to launch the brand new brightway Sun link battery pack to all customers."
+    expected_rules: ["TERM-002"]
+
+  - id: 106
+    description: "Email newsletter using prohibited solar cells phrase"
+    text: "Photovoltaic silicon solar cells are installed directly onto asphalt shingle roofs."
+    expected_rules: ["TERM-001"]
+
+  - id: 107
+    description: "Over-enthusiastic promo blast with multiple exclamations"
+    text: "Huge spring clearance event happening now!!! Save big before inventory runs dry!!!"
+    expected_rules: ["TONE-001"]
+
+  - id: 108
+    description: "High pressure sales text"
+    text: "Offer expires midnight tonight so hurry before time runs out and rates increase."
+    expected_rules: ["TONE-002"]
+
+  - id: 109
+    description: "Press release with exaggerated tech buzzwords"
+    text: "Introducing a revolutionary paradigm-shifting approach to suburban clean energy storage."
+    expected_rules: ["TONE-003"]
+
+  - id: 110
+    description: "Internal memo quoting unreleased confidential project codename"
+    text: "Project Helios battery cells are scheduled for regional trial delivery next quarter."
+    expected_rules: ["CONF-001"]
+
+  - id: 111
+    description: "Web article with missing image alt text in markdown format"
+    text: "Check out our rooftop blueprint below: ![](https://assets.brightway.com/images/array.png)"
+    expected_rules: ["A11Y-001"]
+
+  - id: 112
+    description: "Marketing copy with an unapproved 30-year warranty claim"
+    text: "Every solar system purchase comes backed by our comprehensive 30-year panel warranty."
+    expected_rules: ["NUM-001"]
+
+  - id: 113
+    description: "Compliant technical documentation without violations"
+    text: "Brightway Solar panels convert solar irradiance into alternating current via a certified micro-inverter."
+    expected_rules: []
+
+  - id: 114
+    description: "Clean editorial article citing approved benchmark savings"
+    text: "In our 2025 customer study of 412 households, average electricity-bill savings were 18–24%."
+    expected_rules: []
+
+  - id: 115
+    description: "Clean promotional notice without hype or pressure"
+    text: "Brightway Solar offers consultation appointments Monday through Friday during normal business hours."
+    expected_rules: []
+
+  - id: 116
+    description: "Customer service message with proper brand styling"
+    text: "Your Brightway SunLink battery management application is now ready for download."
+    expected_rules: []
+
+  - id: 117
+    description: "Complex paragraph with both unverified guarantee and urgency pressure"
+    text: "Act fast because slots are filling rapidly! We guarantee zero bills for your home starting next month."
+    expected_rules: ["CLAIM-002", "TONE-002"]
+
+  - id: 118
+    description: "Unsubstantiated government incentive claim"
+    text: "Get your system 100% free with government incentives and mandatory state rebates."
+    expected_rules: ["CLAIM-003"]
+
+  - id: 119
+    description: "Clean product description with accurate warranty coverage"
+    text: "All standard panels include an approved 25-year panel warranty and workmanship guarantee."
+    expected_rules: []
+
+  - id: 120
+    description: "Misleading payback period claim"
+    text: "Pay off your entire residential installation within 12 months guaranteed."
+    expected_rules: ["CLAIM-003"]
+

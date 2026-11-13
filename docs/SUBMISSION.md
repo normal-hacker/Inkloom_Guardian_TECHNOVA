@@ -103,3 +103,4 @@ Judges evaluate engineering discipline through reasoned architectural adaptation
 - **Deterministic Rule Engine Speed:** **< 1 ms** (measured 0.009 ms / 9 µs average per check; 111,429 checks/sec)
 - **Automated Test Suite:** **23 test suites, 221 tests passing** (`npm test`)
 - **Compilation:** **33 Next.js routes compiled cleanly** (`npm run build`) with zero TypeScript or token errors.
+

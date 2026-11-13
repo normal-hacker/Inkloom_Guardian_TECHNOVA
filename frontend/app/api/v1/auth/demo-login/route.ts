@@ -131,6 +131,17 @@ export async function POST(req: Request) {
     maxAge: SESSION_EXPIRY_SECONDS,
   });
 
+  // Client-readable session flag to avoid unauthenticated 401 polling
+  response.cookies.set({
+    name: 'inkloom_has_session',
+    value: '1',
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: SESSION_EXPIRY_SECONDS,
+  });
+
   return response;
 }
 

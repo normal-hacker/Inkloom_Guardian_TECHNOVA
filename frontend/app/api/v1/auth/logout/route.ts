@@ -13,6 +13,7 @@ export async function POST() {
   );
 
   response.cookies.delete(SESSION_COOKIE_NAME);
+  response.cookies.delete('inkloom_has_session');
   return response;
 }
 

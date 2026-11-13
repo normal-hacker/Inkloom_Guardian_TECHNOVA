@@ -1,12 +1,16 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { ShieldCheck, ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 
 export default function BuildNotesPage() {
+  useEffect(() => {
+    document.title = 'Engineering Build Notes & Architecture | Inkloom Guardian';
+  }, []);
+
   return (
     <div className="min-h-screen bg-paper text-ink flex flex-col justify-between">
       {/* Header */}
@@ -141,7 +145,7 @@ export default function BuildNotesPage() {
           </div>
           <div className="p-4 border-2 border-ink bg-surface-2 space-y-3">
             <p className="text-xs text-ink leading-relaxed font-mono">
-              Inkloom Guardian&apos;s core governance engine is 100% deterministic, running 13 brand rules and 6 verified facts locally in pure TypeScript with zero external network calls (&lt; 1 ms latency). When an AI API key is configured, an optional, pluggable Gemini AI adapter provides advisory suggestions and phrasing alternatives on unstructured copy. The AI adapter never approves content, never bypasses blocker gates, and all text undergoes automated PII redaction before leaving the boundary.
+              Deterministic rule engine. Optional advisory AI (mock by default; Gemini when configured). Inkloom Guardian&apos;s core governance engine evaluates 13 brand rules and 6 verified facts locally in pure TypeScript with zero external network dependencies. When an AI API key is configured, an optional, pluggable Gemini AI adapter provides advisory suggestions and phrasing alternatives on unstructured copy. The AI adapter never approves content, never bypasses blocker gates, and all text undergoes automated PII redaction before leaving the boundary.
             </p>
           </div>
         </div>

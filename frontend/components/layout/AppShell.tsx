@@ -4,11 +4,21 @@ import * as React from 'react';
 import { usePathname } from 'next/navigation';
 import { AppSidebar } from '@/components/layout/AppSidebar';
 
+const PUBLIC_ROUTES = [
+  '/',
+  '/login',
+  '/demo-report',
+  '/about-ai',
+  '/build-notes',
+  '/selftest',
+  '/rules',
+];
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  // The login screen renders without sidebar or shell frame
-  if (pathname === '/login') {
+  // Public standalone pages render without app sidebar or dual-header wrapper
+  if (PUBLIC_ROUTES.includes(pathname)) {
     return <>{children}</>;
   }
 

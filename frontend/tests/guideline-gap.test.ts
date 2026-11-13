@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initMemoryDatabase } from '../src/lib/db/memory-db';
 import { setCustomPool } from '../src/lib/db/client';
-import { getInsightsMetrics } from '../src/lib/services/insights';
+import { getInsightsMetrics, shouldFlagGuidelineGap } from '../src/lib/services/insights';
 import { SEED_WORKSPACE_ID, seedDatabase } from '../src/lib/db/seed';
 
 describe('Round 3 Feature B: Guideline-Gap Detector', () => {
@@ -29,6 +29,17 @@ describe('Round 3 Feature B: Guideline-Gap Detector', () => {
       expect(rule.suggestedAction).toBeTruthy();
       expect(rule.isSeeded).toBe(true);
     }
+  });
+
+  it('unit test: verifies threshold logic (39% no, 40% yes, 4 decisions no)', () => {
+
+    // Threshold is >= 40% AND at least 5 decisions
+    expect(shouldFlagGuidelineGap(1, 4)).toBe(false); // 25%, count < 5
+    expect(shouldFlagGuidelineGap(2, 4)).toBe(false); // 50%, count < 5 (fails count >= 5)
+    expect(shouldFlagGuidelineGap(4, 4)).toBe(false); // 100%, count < 5
+    expect(shouldFlagGuidelineGap(39, 100)).toBe(false); // 39% (fails rate >= 40%)
+    expect(shouldFlagGuidelineGap(2, 5)).toBe(true); // 40%, count = 5 (passes)
+    expect(shouldFlagGuidelineGap(41, 100)).toBe(true); // 41%, count = 100 (passes)
   });
 
   it('correctly calculates totalCount, dismissedCount, and dismissalRatePct', async () => {

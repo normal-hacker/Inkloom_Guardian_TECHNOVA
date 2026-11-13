@@ -1,0 +1,95 @@
+{
+  "generatedAt": "2026-11-13T13:15:18.726Z",
+  "totalMatrixTests": 275,
+  "categories": [
+    {
+      "name": "Rule-Engine Correctness",
+      "files": [
+        "engine.test.ts",
+        "golden/eval.test.ts",
+        "holdout/holdout.test.ts",
+        "quick-check.test.ts",
+        "consistency.test.ts"
+      ],
+      "testCount": 101,
+      "description": "13 pure TypeScript rules, context-proximity windows, golden set (52) & holdout (20) precision/recall"
+    },
+    {
+      "name": "API Authorization & Decision Enforcement",
+      "files": [
+        "s4-decisions.test.ts",
+        "adversarial-demo.test.ts",
+        "login-auth.test.ts",
+        "reset-demo.test.ts",
+        "approval-states.test.ts"
+      ],
+      "testCount": 27,
+      "description": "Role-based guards (reviewer/manager), self-approval prevention, open-blocker gate, 403/409 refusals"
+    },
+    {
+      "name": "Audit Immutability & Grounding",
+      "files": [
+        "s1-data.test.ts",
+        "stale-audit.test.ts",
+        "guideline-gap.test.ts",
+        "s7-security.test.ts",
+        "s6-insights.test.ts"
+      ],
+      "testCount": 23,
+      "description": "PostgreSQL append-only triggers, UPDATE/DELETE refusal, grounding foreign-key constraints"
+    },
+    {
+      "name": "Idempotency & Optimistic UI",
+      "files": [
+        "optimistic-api.test.ts",
+        "optimistic-hook.test.ts",
+        "anti-drift.test.ts"
+      ],
+      "testCount": 23,
+      "description": "Idempotency-Key header replay caching, atomic state transitions, drift protection"
+    },
+    {
+      "name": "File Parsing & Ingestion",
+      "files": [
+        "upload-extraction-pipeline.test.ts",
+        "s3-intake.test.ts",
+        "banner-inspection.test.ts"
+      ],
+      "testCount": 19,
+      "description": "Multi-format text extraction (PDF, DOCX, TXT, MD), size bounds, advisory image banner checks"
+    },
+    {
+      "name": "PII Redaction & Word Diffing",
+      "files": [
+        "domain-derive.test.ts",
+        "apply-suggestion.test.ts",
+        "banned-phrases.test.ts"
+      ],
+      "testCount": 31,
+      "description": "Deterministic regex PII masking (emails, phones, SSNs), character offset realignment, word diffs"
+    },
+    {
+      "name": "Design System & UI Component Verification",
+      "files": [
+        "base-components.test.tsx",
+        "sidebar.test.ts",
+        "expandable-tabs.test.ts",
+        "health.test.ts",
+        "env.test.ts"
+      ],
+      "testCount": 42,
+      "description": "Paper Brutalist typography, Geist font variables, expandable navigation tabs, server env validation"
+    },
+    {
+      "name": "Playwright E2E User Journeys",
+      "files": [
+        "credibility.spec.ts",
+        "demo-flow.spec.ts",
+        "landing.spec.ts",
+        "login.spec.ts"
+      ],
+      "testCount": 9,
+      "description": "Parallel isolated demo sessions, real SHA-256 verifier, 60-second judge path, mobile responsiveness"
+    }
+  ]
+}

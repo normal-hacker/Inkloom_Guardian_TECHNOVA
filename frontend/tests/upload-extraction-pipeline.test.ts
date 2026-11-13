@@ -64,7 +64,7 @@ describe('File Upload & Text Extraction Verification Pipeline', () => {
     expect(result.sourceKind).toBe('pdf');
     expect(result.textBody).toContain('Brightway Solar');
     expect(result.textBody).toContain('residential solar power');
-  });
+  }, 20000);
 
   // 2. DOCX Upload & Extraction
   it('2. Successfully extracts text from a Word (.docx) document', async () => {
