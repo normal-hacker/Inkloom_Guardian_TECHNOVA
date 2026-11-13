@@ -915,10 +915,12 @@ body {
   <script>
 // === SECTION 1: SHA-256 ===
 
-function sha256Pure(ascii) {
-  function rightRotate(value, amount) {
-    return (value >>> amount) | (value << (32 - amount));
-  }
+function rotr(value, bits) {
+  return (value >>> bits) | (value << (32 - bits));
+}
+
+function sha256Pure(input) {
+  const bytes = new TextEncoder().encode(input);
   const K = [
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
     0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
@@ -929,59 +931,50 @@ function sha256Pure(ascii) {
     0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
     0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
   ];
+
   const H = [
     0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
     0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
   ];
 
-  const bytes = [];
-  for (let i = 0; i < ascii.length; i++) {
-    const c = ascii.charCodeAt(i);
-    if (c < 128) {
-      bytes.push(c);
-    } else if (c < 2048) {
-      bytes.push((c >> 6) | 192);
-      bytes.push((c & 63) | 128);
-    } else {
-      bytes.push((c >> 12) | 224);
-      bytes.push(((c >> 6) & 63) | 128);
-      bytes.push((c & 63) | 128);
-    }
+  const msg = Array.from(bytes);
+  msg.push(0x80);
+
+  while ((msg.length % 64) !== 56) {
+    msg.push(0);
   }
 
-  const bitLen = bytes.length * 8;
-  bytes.push(0x80);
-  while ((bytes.length % 64) !== 56) {
-    bytes.push(0);
+  const bitLen = BigInt(bytes.length) * 8n;
+  for (let i = 56n; i >= 0n; i -= 8n) {
+    msg.push(Number((bitLen >> i) & 0xffn));
   }
-  bytes.push(0, 0, 0, 0);
-  bytes.push((bitLen >>> 24) & 0xff);
-  bytes.push((bitLen >>> 16) & 0xff);
-  bytes.push((bitLen >>> 8) & 0xff);
-  bytes.push(bitLen & 0xff);
 
-  const W = new Array(64);
-  for (let chunk = 0; chunk < bytes.length; chunk += 64) {
+  let w = new Array(64);
+
+  for (let chunk = 0; chunk < msg.length; chunk += 64) {
     for (let i = 0; i < 16; i++) {
-      W[i] = ((bytes[chunk + i * 4] << 24) |
-              (bytes[chunk + i * 4 + 1] << 16) |
-              (bytes[chunk + i * 4 + 2] << 8) |
-              (bytes[chunk + i * 4 + 3])) >>> 0;
+      w[i] = (
+        (msg[chunk + i * 4] << 24) |
+        (msg[chunk + i * 4 + 1] << 16) |
+        (msg[chunk + i * 4 + 2] << 8) |
+        (msg[chunk + i * 4 + 3])
+      ) >>> 0;
     }
+
     for (let i = 16; i < 64; i++) {
-      const s0 = (rightRotate(W[i - 15], 7) ^ rightRotate(W[i - 15], 18) ^ (W[i - 15] >>> 3)) >>> 0;
-      const s1 = (rightRotate(W[i - 2], 17) ^ rightRotate(W[i - 2], 19) ^ (W[i - 2] >>> 10)) >>> 0;
-      W[i] = (W[i - 16] + s0 + W[i - 7] + s1) >>> 0;
+      const s0 = (rotr(w[i - 15], 7) ^ rotr(w[i - 15], 18) ^ (w[i - 15] >>> 3)) >>> 0;
+      const s1 = (rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >>> 10)) >>> 0;
+      w[i] = (w[i - 16] + s0 + w[i - 7] + s1) >>> 0;
     }
 
     let a = H[0], b = H[1], c = H[2], d = H[3];
     let e = H[4], f = H[5], g = H[6], h = H[7];
 
     for (let i = 0; i < 64; i++) {
-      const S1 = (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25)) >>> 0;
+      const S1 = (rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)) >>> 0;
       const ch = ((e & f) ^ ((~e) & g)) >>> 0;
-      const temp1 = (h + S1 + ch + K[i] + W[i]) >>> 0;
-      const S0 = (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22)) >>> 0;
+      const temp1 = (h + S1 + ch + K[i] + w[i]) >>> 0;
+      const S0 = (rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)) >>> 0;
       const maj = ((a & b) ^ (a & c) ^ (b & c)) >>> 0;
       const temp2 = (S0 + maj) >>> 0;
 
@@ -1005,11 +998,7 @@ function sha256Pure(ascii) {
     H[7] = (H[7] + h) >>> 0;
   }
 
-  let hex = '';
-  for (let i = 0; i < 8; i++) {
-    hex += (H[i] >>> 0).toString(16).padStart(8, '0');
-  }
-  return hex;
+  return H.map(x => (x >>> 0).toString(16).padStart(8, "0")).join("");
 }
 
 async function sha256(text) {
@@ -2434,37 +2423,27 @@ function runRules(text, ctx = {}) {
   // Severity ranks
   const sevRank = { blocker: 1, major: 2, minor: 3, info: 4 };
 
-  // De-duplicate overlapping spans: keep higher severity, tie -> earlier rule order
+  // De-duplicate overlapping spans: keep higher severity, tie -> earlier start, tie -> longer span
   verified.sort((a, b) => {
+    const rA = sevRank[a.severity] || 5;
+    const rB = sevRank[b.severity] || 5;
+    if (rA !== rB) return rA - rB;
     if (a.start !== b.start) return a.start - b.start;
-    return (sevRank[a.severity] || 5) - (sevRank[b.severity] || 5);
+    return (b.end - b.start) - (a.end - a.start);
   });
 
   const deduped = [];
-  for (let i = 0; i < verified.length; i++) {
-    const cur = verified[i];
-    let overlap = false;
-    for (let j = 0; j < deduped.length; j++) {
-      const prev = deduped[j];
-      if (Math.max(cur.start, prev.start) < Math.min(cur.end, prev.end)) {
-        overlap = true;
-        if ((sevRank[cur.severity] || 5) < (sevRank[prev.severity] || 5)) {
-          deduped[j] = cur;
-        }
-        break;
-      }
-    }
-    if (!overlap) {
+  for (const cur of verified) {
+    const overlaps = deduped.some(prev => Math.max(cur.start, prev.start) < Math.min(cur.end, prev.end));
+    if (!overlaps) {
       deduped.push(cur);
     }
   }
 
-  // Sort: severity order then position
+  // Sort: by start position ascending for deterministic non-overlapping slices
   deduped.sort((a, b) => {
-    const rA = sevRank[a.severity] || 5;
-    const rB = sevRank[b.severity] || 5;
-    if (rA !== rB) return rA - rB;
-    return a.start - b.start;
+    if (a.start !== b.start) return a.start - b.start;
+    return a.end - b.end;
   });
 
   // Cap at 50 & assign stable IDs

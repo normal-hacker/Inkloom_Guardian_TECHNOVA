@@ -324,13 +324,13 @@ export const AuthComponent: React.FC<AuthComponentProps> = ({
                               className="w-full text-left p-3.5 border-2 border-ink bg-surface hover:bg-surface-2 transition-all duration-120 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-hard-hover active:translate-x-0.5 active:translate-y-0.5 active:shadow-none flex items-center justify-between gap-3 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-focus"
                             >
                               <div>
-                                <p className="font-bold text-sm text-ink">{u.name}</p>
-                                <p className="text-xs font-mono text-ink-2 mt-0.5 line-clamp-1">
+                                <p className="font-bold text-sm text-[#0A0A0A]">{u.name}</p>
+                                <p className="text-xs font-mono text-[#383734] mt-0.5 line-clamp-1">
                                   {u.blurb}
                                 </p>
                               </div>
                               <div className="flex items-center gap-2 shrink-0">
-                                <span className="font-mono text-[10px] font-bold uppercase px-2 py-0.5 border border-ink bg-surface-2 text-ink">
+                                <span className="font-mono text-[10px] font-bold uppercase px-2 py-0.5 border border-ink bg-surface-2 text-[#0A0A0A]">
                                   {u.role}
                                 </span>
                                 <ArrowRight className="w-4 h-4 text-ink" />
