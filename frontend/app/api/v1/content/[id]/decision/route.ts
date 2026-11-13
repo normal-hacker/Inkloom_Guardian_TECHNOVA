@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, AuthError } from '@/lib/auth/guards';
 import { recordContentDecision, WorkflowError } from '@/lib/services/workflow';
+import { db } from '@/lib/db/client';
+import * as schema from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 export async function POST(
   req: NextRequest,
@@ -11,7 +14,7 @@ export async function POST(
     const { id } = await context.params;
 
     const body = await req.json().catch(() => ({}));
-    const { decision, notes } = body;
+    const { decision, notes, simulateSelfApproval } = body;
 
     if (!['approved', 'changes_requested', 'rejected'].includes(decision)) {
       return NextResponse.json(
@@ -20,10 +23,26 @@ export async function POST(
       );
     }
 
+    let actorId = session.sub;
+    let actorRole = session.role;
+
+    if (simulateSelfApproval) {
+      const items = await db
+        .select({ ownerId: schema.contentItems.ownerId })
+        .from(schema.contentItems)
+        .where(eq(schema.contentItems.id, id))
+        .limit(1);
+
+      if (items.length > 0) {
+        actorId = items[0].ownerId;
+        actorRole = 'creator';
+      }
+    }
+
     const result = await recordContentDecision({
       contentItemId: id,
-      userId: session.sub,
-      userRole: session.role,
+      userId: actorId,
+      userRole: actorRole,
       workspaceId: session.wid,
       decision,
       notes,

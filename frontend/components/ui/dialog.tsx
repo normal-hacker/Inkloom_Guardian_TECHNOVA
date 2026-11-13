@@ -22,6 +22,8 @@ export function Dialog({
   className,
 }: DialogProps) {
   const dialogRef = React.useRef<HTMLDivElement>(null);
+  const onCloseRef = React.useRef(onClose);
+  onCloseRef.current = onClose;
 
   React.useEffect(() => {
     if (!open) return;
@@ -29,7 +31,7 @@ export function Dialog({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        onClose();
+        onCloseRef.current();
       }
     };
 
@@ -37,14 +39,26 @@ export function Dialog({
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
-    // Focus the dialog container
-    dialogRef.current?.focus();
+    // Focus the first actionable control on open, or the modal container if none
+    const timer = setTimeout(() => {
+      if (dialogRef.current && !dialogRef.current.contains(document.activeElement)) {
+        const focusable = dialogRef.current.querySelector<HTMLElement>(
+          'textarea:not([disabled]), input:not([disabled]), button:not([aria-label="Close dialog"]):not([disabled])'
+        );
+        if (focusable) {
+          focusable.focus();
+        } else {
+          dialogRef.current.focus();
+        }
+      }
+    }, 20);
 
     return () => {
+      clearTimeout(timer);
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = originalOverflow;
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 
@@ -152,6 +166,7 @@ export function ConfirmDialog({
           <Textarea
             label="Justification Reason"
             required
+            autoFocus
             rows={3}
             value={reason}
             onChange={(e) => {

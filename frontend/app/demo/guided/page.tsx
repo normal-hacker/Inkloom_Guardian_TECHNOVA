@@ -44,6 +44,21 @@ function GuidedDemoContent() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    const s = searchParams.get('session');
+    const it = searchParams.get('item');
+    if (!s || !it) {
+      fetch('/api/v1/demo-session/start', { method: 'POST' })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d?.redirectUrl) {
+            router.replace(d.redirectUrl);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [searchParams, router]);
+
+  useEffect(() => {
     // Run rule checks initially
     const computedFindings = runRules(draftText);
     setFindings(computedFindings);

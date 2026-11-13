@@ -5,6 +5,7 @@ import {
   ChartColumn,
   ScrollText,
   Info,
+  Sparkles,
   LucideIcon,
 } from 'lucide-react';
 
@@ -29,6 +30,14 @@ export const NAV_CONFIG: NavItemConfig[] = [
     description: 'What needs your attention and the status of your content',
     icon: LayoutDashboard,
     href: '/dashboard',
+    roles: 'all',
+  },
+  {
+    id: 'guided-demo',
+    title: 'Guided Demo',
+    description: '7-step interactive walkthrough: checks, blocker gates & audit ledger',
+    icon: Sparkles,
+    href: '/demo/guided',
     roles: 'all',
   },
   {

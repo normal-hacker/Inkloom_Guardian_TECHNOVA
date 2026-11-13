@@ -75,18 +75,18 @@ export default function ReviewWorkspacePage({
     openBlockerCount: 0,
   });
 
-  const loadApprovalEligibility = () => {
+  const loadApprovalEligibility = useCallback(() => {
     fetch(`/api/v1/content/${id}/approval-status`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data) setApprovalEligibility(data);
       })
       .catch(() => {});
-  };
+  }, [id]);
 
   useEffect(() => {
     loadApprovalEligibility();
-  }, [id, selectedVersionNo, findings]);
+  }, [loadApprovalEligibility, selectedVersionNo]);
 
   const [adversarialMsg, setAdversarialMsg] = useState<{ type: 'error' | 'success'; text: string; status?: number } | null>(null);
   const [isAdversarialBusy, setIsAdversarialBusy] = useState(false);
@@ -102,28 +102,40 @@ export default function ReviewWorkspacePage({
       .catch(() => {});
   }, []);
 
-  const handleAdversarialSelfApprove = async () => {
+  const handleAdversarialCheat = async (mode: 'self_approve' | 'open_blocker') => {
     setIsAdversarialBusy(true);
     setAdversarialMsg(null);
     try {
+      const payload =
+        mode === 'self_approve'
+          ? { decision: 'approved', simulateSelfApproval: true }
+          : { decision: 'approved', notes: 'Attempting approval while blockers are active' };
+
       const res = await fetch(`/api/v1/content/${id}/decision`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ decision: 'approved' }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
+        const errorText =
+          data.message ||
+          data.error?.message ||
+          (typeof data.error === 'string' ? data.error : undefined) ||
+          `Server gate refused request [HTTP ${res.status}].`;
         setAdversarialMsg({
           type: 'error',
           status: res.status,
-          text: `Server refused [HTTP ${res.status}]: ${data.message || data.error}`,
+          text: `Server refused [HTTP ${res.status}]: ${errorText}`,
         });
       } else {
         setAdversarialMsg({ type: 'success', text: 'Unexpected approval success' });
       }
+      await loadData();
+      loadApprovalEligibility();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Request failed';
-      setAdversarialMsg({ type: 'error', text: msg });
+      setAdversarialMsg({ type: 'error', text: `Connection error: ${msg}. Please verify session and network.` });
     } finally {
       setIsAdversarialBusy(false);
     }
@@ -139,6 +151,10 @@ export default function ReviewWorkspacePage({
   // Finding filter
   const [severityFilter, setSeverityFilter] = useState<string>('all');
   const [selectedFindingId, setSelectedFindingId] = useState<string | null>(null);
+
+  const handleCloseDecisionModal = useCallback(() => {
+    setDecisionModal(null);
+  }, []);
 
   // Modals / forms
   const [decisionModal, setDecisionModal] = useState<{
@@ -240,14 +256,20 @@ export default function ReviewWorkspacePage({
     },
   });
 
+  const commentMutationRef = React.useRef(commentMutation);
+  commentMutationRef.current = commentMutation;
+
+  const deleteCommentMutationRef = React.useRef(deleteCommentMutation);
+  deleteCommentMutationRef.current = deleteCommentMutation;
+
   const loadData = useCallback(async () => {
     try {
       const cRes = await fetch(`/api/v1/content/${id}`);
       if (cRes.ok) {
         const cData = await cRes.json();
         setContent(cData.item);
-        if (cData.item.currentVersionNo) {
-          setSelectedVersionNo(cData.item.currentVersionNo);
+        if (cData.item?.currentVersionNo) {
+          setSelectedVersionNo((prev) => prev || cData.item.currentVersionNo);
         }
       }
 
@@ -267,8 +289,8 @@ export default function ReviewWorkspacePage({
       if (commRes.ok) {
         const commData = await commRes.json();
         const loaded = commData.comments || [];
-        commentMutation.setState(loaded);
-        deleteCommentMutation.setState(loaded);
+        commentMutationRef.current?.setState(loaded);
+        deleteCommentMutationRef.current?.setState(loaded);
       }
 
       let userRole: string | undefined;
@@ -297,7 +319,7 @@ export default function ReviewWorkspacePage({
     } finally {
       setLoading(false);
     }
-  }, [id, commentMutation, deleteCommentMutation]);
+  }, [id]);
 
   useEffect(() => {
     loadData();
@@ -314,12 +336,18 @@ export default function ReviewWorkspacePage({
       const res = await fetch(`/api/v1/content/${id}/check`, {
         method: 'POST',
       });
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || 'Check failed to run.');
+        const errorMsg =
+          data.error?.message ||
+          data.message ||
+          (typeof data.error === 'string' ? data.error : undefined) ||
+          `Check failed to run (HTTP ${res.status}).`;
+        throw new Error(errorMsg);
       }
       setActionSuccess('Content checks completed successfully.');
       await loadData();
+      loadApprovalEligibility();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setActionError(msg);
@@ -807,7 +835,7 @@ export default function ReviewWorkspacePage({
                   variant="destructive"
                   size="sm"
                   disabled={isAdversarialBusy}
-                  onClick={handleAdversarialSelfApprove}
+                  onClick={() => handleAdversarialCheat('self_approve')}
                   className="font-mono text-xs cursor-pointer"
                   data-testid="cheat-self-approve-btn"
                 >
@@ -817,7 +845,7 @@ export default function ReviewWorkspacePage({
                   variant="secondary"
                   size="sm"
                   disabled={isAdversarialBusy}
-                  onClick={handleAdversarialSelfApprove}
+                  onClick={() => handleAdversarialCheat('open_blocker')}
                   className="font-mono text-xs cursor-pointer"
                   data-testid="cheat-open-blocker-btn"
                 >
@@ -1092,7 +1120,7 @@ export default function ReviewWorkspacePage({
       {/* Decision Justification Modal */}
       <ConfirmDialog
         open={Boolean(decisionModal)}
-        onClose={() => setDecisionModal(null)}
+        onClose={handleCloseDecisionModal}
         onConfirm={(reason) => {
           if (decisionModal?.findingId) {
             handleFindingDecisionConfirm(reason);

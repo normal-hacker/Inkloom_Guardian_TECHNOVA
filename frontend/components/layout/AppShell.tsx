@@ -8,10 +8,6 @@ const PUBLIC_ROUTES = [
   '/',
   '/login',
   '/demo-report',
-  '/about-ai',
-  '/build-notes',
-  '/selftest',
-  '/rules',
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
