@@ -122,21 +122,24 @@ export function ExpandableTabs({
     [tabs, isControlled, onChange]
   );
 
-  // Scroll active tab into view when needed
+  // Scroll active tab into view horizontally inside container only (never scroll the page vertically)
   React.useEffect(() => {
     if (selected !== null && selected !== undefined) {
       const el = itemRefs.current.get(selected);
-      if (el) {
+      const container = outsideClickRef.current;
+      if (el && container) {
         try {
-          el.scrollIntoView({
-            behavior: shouldReduceMotion ? 'auto' : 'smooth',
-            block: 'nearest',
-            inline: 'nearest',
-          });
+          const containerRect = container.getBoundingClientRect();
+          const elRect = el.getBoundingClientRect();
+          if (elRect.left < containerRect.left) {
+            container.scrollLeft += elRect.left - containerRect.left;
+          } else if (elRect.right > containerRect.right) {
+            container.scrollLeft += elRect.right - containerRect.right;
+          }
         } catch {}
       }
     }
-  }, [selected, shouldReduceMotion]);
+  }, [selected]);
 
   // Tablist roving focus & arrow keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent, index: number) => {

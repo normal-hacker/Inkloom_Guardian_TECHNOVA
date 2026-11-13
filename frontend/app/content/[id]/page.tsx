@@ -628,34 +628,34 @@ export default function ReviewWorkspacePage({
   }
 
   return (
-    <div className="flex flex-col flex-1 bg-paper text-ink min-h-screen pb-28">
+    <div className="flex flex-col flex-1 bg-paper text-ink min-h-full pb-36">
       
       {/* 3.1 Decision Cockpit Bar */}
       <div className="border-b-2 border-ink bg-surface px-6 md:px-8 py-2.5 font-mono text-xs flex flex-wrap items-center justify-between gap-4 shrink-0 shadow-hard-sm" data-testid="decision-cockpit-bar">
         <div className="flex items-center gap-3 flex-wrap">
           <span className="px-2 py-0.5 border border-ink bg-ink text-surface font-bold uppercase">
-            v${selectedVersionNo} · ${content?.status || 'draft'}
+            v{selectedVersionNo} · {content?.status || 'draft'}
           </span>
           <div className="flex items-center gap-2">
             <span className="text-severity-blocker font-bold">
-              ${findings.filter(f => f.severity === 'blocker' && f.status === 'open').length} Blocker${findings.filter(f => f.severity === 'blocker' && f.status === 'open').length === 1 ? '' : 's'}
+              {findings.filter(f => f.severity === 'blocker' && f.status === 'open').length} Blocker{findings.filter(f => f.severity === 'blocker' && f.status === 'open').length === 1 ? '' : 's'}
             </span>
             <span className="text-ink-3">·</span>
             <span className="text-ink-2 font-bold">
-              ${findings.filter(f => f.severity === 'major' && f.status === 'open').length} Major
+              {findings.filter(f => f.severity === 'major' && f.status === 'open').length} Major
             </span>
             <span className="text-ink-3">·</span>
             <span className="text-ink-3">
-              ${findings.filter(f => f.severity === 'minor' && f.status === 'open').length} Minor
+              {findings.filter(f => f.severity === 'minor' && f.status === 'open').length} Minor
             </span>
           </div>
         </div>
 
         <div className="flex items-center gap-4 text-[11px] text-ink-2 flex-wrap">
-          <span>Author: <strong className="text-ink">${content?.ownerName || 'Asha'}</strong></span>
-          <span>Reviewer: <strong className="text-ink">${currentUser?.displayName || 'Priya'}</strong></span>
+          <span>Author: <strong className="text-ink">{content?.ownerName || 'Asha'}</strong></span>
+          <span>Reviewer: <strong className="text-ink">{currentUser?.displayName || 'Priya'}</strong></span>
           <span>Check: <strong className="text-status-approved uppercase">Complete</strong></span>
-          <span>Last Audit: <strong className="text-ink">${auditLogs[0]?.action || 'content.check'}</strong></span>
+          <span>Last Audit: <strong className="text-ink">{auditLogs[0]?.action || 'content.check'}</strong></span>
         </div>
       </div>
 
